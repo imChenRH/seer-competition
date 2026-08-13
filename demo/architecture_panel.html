@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>英知战队 · 智能叉车集装箱卸货系统 · 架构仿真Demo</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d1117; color:#c9d1d9; font-family:"Microsoft YaHei",sans-serif; padding:16px; }
+h1 { font-size:20px; text-align:center; margin-bottom:12px; color:#e6edf3; }
+.grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.card { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:14px; min-height:220px; transition:box-shadow .3s; }
+.card.active { box-shadow:0 0 0 2px #2f81f7, 0 0 18px #2f81f7aa; }
+.card h2 { font-size:15px; margin-bottom:8px; }
+.card .sub { font-size:11px; color:#8b949e; margin-bottom:10px; }
+.row { font-size:12px; margin:5px 0; display:flex; justify-content:space-between; }
+.row .k { color:#8b949e; }
+.row .v { color:#e6edf3; font-family:Consolas,monospace; }
+.flow { grid-column:1/4; display:flex; align-items:center; justify-content:center; gap:10px; margin:8px 0; }
+.flow .arrow { color:#2f81f7; font-size:20px; animation:pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+.dual { grid-column:1/4; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.panel { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:12px; font-size:12px; }
+.panel h3 { font-size:13px; margin-bottom:8px; }
+.exec { border-left:3px solid #3fb950; }
+.sugg { border-left:3px solid #d29922; }
+.log { grid-column:1/4; background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:12px; height:150px; overflow-y:auto; font-family:Consolas,monospace; font-size:11px; line-height:1.6; }
+.log .ok { color:#3fb950; } .log .fb { color:#d29922; } .log .warn { color:#f85149; }
+.metrics { grid-column:1/4; display:flex; gap:20px; justify-content:center; font-size:13px; }
+.metrics .m { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px 18px; text-align:center; }
+.metrics .num { font-size:22px; color:#2f81f7; font-family:Consolas,monospace; }
+.btns { grid-column:1/4; display:flex; gap:10px; justify-content:center; margin-top:6px; }
+button { background:#21262d; color:#c9d1d9; border:1px solid #30363d; border-radius:6px; padding:8px 16px; cursor:pointer; font-size:13px; }
+button:hover { background:#30363d; }
+.status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; }
+.green { background:#3fb950; } .blue { background:#2f81f7; } .yellow { background:#d29922; }
+</style>
+</head>
+<body>
+<h1>英知战队 · 智能叉车集装箱卸货系统 · 架构仿真 Demo</h1>
+<div class="grid">
+
+  <div class="card" id="card-top">
+    <h2><span class="status-dot green"></span>上层 · AgentOS 智能调度（慢推理规划）</h2>
+    <div class="sub">飞书 Aily · 端云结合 · 决策频率 1~5s</div>
+    <div class="row"><span class="k">输入</span><span class="v">"卸载3号集装箱货物到A区传送带"</span></div>
+    <div class="row"><span class="k">任务分解</span><span class="v">FORK-NAV-01→NAV-03→PER-01→OP-01→OP-02→OP-03→NAV-02→OP-05→OP-04</span></div>
+    <div class="row"><span class="k">任务ID</span><span class="v" id="taskId">T-001</span></div>
+    <div class="row"><span class="k">执行来源</span><span class="v">sim（真实仿真）</span></div>
+    <div class="row"><span class="k">状态</span><span class="v" id="topStatus">● 执行中</span></div>
+  </div>
+
+  <div class="card" id="card-mid">
+    <h2><span class="status-dot blue"></span>中层 · Fast-WAM 世界动作模型（影子）</h2>
+    <div class="sub">细粒度执行 VLA · SRC-5000 156TOPS（阶段2端侧）· ~190ms/推理</div>
+    <div class="row"><span class="k">输入</span><span class="v">RGB-D 224×448 + 本体状态 + 技能指令</span></div>
+    <div class="row"><span class="k">建议通道</span><span class="v" id="wamSugg">[0.1, 0, 0.05, 0, 0]（示意）</span></div>
+    <div class="row"><span class="k">执行通道</span><span class="v">规控脚本（阶段1真实路线）</span></div>
+    <div class="row"><span class="k">推理延迟</span><span class="v">190ms（论文实测）</span></div>
+    <div class="row"><span class="k">状态</span><span class="v">● 影子推理中（仅接触丰富技能触发）</span></div>
+  </div>
+
+  <div class="card" id="card-bottom">
+    <h2><span class="status-dot yellow"></span>底层 · SRC-5000 实时控制</h2>
+    <div class="sub">RTOS + TSN 实时核 · 60Hz(Demo)/100Hz(规格) · EtherCAT</div>
+    <div class="row"><span class="k">内置</span><span class="v">WBC 全身控制 + SLAM + 通信中间件</span></div>
+    <div class="row"><span class="k">三层安全验证</span><span class="v">运动学 → 碰撞 → 人机距离（Demo 简化）</span></div>
+    <div class="row"><span class="k">当前技能</span><span class="v" id="curSkill">FORK-NAV-01 进箱导航</span></div>
+    <div class="row"><span class="k">状态</span><span class="v">● 执行中</span></div>
+  </div>
+
+  <div class="flow">
+    <span>指令</span><span class="arrow">→</span><span>任务图</span><span class="arrow">→</span><span>动作token/规控</span><span class="arrow">→</span><span>电机指令</span><span class="arrow">→</span><span>物理仿真 60Hz</span>
+  </div>
+
+  <div class="dual">
+    <div class="panel exec">
+      <h3>▶ 执行通道（规控脚本 · 高亮）</h3>
+      <div id="execLog">叉车实际执行的动作序列</div>
+    </div>
+    <div class="panel sugg">
+      <h3>◈ 建议通道（Fast-WAM · 影子验证）</h3>
+      <div id="suggLog">阶段1影子验证 → 阶段2微调后接管</div>
+    </div>
+  </div>
+
+  <div class="log" id="auditLog"></div>
+
+  <div class="metrics">
+    <div class="m"><div class="num" id="mTask">1</div>任务完成</div>
+    <div class="m"><div class="num" id="mSucc">100</div>成功率%</div>
+    <div class="m"><div class="num" id="mFb">0</div>Fallback次数</div>
+    <div class="m"><div class="num" id="mTakt">达成</div>节拍</div>
+  </div>
+
+  <div class="btns">
+    <button onclick="runTask(1)">开始卸货</button>
+    <button onclick="runTask(2)">触发栈板偏移</button>
+    <button onclick="runTask(3)">触发遮挡告警</button>
+    <button onclick="resetAll()">重置</button>
+  </div>
+
+</div>
+<script>
+const skills1 = ["FORK-NAV-01 进箱导航","FORK-NAV-03 精确对位","FORK-PER-01 栈板识别","FORK-OP-01 货叉插入","FORK-OP-02 门架起升","FORK-OP-03 倾斜调整","FORK-NAV-02 出箱","FORK-OP-05 对接传送带","FORK-OP-04 放置"];
+const log = el => document.getElementById('auditLog');
+function audit(msg, cls) {
+  const d = new Date();
+  const t = d.toTimeString().slice(0,8);
+  const line = document.createElement('div');
+  line.className = cls || '';
+  line.textContent = `[${t}] ${msg}`;
+  log().appendChild(line);
+  log().scrollTop = log().scrollHeight;
+}
+function setActive(card) {
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  document.getElementById(card).classList.add('active');
+}
+let running = false;
+async function runTask(scene) {
+  if (running) return; running = true;
+  resetAll(true);
+  audit('T-001 | 决策层 | 任务分解 | 剧本' + scene + ' 启动', 'ok');
+  setActive('card-top');
+  await sleep(900);
+  setActive('card-bottom');
+  const sk = scene === 2 ? ['FORK-NAV-01 进箱导航','FORK-NAV-03 精确对位','FORK-PER-01 识别(偏移!)','FORK-PER-01 重试1','FORK-PER-01 重试2成功','FORK-OP-01 叉取','FORK-OP-02 起升','FORK-NAV-02 出箱'] :
+             scene === 3 ? ['FORK-NAV-01 进箱导航','FORK-PER-01 识别(遮挡!)','FORK-PER-01 重试1','FORK-PER-01 重试2','FORK-PER-01 重试3','⚠ 降级 FB-F07 安全停止','人工介入'] : skills1;
+  for (const s of sk) {
+    document.getElementById('curSkill').textContent = s;
+    setActive('card-bottom');
+    audit('T-001 | 执行反馈层 | 技能执行 | ' + s, 'ok');
+    if (s.includes('偏移') || s.includes('遮挡')) {
+      audit('T-001 | 执行反馈层 | Fallback触发 | FB-F' + (scene===2?'01':'02'), 'fb');
+      setActive('card-mid');
+    }
+    if (s.includes('重试')) { audit('T-001 | 安全验证层 | 验证拦截 | 重试中', 'warn'); }
+    if (s.includes('降级')) { audit('T-001 | 决策层 | 降级执行 | FB-F07 人工介入', 'warn'); document.getElementById('mSucc').textContent = 67; }
+    await sleep(800);
+  }
+  setActive('card-top');
+  audit('T-001 | 决策层 | 任务完成 | ' + (scene===3?'状态=人工介入':'节拍达成 ✓'), scene===3?'warn':'ok');
+  document.getElementById('topStatus').textContent = scene===3?'● 人工介入':'● 空闲';
+  if (scene===2) { document.getElementById('mFb').textContent = 1; }
+  running = false;
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function resetAll(silent) {
+  if (!silent) { log().innerHTML=''; audit('系统就绪，等待指令…'); }
+  document.getElementById('curSkill').textContent = 'IDLE 待命';
+  document.getElementById('topStatus').textContent = '● 运行中';
+}
+resetAll(true);
+</script>
+</body>
+</html>

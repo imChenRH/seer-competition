@@ -100,10 +100,17 @@
 
 这些进展的方向与我们的层次化 VLA 架构高度一致——"高层负责任务理解与策略选择，低层负责轨迹生成与安全执行"的分层设计，天然适配未来在 VLA 中加入世界模型预测能力的技术演进路径。换言之，**层次化 VLA 不仅是工业的当前答案，也是面向下一代具身智能架构的预留接口**。
 
+### 实证：Harness VLA——编排式架构的基准验证
+
+2026 年 7 月，清华大学等七家机构发布的 Harness VLA（arXiv:2607.08448）为层次化路线提供了迄今最强的实证：将**冻结的 VLA 暴露为一个"可重试的接触丰富原语"（vla_act）**，与小型固定的解析原语库（move_to / set_gripper / release 等）组合，由 LLM 规划器编排——不微调 VLA、不扩充技能库，靠规划器学习"何时、怎么用每个原语"来应对部署扰动。结果：标准 LIBERO 保持 96.0%，而在扰动基准 LIBERO-Pro（指令重定向/位置交换，即"摆放不规律、目标重绑定"的学术版）上达到 **82.4%，比最强端到端基线（43.8%）提升 38.6 个百分点**；RoboCasa365 +25.4pp。原语使用统计揭示了分工本质：**解析原语占调用 84.2%，vla_act 仅占 15.8%**——VLA 是稀疏调用的局部接触专家，不是全局控制器。
+
+这一实证与我们的架构同构：LLM 规划器 ↔ AgentOS 上层、固定原语库 ↔ 技能库、vla_act ↔ Fast-WAM 中层、解析原语 ↔ 规控脚本、任务/全局记忆 ↔ 多表数据底座。即我们的方案本质上就是**工业场景的 Harness VLA**——编排式分层不是工程妥协，而是有基准数据支撑的最优分工（联系到叉车场景：导航/运输/放置由规控承担，接触丰富的叉取/放置阶段才是模型接管的候选）。
+
 ### 参考文献
 
 - RT-2 (Google DeepMind, 2023.07): "RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control", arXiv:2307.15818
 - π0.5 (Physical Intelligence, 2025.04): "π0.5: A Vision-Language-Action Flow Model for General Robot Control", arXiv:2504.16054
 - OpenVLA (Stanford et al., 2024): "OpenVLA: An Open-Source Vision-Language-Action Model"
 - LingBot-VLA 2.0 (Robbyant/Ant Group, 2026.07): 开源具身智能通用大脑，20 种机器人构型，17 家厂商
+- Harness VLA (Tsinghua et al., 2026.07): "Harness VLA: Steering Frozen VLAs into Reliable Manipulation Primitives via Memory-Guided Agents", arXiv:2607.08448
 - ISO 10218-1: 工业机器人安全要求
