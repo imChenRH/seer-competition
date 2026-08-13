@@ -1,0 +1,17 @@
+{
+  "run_id": "isaac-normal-20260813",
+  "scenario": "normal",
+  "source": "isaac_sim",
+  "event_count": 20,
+  "terminal_status": "COMPLETED",
+  "duration_s": 51.0,
+  "generated_at": "2026-08-13T13:11:35.157978+00:00",
+  "controller": "deterministic_kinematic_rule_controller",
+  "isaac_version": "6.0.1",
+  "frame_count": 409,
+  "fps": 8,
+  "resolution": "1280x720",
+  "events_file": "events.jsonl",
+  "video_file": "simulation.mp4",
+  "scene_file": "scene.usda"
+}

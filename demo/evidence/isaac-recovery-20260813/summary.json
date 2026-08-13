@@ -1,0 +1,17 @@
+{
+  "run_id": "isaac-recovery-20260813",
+  "scenario": "recovery",
+  "source": "isaac_sim",
+  "event_count": 24,
+  "terminal_status": "COMPLETED",
+  "duration_s": 62.0,
+  "generated_at": "2026-08-13T13:13:53.427148+00:00",
+  "controller": "deterministic_kinematic_rule_controller",
+  "isaac_version": "6.0.1",
+  "frame_count": 497,
+  "fps": 8,
+  "resolution": "1280x720",
+  "events_file": "events.jsonl",
+  "video_file": "simulation.mp4",
+  "scene_file": "scene.usda"
+}

@@ -3,4 +3,7 @@ demo/.env
 凭证汇总.md
 # 其他不提交
 *.dmp
+*.py[cod]
+__pycache__/
+.DS_Store
 MinerU_markdown_*.md

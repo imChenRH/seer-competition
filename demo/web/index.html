@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SEER–HVLA 证据控制台</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-mark">英知</div>
+    <div>
+      <p class="eyebrow">SEER × HVLA · 企业交流 Demo</p>
+      <h1>叉车任务证据控制台</h1>
+    </div>
+    <div class="truth-badge">数据仅来自已验证 JSONL</div>
+  </header>
+
+  <main>
+    <section class="run-picker panel">
+      <div>
+        <label for="run-select">证据运行</label>
+        <select id="run-select" aria-label="选择证据运行"></select>
+      </div>
+      <div id="run-meta" class="run-meta">正在读取本地证据…</div>
+    </section>
+
+    <section class="metrics" aria-label="运行摘要">
+      <article class="metric"><span>终态</span><strong id="metric-status">—</strong></article>
+      <article class="metric"><span>已完成技能</span><strong id="metric-skills">—</strong></article>
+      <article class="metric"><span>Fallback</span><strong id="metric-fallbacks">—</strong></article>
+      <article class="metric"><span>证据时长</span><strong id="metric-duration">—</strong></article>
+    </section>
+
+    <section class="workspace">
+      <article class="video-card panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">ISAAC SIM VIEW</p><h2>对应仿真画面</h2></div>
+          <span id="source-pill" class="pill">—</span>
+        </div>
+        <video id="simulation-video" controls preload="metadata" playsinline></video>
+        <div id="no-video" class="empty-state" hidden>该运行是 Mac dry-run，仅有逻辑证据，没有仿真视频。</div>
+      </article>
+
+      <article class="panel skills-card">
+        <div class="section-heading"><div><p class="eyebrow">SKILL GRAPH</p><h2>技能执行链</h2></div></div>
+        <ol id="skill-list" class="skill-list"></ol>
+      </article>
+    </section>
+
+    <section class="lower-grid">
+      <article class="panel">
+        <div class="section-heading"><div><p class="eyebrow">FALLBACK & SAFETY</p><h2>恢复与安全事件</h2></div></div>
+        <div id="fallback-list" class="event-cards"></div>
+      </article>
+      <article class="panel">
+        <div class="section-heading"><div><p class="eyebrow">AUDIT TRAIL</p><h2>连续审计日志</h2></div><span id="event-count" class="pill">0 events</span></div>
+        <div id="event-log" class="event-log"></div>
+      </article>
+    </section>
+
+    <aside class="limitations">
+      <strong>演示边界</strong>
+      <span>规则控制的 Isaac Sim 运动学数字孪生原型；不是仙工实机控制、真实感知、ROS 2 硬件闭环或 Fast-WAM 叉车控制。Fast-WAM 结果单独验证。</span>
+    </aside>
+  </main>
+
+  <script src="/assets/protocol.js"></script>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

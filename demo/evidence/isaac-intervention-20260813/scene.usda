@@ -1,0 +1,2048 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 1000000
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+
+def "Render" (
+    hide_in_stage_window = true
+    no_delete = true
+)
+{
+    def "OmniverseKit"
+    {
+        def "HydraTextures" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            def RenderProduct "omni_kit_widget_viewport_ViewportTexture_0" (
+                prepend apiSchemas = ["OmniRtxSettingsCommonAdvancedAPI_1", "OmniRtxSettingsRtAdvancedAPI_1", "OmniRtxSettingsPtAdvancedAPI_1", "OmniRtxPostColorGradingAPI_1", "OmniRtxPostChromaticAberrationAPI_1", "OmniRtxPostBloomPhysicalAPI_1", "OmniRtxPostMatteObjectAPI_1", "OmniRtxPostCompositingAPI_1", "OmniRtxPostDofAPI_1", "OmniRtxPostMotionBlurAPI_1", "OmniRtxPostTvNoiseAPI_1", "OmniRtxPostTonemapIrayReinhardAPI_1", "OmniRtxPostDebugSettingsAPI_1", "OmniRtxDebugSettingsAPI_1"]
+                hide_in_stage_window = true
+                no_delete = true
+            )
+            {
+                rel camera = </OmniverseKit_Persp>
+                token omni:rtx:ambientOcclusion:denoiserMode = "none"
+                token omni:rtx:background:source:texture:textureMode = "repeatMirrored"
+                token omni:rtx:background:source:type = "domeLight"
+                bool omni:rtx:debug:view:pixelDebug:enableFixedTextPos = 1
+                token omni:rtx:directLighting:sampledLighting:denoisingTechnique = "None"
+                bool omni:rtx:dlss:frameGeneration = 0
+                float3 omni:rtx:domeLight:rotationAxis = (0, 0, 1)
+                bool omni:rtx:indirectDiffuse:denoiser:enabled = 0
+                bool omni:rtx:material:db:syncLoads = 1
+                token omni:rtx:post:dlss:execMode = "performance"
+                bool omni:rtx:post:registeredCompositing:invertColorCorrection = 1
+                bool omni:rtx:post:registeredCompositing:invertToneMap = 1
+                bool omni:rtx:pt:adaptiveSampling:filterError = 0
+                uint omni:rtx:pt:adaptiveSampling:fixedSppIterations = 2
+                int omni:rtx:pt:clampSpp = 64
+                uint omni:rtx:pt:limits:maxBounces = 3
+                uint omni:rtx:pt:limits:maxGlossyBounces = 3
+                uint omni:rtx:pt:maxSamplesPerLaunch = 2073600
+                uint omni:rtx:pt:mgpu:maxPixelsPerRegionExponent = 12
+                int omni:rtx:pt:samplesPerIteration = 64
+                uint omni:rtx:pt:samplesPerPixel = 64
+                bool omni:rtx:reflections:denoiser:enabled = 0
+                token omni:rtx:rendermode = "RealTimePathTracing"
+                color3f omni:rtx:rt:ambientLight:color = (0.1, 0.1, 0.1)
+                bool omni:rtx:rt:demoire = 0
+                bool omni:rtx:rt:ecoMode:enabled = 0
+                bool omni:rtx:rt:lightcache:spatialCache:dontResolveConflicts = 1
+                int omni:rtx:rt:sss:samples = 1
+                uint omni:rtx:rtpt:maxVolumeBounces = 15
+                float omni:rtx:rtpt:modulatingRoughnessThreshold = 0.08
+                bool omni:rtx:scene:hydra:materialSyncLoads = 1
+                bool omni:rtx:scene:hydra:mdlMaterialWarmup = 1
+                rel orderedVars = </Render/Vars/LdrColor>
+                custom bool overrideClipRange = 0
+                uniform int2 resolution = (1280, 720)
+            }
+
+            def RenderProduct "DemoRender" (
+                prepend apiSchemas = ["OmniRtxSettingsCommonAdvancedAPI_1", "OmniRtxSettingsRtAdvancedAPI_1", "OmniRtxSettingsPtAdvancedAPI_1", "OmniRtxPostColorGradingAPI_1", "OmniRtxPostChromaticAberrationAPI_1", "OmniRtxPostBloomPhysicalAPI_1", "OmniRtxPostMatteObjectAPI_1", "OmniRtxPostCompositingAPI_1", "OmniRtxPostDofAPI_1", "OmniRtxPostMotionBlurAPI_1", "OmniRtxPostTvNoiseAPI_1", "OmniRtxPostTonemapIrayReinhardAPI_1", "OmniRtxPostDebugSettingsAPI_1", "OmniRtxDebugSettingsAPI_1"]
+                hide_in_stage_window = true
+                no_delete = true
+            )
+            {
+                rel camera = </World/DemoCamera>
+                custom string ogPostProcessPath = "/Render/OmniverseKit/HydraTextures/DemoRender/PostRender"
+                token omni:rtx:ambientOcclusion:denoiserMode = "none"
+                token omni:rtx:background:source:texture:textureMode = "repeatMirrored"
+                token omni:rtx:background:source:type = "domeLight"
+                bool omni:rtx:debug:view:pixelDebug:enableFixedTextPos = 1
+                token omni:rtx:directLighting:sampledLighting:denoisingTechnique = "None"
+                bool omni:rtx:dlss:frameGeneration = 0
+                float3 omni:rtx:domeLight:rotationAxis = (0, 0, 1)
+                bool omni:rtx:indirectDiffuse:denoiser:enabled = 0
+                bool omni:rtx:material:db:syncLoads = 1
+                token omni:rtx:post:dlss:execMode = "performance"
+                bool omni:rtx:post:registeredCompositing:invertColorCorrection = 1
+                bool omni:rtx:post:registeredCompositing:invertToneMap = 1
+                bool omni:rtx:pt:adaptiveSampling:filterError = 0
+                uint omni:rtx:pt:adaptiveSampling:fixedSppIterations = 2
+                int omni:rtx:pt:clampSpp = 64
+                uint omni:rtx:pt:limits:maxBounces = 3
+                uint omni:rtx:pt:limits:maxGlossyBounces = 3
+                uint omni:rtx:pt:maxSamplesPerLaunch = 2073600
+                uint omni:rtx:pt:mgpu:maxPixelsPerRegionExponent = 12
+                int omni:rtx:pt:samplesPerIteration = 64
+                uint omni:rtx:pt:samplesPerPixel = 64
+                bool omni:rtx:reflections:denoiser:enabled = 0
+                token omni:rtx:rendermode = "RealTimePathTracing"
+                color3f omni:rtx:rt:ambientLight:color = (0.1, 0.1, 0.1)
+                bool omni:rtx:rt:demoire = 0
+                bool omni:rtx:rt:ecoMode:enabled = 0
+                bool omni:rtx:rt:lightcache:spatialCache:dontResolveConflicts = 1
+                int omni:rtx:rt:sss:samples = 1
+                uint omni:rtx:rtpt:maxVolumeBounces = 15
+                float omni:rtx:rtpt:modulatingRoughnessThreshold = 0.08
+                bool omni:rtx:scene:hydra:materialSyncLoads = 1
+                bool omni:rtx:scene:hydra:mdlMaterialWarmup = 1
+                rel orderedVars = [
+                    </Render/Vars/LdrColorSD>,
+                    </Render/Vars/LdrColor>,
+                ]
+                custom bool overrideClipRange = 0
+                uniform int2 resolution = (1280, 720)
+            }
+        }
+    }
+
+    def RenderSettings "OmniverseGlobalRenderSettings" (
+        prepend apiSchemas = ["OmniRtxSettingsGlobalRtAdvancedAPI_1", "OmniRtxSettingsGlobalPtAdvancedAPI_1"]
+        no_delete = true
+    )
+    {
+        rel products = [
+            </Render/OmniverseKit/HydraTextures/omni_kit_widget_viewport_ViewportTexture_0>,
+            </Render/OmniverseKit/HydraTextures/DemoRender>,
+        ]
+    }
+
+    def "Vars"
+    {
+        def RenderVar "LdrColor" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            uniform string sourceName = "LdrColor"
+            uniform token sourceType = "raw"
+        }
+    }
+}
+over "OmniverseKit_Persp"
+{
+    float exposure:fStop = 5
+    float exposure:responsivity = 1.1026709
+    float exposure:time = 0.02
+}
+
+def Xform "World"
+{
+    def Cube "Ground"
+    {
+        color3f[] primvars:displayColor = [(0.16, 0.19, 0.23)]
+        double size = 1
+        float3 xformOp:scale = (24, 16, 0.1)
+        double3 xformOp:translate = (0, 0, -0.05)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+
+    def "Grid"
+    {
+        def Cube "X_0"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 14, 0.012)
+            double3 xformOp:translate = (-8, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "X_2"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 14, 0.012)
+            double3 xformOp:translate = (-6, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "X_4"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 14, 0.012)
+            double3 xformOp:translate = (-4, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "X_6"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 14, 0.012)
+            double3 xformOp:translate = (-2, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "X_8"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 14, 0.012)
+            double3 xformOp:translate = (0, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "X_10"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 14, 0.012)
+            double3 xformOp:translate = (2, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "X_12"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 14, 0.012)
+            double3 xformOp:translate = (4, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "X_14"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 14, 0.012)
+            double3 xformOp:translate = (6, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "X_16"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (0.025, 14, 0.012)
+            double3 xformOp:translate = (8, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Y_0"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (20, 0.025, 0.012)
+            double3 xformOp:translate = (0, -6, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Y_2"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (20, 0.025, 0.012)
+            double3 xformOp:translate = (0, -4, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Y_4"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (20, 0.025, 0.012)
+            double3 xformOp:translate = (0, -2, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Y_6"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (20, 0.025, 0.012)
+            double3 xformOp:translate = (0, 0, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Y_8"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (20, 0.025, 0.012)
+            double3 xformOp:translate = (0, 2, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Y_10"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (20, 0.025, 0.012)
+            double3 xformOp:translate = (0, 4, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Y_12"
+        {
+            color3f[] primvars:displayColor = [(0.28, 0.32, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (20, 0.025, 0.012)
+            double3 xformOp:translate = (0, 6, 0.012)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def "Warehouse"
+    {
+        def Cube "BackWall"
+        {
+            color3f[] primvars:displayColor = [(0.25, 0.29, 0.34)]
+            double size = 1
+            float3 xformOp:scale = (20, 0.18, 4.5)
+            double3 xformOp:translate = (0, 6.5, 2.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "SideWall"
+        {
+            color3f[] primvars:displayColor = [(0.22, 0.26, 0.31)]
+            double size = 1
+            float3 xformOp:scale = (0.18, 13, 4.5)
+            double3 xformOp:translate = (9.5, 0, 2.25)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def "Safety"
+    {
+        def Cube "ExitLaneLeft"
+        {
+            color3f[] primvars:displayColor = [(0.95, 0.75, 0.06)]
+            double size = 1
+            float3 xformOp:scale = (10, 0.07, 0.025)
+            double3 xformOp:translate = (-1, 1.55, 0.025)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "ExitLaneRight"
+        {
+            color3f[] primvars:displayColor = [(0.95, 0.75, 0.06)]
+            double size = 1
+            float3 xformOp:scale = (10, 0.07, 0.025)
+            double3 xformOp:translate = (-1, -1.55, 0.025)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def "Container"
+    {
+        def Cube "Floor"
+        {
+            color3f[] primvars:displayColor = [(0.31, 0.34, 0.37)]
+            double size = 1
+            float3 xformOp:scale = (6, 2.8, 0.12)
+            double3 xformOp:translate = (3, 0, 0.06)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Back"
+        {
+            color3f[] primvars:displayColor = [(0.46, 0.18, 0.12)]
+            double size = 1
+            float3 xformOp:scale = (0.12, 2.8, 3)
+            double3 xformOp:translate = (6, 0, 1.5)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Left"
+        {
+            color3f[] primvars:displayColor = [(0.55, 0.22, 0.14)]
+            double size = 1
+            float3 xformOp:scale = (6, 0.1, 3)
+            double3 xformOp:translate = (3, 1.4, 1.5)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Right"
+        {
+            color3f[] primvars:displayColor = [(0.55, 0.22, 0.14)]
+            float[] primvars:displayOpacity = [0.18]
+            double size = 1
+            float3 xformOp:scale = (6, 0.1, 3)
+            double3 xformOp:translate = (3, -1.4, 1.5)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roof"
+        {
+            color3f[] primvars:displayColor = [(0.5, 0.2, 0.13)]
+            float[] primvars:displayOpacity = [0.28]
+            double size = 1
+            float3 xformOp:scale = (6, 2.8, 0.1)
+            double3 xformOp:translate = (3, 0, 3)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "DoorFrame0"
+        {
+            color3f[] primvars:displayColor = [(0.75, 0.33, 0.16)]
+            double size = 1
+            float3 xformOp:scale = (0.12, 0.12, 3)
+            double3 xformOp:translate = (0, -1.22, 1.5)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "DoorFrame1"
+        {
+            color3f[] primvars:displayColor = [(0.75, 0.33, 0.16)]
+            double size = 1
+            float3 xformOp:scale = (0.12, 0.12, 3)
+            double3 xformOp:translate = (0, 1.22, 1.5)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def "Conveyor"
+    {
+        def Cube "Base"
+        {
+            color3f[] primvars:displayColor = [(0.12, 0.25, 0.38)]
+            double size = 1
+            float3 xformOp:scale = (3.2, 1.35, 0.62)
+            double3 xformOp:translate = (-3.4, -2, 0.31)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roller0"
+        {
+            color3f[] primvars:displayColor = [(0.52, 0.58, 0.63)]
+            double size = 1
+            float3 xformOp:scale = (0.16, 1.15, 0.16)
+            double3 xformOp:translate = (-4.65, -2, 0.7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roller1"
+        {
+            color3f[] primvars:displayColor = [(0.52, 0.58, 0.63)]
+            double size = 1
+            float3 xformOp:scale = (0.16, 1.15, 0.16)
+            double3 xformOp:translate = (-4.340000000000001, -2, 0.7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roller2"
+        {
+            color3f[] primvars:displayColor = [(0.52, 0.58, 0.63)]
+            double size = 1
+            float3 xformOp:scale = (0.16, 1.15, 0.16)
+            double3 xformOp:translate = (-4.03, -2, 0.7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roller3"
+        {
+            color3f[] primvars:displayColor = [(0.52, 0.58, 0.63)]
+            double size = 1
+            float3 xformOp:scale = (0.16, 1.15, 0.16)
+            double3 xformOp:translate = (-3.7200000000000006, -2, 0.7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roller4"
+        {
+            color3f[] primvars:displayColor = [(0.52, 0.58, 0.63)]
+            double size = 1
+            float3 xformOp:scale = (0.16, 1.15, 0.16)
+            double3 xformOp:translate = (-3.41, -2, 0.7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roller5"
+        {
+            color3f[] primvars:displayColor = [(0.52, 0.58, 0.63)]
+            double size = 1
+            float3 xformOp:scale = (0.16, 1.15, 0.16)
+            double3 xformOp:translate = (-3.1000000000000005, -2, 0.7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roller6"
+        {
+            color3f[] primvars:displayColor = [(0.52, 0.58, 0.63)]
+            double size = 1
+            float3 xformOp:scale = (0.16, 1.15, 0.16)
+            double3 xformOp:translate = (-2.7900000000000005, -2, 0.7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roller7"
+        {
+            color3f[] primvars:displayColor = [(0.52, 0.58, 0.63)]
+            double size = 1
+            float3 xformOp:scale = (0.16, 1.15, 0.16)
+            double3 xformOp:translate = (-2.4800000000000004, -2, 0.7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Roller8"
+        {
+            color3f[] primvars:displayColor = [(0.52, 0.58, 0.63)]
+            double size = 1
+            float3 xformOp:scale = (0.16, 1.15, 0.16)
+            double3 xformOp:translate = (-2.1700000000000004, -2, 0.7)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "Target"
+        {
+            color3f[] primvars:displayColor = [(0.1, 0.65, 0.42)]
+            double size = 1
+            float3 xformOp:scale = (1.4, 1.15, 0.025)
+            double3 xformOp:translate = (-3.4, -2, 0.8)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def Xform "Forklift"
+    {
+        double3 xformOp:translate = (-1, 0, 0)
+        double3 xformOp:translate.timeSamples = {
+            0: (-6, 0, 0),
+            0.125: (-5.996979, 0, 0),
+            0.25: (-5.988016, 0, 0),
+            0.375: (-5.973264, 0, 0),
+            0.5: (-5.952875, 0, 0),
+            0.625: (-5.927002, 0, 0),
+            0.75: (-5.895797, 0, 0),
+            0.875: (-5.859412, 0, 0),
+            1: (-5.818, 0, 0),
+            1.125: (-5.771713, 0, 0),
+            1.25: (-5.720703, 0, 0),
+            1.375: (-5.665123, 0, 0),
+            1.5: (-5.605125, 0, 0),
+            1.625: (-5.540861, 0, 0),
+            1.75: (-5.472484, 0, 0),
+            1.875: (-5.400146, 0, 0),
+            2: (-5.324, 0, 0),
+            2.125: (-5.244197, 0, 0),
+            2.25: (-5.160891, 0, 0),
+            2.375: (-5.074232, 0, 0),
+            2.5: (-4.984375, 0, 0),
+            2.625: (-4.891471, 0, 0),
+            2.75: (-4.795672, 0, 0),
+            2.875: (-4.697131, 0, 0),
+            3: (-4.596, 0, 0),
+            3.125: (-4.492432, 0, 0),
+            3.25: (-4.386578, 0, 0),
+            3.375: (-4.278592, 0, 0),
+            3.5: (-4.168625, 0, 0),
+            3.625: (-4.05683, 0, 0),
+            3.75: (-3.943359, 0, 0),
+            3.875: (-3.828365, 0, 0),
+            4: (-3.712, 0, 0),
+            4.125: (-3.594416, 0, 0),
+            4.25: (-3.475766, 0, 0),
+            4.375: (-3.356201, 0, 0),
+            4.5: (-3.235875, 0, 0),
+            4.625: (-3.114939, 0, 0),
+            4.75: (-2.993547, 0, 0),
+            4.875: (-2.87185, 0, 0),
+            5: (-2.75, 0, 0),
+            5.125: (-2.62815, 0, 0),
+            5.25: (-2.506453, 0, 0),
+            5.375: (-2.385061, 0, 0),
+            5.5: (-2.264125, 0, 0),
+            5.625: (-2.143799, 0, 0),
+            5.75: (-2.024234, 0, 0),
+            5.875: (-1.905584, 0, 0),
+            6: (-1.788, 0, 0),
+            6.125: (-1.671635, 0, 0),
+            6.25: (-1.556641, 0, 0),
+            6.375: (-1.44317, 0, 0),
+            6.5: (-1.331375, 0, 0),
+            6.625: (-1.221408, 0, 0),
+            6.75: (-1.113422, 0, 0),
+            6.875: (-1.007568, 0, 0),
+            7: (-0.904, 0, 0),
+            7.125: (-0.802869, 0, 0),
+            7.25: (-0.704328, 0, 0),
+            7.375: (-0.608529, 0, 0),
+            7.5: (-0.515625, 0, 0),
+            7.625: (-0.425768, 0, 0),
+            7.75: (-0.339109, 0, 0),
+            7.875: (-0.255803, 0, 0),
+            8: (-0.176, 0, 0),
+            8.125: (-0.099854, 0, 0),
+            8.25: (-0.027516, 0, 0),
+            8.375: (0.040861, 0, 0),
+            8.5: (0.105125, 0, 0),
+            8.625: (0.165123, 0, 0),
+            8.75: (0.220703, 0, 0),
+            8.875: (0.271713, 0, 0),
+            9: (0.318, 0, 0),
+            9.125: (0.359412, 0, 0),
+            9.25: (0.395797, 0, 0),
+            9.375: (0.427002, 0, 0),
+            9.5: (0.452875, 0, 0),
+            9.625: (0.473264, 0, 0),
+            9.75: (0.488016, 0, 0),
+            9.875: (0.496979, 0, 0),
+            10: (0.5, 0, 0),
+            10.125: (0.501232, 0, 0),
+            10.25: (0.504877, 0, 0),
+            10.375: (0.510856, 0, 0),
+            10.5: (0.519092, 0, 0),
+            10.625: (0.529507, 0, 0),
+            10.75: (0.542023, 0, 0),
+            10.875: (0.556562, 0, 0),
+            11: (0.573047, 0, 0),
+            11.125: (0.591399, 0, 0),
+            11.25: (0.611542, 0, 0),
+            11.375: (0.633396, 0, 0),
+            11.5: (0.656885, 0, 0),
+            11.625: (0.68193, 0, 0),
+            11.75: (0.708453, 0, 0),
+            11.875: (0.736378, 0, 0),
+            12: (0.765625, 0, 0),
+            12.125: (0.796117, 0, 0),
+            12.25: (0.827777, 0, 0),
+            12.375: (0.860526, 0, 0),
+            12.5: (0.894287, 0, 0),
+            12.625: (0.928982, 0, 0),
+            12.75: (0.964532, 0, 0),
+            12.875: (1.000861, 0, 0),
+            13: (1.037891, 0, 0),
+            13.125: (1.075542, 0, 0),
+            13.25: (1.113739, 0, 0),
+            13.375: (1.152402, 0, 0),
+            13.5: (1.191455, 0, 0),
+            13.625: (1.230819, 0, 0),
+            13.75: (1.270416, 0, 0),
+            13.875: (1.310169, 0, 0),
+            14: (1.35, 0, 0),
+            14.125: (1.389831, 0, 0),
+            14.25: (1.429584, 0, 0),
+            14.375: (1.469181, 0, 0),
+            14.5: (1.508545, 0, 0),
+            14.625: (1.547598, 0, 0),
+            14.75: (1.586261, 0, 0),
+            14.875: (1.624458, 0, 0),
+            15: (1.662109, 0, 0),
+            15.125: (1.699139, 0, 0),
+            15.25: (1.735468, 0, 0),
+            15.375: (1.771018, 0, 0),
+            15.5: (1.805713, 0, 0),
+            15.625: (1.839474, 0, 0),
+            15.75: (1.872223, 0, 0),
+            15.875: (1.903883, 0, 0),
+            16: (1.934375, 0, 0),
+            16.125: (1.963622, 0, 0),
+            16.25: (1.991547, 0, 0),
+            16.375: (2.01807, 0, 0),
+            16.5: (2.043115, 0, 0),
+            16.625: (2.066604, 0, 0),
+            16.75: (2.088458, 0, 0),
+            16.875: (2.108601, 0, 0),
+            17: (2.126953, 0, 0),
+            17.125: (2.143438, 0, 0),
+            17.25: (2.157977, 0, 0),
+            17.375: (2.170493, 0, 0),
+            17.5: (2.180908, 0, 0),
+            17.625: (2.189144, 0, 0),
+            17.75: (2.195123, 0, 0),
+            17.875: (2.198768, 0, 0),
+            18: (2.2, 0, 0),
+            18.125: (2.2, 0, 0),
+            18.25: (2.2, 0, 0),
+            18.375: (2.2, 0, 0),
+            18.5: (2.2, 0, 0),
+            18.625: (2.2, 0, 0),
+            18.75: (2.2, 0, 0),
+            18.875: (2.2, 0, 0),
+            19: (2.2, 0, 0),
+            19.125: (2.2, 0, 0),
+            19.25: (2.2, 0, 0),
+            19.375: (2.2, 0, 0),
+            19.5: (2.2, 0, 0),
+            19.625: (2.2, 0, 0),
+            19.75: (2.2, 0, 0),
+            19.875: (2.2, 0, 0),
+            20: (2.2, 0, 0),
+            20.125: (2.2, 0, 0),
+            20.25: (2.2, 0, 0),
+            20.375: (2.2, 0, 0),
+            20.5: (2.2, 0, 0),
+            20.625: (2.2, 0, 0),
+            20.75: (2.2, 0, 0),
+            20.875: (2.2, 0, 0),
+            21: (2.2, 0, 0),
+            21.125: (2.2, 0.001685, 0),
+            21.25: (2.2, 0.006445, 0),
+            21.375: (2.2, 0.013843, 0),
+            21.5: (2.2, 0.023438, 0),
+            21.625: (2.2, 0.03479, 0),
+            21.75: (2.2, 0.047461, 0),
+            21.875: (2.2, 0.061011, 0),
+            22: (2.2, 0.075, 0),
+            22.125: (2.2, 0.088989, 0),
+            22.25: (2.2, 0.102539, 0),
+            22.375: (2.2, 0.11521, 0),
+            22.5: (2.2, 0.126562, 0),
+            22.625: (2.2, 0.136157, 0),
+            22.75: (2.2, 0.143555, 0),
+            22.875: (2.2, 0.148315, 0),
+            23: (2.2, 0.15, 0),
+            23.125: (2.2, 0.15, 0),
+            23.25: (2.2, 0.15, 0),
+            23.375: (2.2, 0.15, 0),
+            23.5: (2.2, 0.15, 0),
+            23.625: (2.2, 0.15, 0),
+            23.75: (2.2, 0.15, 0),
+            23.875: (2.2, 0.15, 0),
+            24: (2.2, 0.15, 0),
+            24.125: (2.2, 0.15, 0),
+            24.25: (2.2, 0.15, 0),
+            24.375: (2.2, 0.15, 0),
+            24.5: (2.2, 0.15, 0),
+            24.625: (2.2, 0.15, 0),
+            24.75: (2.2, 0.15, 0),
+            24.875: (2.2, 0.15, 0),
+            25: (2.2, 0.15, 0),
+            25.125: (2.2, 0.15, 0),
+            25.25: (2.2, 0.15, 0),
+            25.375: (2.2, 0.15, 0),
+            25.5: (2.2, 0.15, 0),
+            25.625: (2.2, 0.15, 0),
+            25.75: (2.2, 0.15, 0),
+            25.875: (2.2, 0.15, 0),
+            26: (2.2, 0.15, 0),
+            26.125: (2.2, 0.146631, 0),
+            26.25: (2.2, 0.137109, 0),
+            26.375: (2.2, 0.122314, 0),
+            26.5: (2.2, 0.103125, 0),
+            26.625: (2.2, 0.08042, 0),
+            26.75: (2.2, 0.055078, 0),
+            26.875: (2.2, 0.027979, 0),
+            27: (2.2, 0, 0),
+            27.125: (2.2, -0.027979, 0),
+            27.25: (2.2, -0.055078, 0),
+            27.375: (2.2, -0.08042, 0),
+            27.5: (2.2, -0.103125, 0),
+            27.625: (2.2, -0.122314, 0),
+            27.75: (2.2, -0.137109, 0),
+            27.875: (2.2, -0.146631, 0),
+            28: (2.2, -0.15, 0),
+            28.125: (2.2, -0.15, 0),
+            28.25: (2.2, -0.15, 0),
+            28.375: (2.2, -0.15, 0),
+            28.5: (2.2, -0.15, 0),
+            28.625: (2.2, -0.15, 0),
+            28.75: (2.2, -0.15, 0),
+            28.875: (2.2, -0.15, 0),
+            29: (2.2, -0.15, 0),
+            29.125: (2.2, -0.15, 0),
+            29.25: (2.2, -0.15, 0),
+            29.375: (2.2, -0.15, 0),
+            29.5: (2.2, -0.15, 0),
+            29.625: (2.2, -0.15, 0),
+            29.75: (2.2, -0.15, 0),
+            29.875: (2.2, -0.15, 0),
+            30: (2.2, -0.15, 0),
+            30.125: (2.2, -0.15, 0),
+            30.25: (2.2, -0.15, 0),
+            30.375: (2.2, -0.15, 0),
+            30.5: (2.2, -0.15, 0),
+            30.625: (2.2, -0.15, 0),
+            30.75: (2.2, -0.15, 0),
+            30.875: (2.2, -0.15, 0),
+            31: (2.2, -0.15, 0),
+            31.125: (2.19082, -0.14957, 0),
+            31.25: (2.164062, -0.148315, 0),
+            31.375: (2.120898, -0.146292, 0),
+            31.5: (2.0625, -0.143555, 0),
+            31.625: (1.990039, -0.140158, 0),
+            31.75: (1.904688, -0.136157, 0),
+            31.875: (1.807617, -0.131607, 0),
+            32: (1.7, -0.126562, 0),
+            32.125: (1.583008, -0.121078, 0),
+            32.25: (1.457813, -0.11521, 0),
+            32.375: (1.325586, -0.109012, 0),
+            32.5: (1.1875, -0.102539, 0),
+            32.625: (1.044727, -0.095847, 0),
+            32.75: (0.898438, -0.088989, 0),
+            32.875: (0.749805, -0.082022, 0),
+            33: (0.6, -0.075, 0),
+            33.125: (0.450195, -0.067978, 0),
+            33.25: (0.301563, -0.061011, 0),
+            33.375: (0.155273, -0.054153, 0),
+            33.5: (0.0125, -0.047461, 0),
+            33.625: (-0.125586, -0.040988, 0),
+            33.75: (-0.257812, -0.03479, 0),
+            33.875: (-0.383008, -0.028922, 0),
+            34: (-0.5, -0.023438, 0),
+            34.125: (-0.607617, -0.018393, 0),
+            34.25: (-0.704687, -0.013843, 0),
+            34.375: (-0.790039, -0.009842, 0),
+            34.5: (-0.8625, -0.006445, 0),
+            34.625: (-0.920898, -0.003708, 0),
+            34.75: (-0.964062, -0.001685, 0),
+            34.875: (-0.99082, -0.00043, 0),
+            35: (-1, 0, 0),
+            35.125: (-1, 0, 0),
+            35.25: (-1, 0, 0),
+            35.375: (-1, 0, 0),
+            35.5: (-1, 0, 0),
+            35.625: (-1, 0, 0),
+            35.75: (-1, 0, 0),
+            35.875: (-1, 0, 0),
+            36: (-1, 0, 0),
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "Body"
+        {
+            def Cube "chassis"
+            {
+                color3f[] primvars:displayColor = [(0.94, 0.55, 0.08)]
+                double size = 1
+                float3 xformOp:scale = (2.2, 1.15, 0.55)
+                double3 xformOp:translate = (0, 0, 0.48)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "counterweight"
+            {
+                color3f[] primvars:displayColor = [(0.9, 0.43, 0.04)]
+                double size = 1
+                float3 xformOp:scale = (0.75, 1.05, 0.85)
+                double3 xformOp:translate = (-0.7, 0, 0.95)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "cabin"
+            {
+                color3f[] primvars:displayColor = [(0.18, 0.25, 0.3)]
+                double size = 1
+                float3 xformOp:scale = (0.85, 0.95, 1.25)
+                double3 xformOp:translate = (-0.1, 0, 1.25)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "mast_left"
+            {
+                color3f[] primvars:displayColor = [(0.16, 0.18, 0.21)]
+                double size = 1
+                float3 xformOp:scale = (0.13, 0.13, 2.5)
+                double3 xformOp:translate = (1.05, 0.42, 1.4)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "mast_right"
+            {
+                color3f[] primvars:displayColor = [(0.16, 0.18, 0.21)]
+                double size = 1
+                float3 xformOp:scale = (0.13, 0.13, 2.5)
+                double3 xformOp:translate = (1.05, -0.42, 1.4)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "overhead_guard"
+            {
+                color3f[] primvars:displayColor = [(0.12, 0.14, 0.17)]
+                double size = 1
+                float3 xformOp:scale = (1.05, 1.05, 0.1)
+                double3 xformOp:translate = (-0.1, 0, 2.05)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "wheel_fl"
+            {
+                color3f[] primvars:displayColor = [(0.04, 0.04, 0.05)]
+                double size = 1
+                float3 xformOp:scale = (0.42, 0.24, 0.42)
+                double3 xformOp:translate = (0.72, 0.63, 0.42)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "wheel_fr"
+            {
+                color3f[] primvars:displayColor = [(0.04, 0.04, 0.05)]
+                double size = 1
+                float3 xformOp:scale = (0.42, 0.24, 0.42)
+                double3 xformOp:translate = (0.72, -0.63, 0.42)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "wheel_rl"
+            {
+                color3f[] primvars:displayColor = [(0.04, 0.04, 0.05)]
+                double size = 1
+                float3 xformOp:scale = (0.48, 0.24, 0.48)
+                double3 xformOp:translate = (-0.72, 0.63, 0.44)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "wheel_rr"
+            {
+                color3f[] primvars:displayColor = [(0.04, 0.04, 0.05)]
+                double size = 1
+                float3 xformOp:scale = (0.48, 0.24, 0.48)
+                double3 xformOp:translate = (-0.72, -0.63, 0.44)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+        }
+
+        def Xform "Lift"
+        {
+            double3 xformOp:translate = (0, 0, 0.22)
+            double3 xformOp:translate.timeSamples = {
+                0: (0, 0, 0.22),
+                0.125: (0, 0, 0.22),
+                0.25: (0, 0, 0.22),
+                0.375: (0, 0, 0.22),
+                0.5: (0, 0, 0.22),
+                0.625: (0, 0, 0.22),
+                0.75: (0, 0, 0.22),
+                0.875: (0, 0, 0.22),
+                1: (0, 0, 0.22),
+                1.125: (0, 0, 0.22),
+                1.25: (0, 0, 0.22),
+                1.375: (0, 0, 0.22),
+                1.5: (0, 0, 0.22),
+                1.625: (0, 0, 0.22),
+                1.75: (0, 0, 0.22),
+                1.875: (0, 0, 0.22),
+                2: (0, 0, 0.22),
+                2.125: (0, 0, 0.22),
+                2.25: (0, 0, 0.22),
+                2.375: (0, 0, 0.22),
+                2.5: (0, 0, 0.22),
+                2.625: (0, 0, 0.22),
+                2.75: (0, 0, 0.22),
+                2.875: (0, 0, 0.22),
+                3: (0, 0, 0.22),
+                3.125: (0, 0, 0.22),
+                3.25: (0, 0, 0.22),
+                3.375: (0, 0, 0.22),
+                3.5: (0, 0, 0.22),
+                3.625: (0, 0, 0.22),
+                3.75: (0, 0, 0.22),
+                3.875: (0, 0, 0.22),
+                4: (0, 0, 0.22),
+                4.125: (0, 0, 0.22),
+                4.25: (0, 0, 0.22),
+                4.375: (0, 0, 0.22),
+                4.5: (0, 0, 0.22),
+                4.625: (0, 0, 0.22),
+                4.75: (0, 0, 0.22),
+                4.875: (0, 0, 0.22),
+                5: (0, 0, 0.22),
+                5.125: (0, 0, 0.22),
+                5.25: (0, 0, 0.22),
+                5.375: (0, 0, 0.22),
+                5.5: (0, 0, 0.22),
+                5.625: (0, 0, 0.22),
+                5.75: (0, 0, 0.22),
+                5.875: (0, 0, 0.22),
+                6: (0, 0, 0.22),
+                6.125: (0, 0, 0.22),
+                6.25: (0, 0, 0.22),
+                6.375: (0, 0, 0.22),
+                6.5: (0, 0, 0.22),
+                6.625: (0, 0, 0.22),
+                6.75: (0, 0, 0.22),
+                6.875: (0, 0, 0.22),
+                7: (0, 0, 0.22),
+                7.125: (0, 0, 0.22),
+                7.25: (0, 0, 0.22),
+                7.375: (0, 0, 0.22),
+                7.5: (0, 0, 0.22),
+                7.625: (0, 0, 0.22),
+                7.75: (0, 0, 0.22),
+                7.875: (0, 0, 0.22),
+                8: (0, 0, 0.22),
+                8.125: (0, 0, 0.22),
+                8.25: (0, 0, 0.22),
+                8.375: (0, 0, 0.22),
+                8.5: (0, 0, 0.22),
+                8.625: (0, 0, 0.22),
+                8.75: (0, 0, 0.22),
+                8.875: (0, 0, 0.22),
+                9: (0, 0, 0.22),
+                9.125: (0, 0, 0.22),
+                9.25: (0, 0, 0.22),
+                9.375: (0, 0, 0.22),
+                9.5: (0, 0, 0.22),
+                9.625: (0, 0, 0.22),
+                9.75: (0, 0, 0.22),
+                9.875: (0, 0, 0.22),
+                10: (0, 0, 0.22),
+                10.125: (0, 0, 0.22),
+                10.25: (0, 0, 0.22),
+                10.375: (0, 0, 0.22),
+                10.5: (0, 0, 0.22),
+                10.625: (0, 0, 0.22),
+                10.75: (0, 0, 0.22),
+                10.875: (0, 0, 0.22),
+                11: (0, 0, 0.22),
+                11.125: (0, 0, 0.22),
+                11.25: (0, 0, 0.22),
+                11.375: (0, 0, 0.22),
+                11.5: (0, 0, 0.22),
+                11.625: (0, 0, 0.22),
+                11.75: (0, 0, 0.22),
+                11.875: (0, 0, 0.22),
+                12: (0, 0, 0.22),
+                12.125: (0, 0, 0.22),
+                12.25: (0, 0, 0.22),
+                12.375: (0, 0, 0.22),
+                12.5: (0, 0, 0.22),
+                12.625: (0, 0, 0.22),
+                12.75: (0, 0, 0.22),
+                12.875: (0, 0, 0.22),
+                13: (0, 0, 0.22),
+                13.125: (0, 0, 0.22),
+                13.25: (0, 0, 0.22),
+                13.375: (0, 0, 0.22),
+                13.5: (0, 0, 0.22),
+                13.625: (0, 0, 0.22),
+                13.75: (0, 0, 0.22),
+                13.875: (0, 0, 0.22),
+                14: (0, 0, 0.22),
+                14.125: (0, 0, 0.22),
+                14.25: (0, 0, 0.22),
+                14.375: (0, 0, 0.22),
+                14.5: (0, 0, 0.22),
+                14.625: (0, 0, 0.22),
+                14.75: (0, 0, 0.22),
+                14.875: (0, 0, 0.22),
+                15: (0, 0, 0.22),
+                15.125: (0, 0, 0.22),
+                15.25: (0, 0, 0.22),
+                15.375: (0, 0, 0.22),
+                15.5: (0, 0, 0.22),
+                15.625: (0, 0, 0.22),
+                15.75: (0, 0, 0.22),
+                15.875: (0, 0, 0.22),
+                16: (0, 0, 0.22),
+                16.125: (0, 0, 0.22),
+                16.25: (0, 0, 0.22),
+                16.375: (0, 0, 0.22),
+                16.5: (0, 0, 0.22),
+                16.625: (0, 0, 0.22),
+                16.75: (0, 0, 0.22),
+                16.875: (0, 0, 0.22),
+                17: (0, 0, 0.22),
+                17.125: (0, 0, 0.22),
+                17.25: (0, 0, 0.22),
+                17.375: (0, 0, 0.22),
+                17.5: (0, 0, 0.22),
+                17.625: (0, 0, 0.22),
+                17.75: (0, 0, 0.22),
+                17.875: (0, 0, 0.22),
+                18: (0, 0, 0.22),
+                18.125: (0, 0, 0.22),
+                18.25: (0, 0, 0.22),
+                18.375: (0, 0, 0.22),
+                18.5: (0, 0, 0.22),
+                18.625: (0, 0, 0.22),
+                18.75: (0, 0, 0.22),
+                18.875: (0, 0, 0.22),
+                19: (0, 0, 0.22),
+                19.125: (0, 0, 0.22),
+                19.25: (0, 0, 0.22),
+                19.375: (0, 0, 0.22),
+                19.5: (0, 0, 0.22),
+                19.625: (0, 0, 0.22),
+                19.75: (0, 0, 0.22),
+                19.875: (0, 0, 0.22),
+                20: (0, 0, 0.22),
+                20.125: (0, 0, 0.22),
+                20.25: (0, 0, 0.22),
+                20.375: (0, 0, 0.22),
+                20.5: (0, 0, 0.22),
+                20.625: (0, 0, 0.22),
+                20.75: (0, 0, 0.22),
+                20.875: (0, 0, 0.22),
+                21: (0, 0, 0.22),
+                21.125: (0, 0, 0.22),
+                21.25: (0, 0, 0.22),
+                21.375: (0, 0, 0.22),
+                21.5: (0, 0, 0.22),
+                21.625: (0, 0, 0.22),
+                21.75: (0, 0, 0.22),
+                21.875: (0, 0, 0.22),
+                22: (0, 0, 0.22),
+                22.125: (0, 0, 0.22),
+                22.25: (0, 0, 0.22),
+                22.375: (0, 0, 0.22),
+                22.5: (0, 0, 0.22),
+                22.625: (0, 0, 0.22),
+                22.75: (0, 0, 0.22),
+                22.875: (0, 0, 0.22),
+                23: (0, 0, 0.22),
+                23.125: (0, 0, 0.22),
+                23.25: (0, 0, 0.22),
+                23.375: (0, 0, 0.22),
+                23.5: (0, 0, 0.22),
+                23.625: (0, 0, 0.22),
+                23.75: (0, 0, 0.22),
+                23.875: (0, 0, 0.22),
+                24: (0, 0, 0.22),
+                24.125: (0, 0, 0.22),
+                24.25: (0, 0, 0.22),
+                24.375: (0, 0, 0.22),
+                24.5: (0, 0, 0.22),
+                24.625: (0, 0, 0.22),
+                24.75: (0, 0, 0.22),
+                24.875: (0, 0, 0.22),
+                25: (0, 0, 0.22),
+                25.125: (0, 0, 0.22),
+                25.25: (0, 0, 0.22),
+                25.375: (0, 0, 0.22),
+                25.5: (0, 0, 0.22),
+                25.625: (0, 0, 0.22),
+                25.75: (0, 0, 0.22),
+                25.875: (0, 0, 0.22),
+                26: (0, 0, 0.22),
+                26.125: (0, 0, 0.22),
+                26.25: (0, 0, 0.22),
+                26.375: (0, 0, 0.22),
+                26.5: (0, 0, 0.22),
+                26.625: (0, 0, 0.22),
+                26.75: (0, 0, 0.22),
+                26.875: (0, 0, 0.22),
+                27: (0, 0, 0.22),
+                27.125: (0, 0, 0.22),
+                27.25: (0, 0, 0.22),
+                27.375: (0, 0, 0.22),
+                27.5: (0, 0, 0.22),
+                27.625: (0, 0, 0.22),
+                27.75: (0, 0, 0.22),
+                27.875: (0, 0, 0.22),
+                28: (0, 0, 0.22),
+                28.125: (0, 0, 0.22),
+                28.25: (0, 0, 0.22),
+                28.375: (0, 0, 0.22),
+                28.5: (0, 0, 0.22),
+                28.625: (0, 0, 0.22),
+                28.75: (0, 0, 0.22),
+                28.875: (0, 0, 0.22),
+                29: (0, 0, 0.22),
+                29.125: (0, 0, 0.22),
+                29.25: (0, 0, 0.22),
+                29.375: (0, 0, 0.22),
+                29.5: (0, 0, 0.22),
+                29.625: (0, 0, 0.22),
+                29.75: (0, 0, 0.22),
+                29.875: (0, 0, 0.22),
+                30: (0, 0, 0.22),
+                30.125: (0, 0, 0.22),
+                30.25: (0, 0, 0.22),
+                30.375: (0, 0, 0.22),
+                30.5: (0, 0, 0.22),
+                30.625: (0, 0, 0.22),
+                30.75: (0, 0, 0.22),
+                30.875: (0, 0, 0.22),
+                31: (0, 0, 0.22),
+                31.125: (0, 0, 0.22),
+                31.25: (0, 0, 0.22),
+                31.375: (0, 0, 0.22),
+                31.5: (0, 0, 0.22),
+                31.625: (0, 0, 0.22),
+                31.75: (0, 0, 0.22),
+                31.875: (0, 0, 0.22),
+                32: (0, 0, 0.22),
+                32.125: (0, 0, 0.22),
+                32.25: (0, 0, 0.22),
+                32.375: (0, 0, 0.22),
+                32.5: (0, 0, 0.22),
+                32.625: (0, 0, 0.22),
+                32.75: (0, 0, 0.22),
+                32.875: (0, 0, 0.22),
+                33: (0, 0, 0.22),
+                33.125: (0, 0, 0.22),
+                33.25: (0, 0, 0.22),
+                33.375: (0, 0, 0.22),
+                33.5: (0, 0, 0.22),
+                33.625: (0, 0, 0.22),
+                33.75: (0, 0, 0.22),
+                33.875: (0, 0, 0.22),
+                34: (0, 0, 0.22),
+                34.125: (0, 0, 0.22),
+                34.25: (0, 0, 0.22),
+                34.375: (0, 0, 0.22),
+                34.5: (0, 0, 0.22),
+                34.625: (0, 0, 0.22),
+                34.75: (0, 0, 0.22),
+                34.875: (0, 0, 0.22),
+                35: (0, 0, 0.22),
+                35.125: (0, 0, 0.22),
+                35.25: (0, 0, 0.22),
+                35.375: (0, 0, 0.22),
+                35.5: (0, 0, 0.22),
+                35.625: (0, 0, 0.22),
+                35.75: (0, 0, 0.22),
+                35.875: (0, 0, 0.22),
+                36: (0, 0, 0.22),
+            }
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Xform "ForkTilt"
+            {
+                float3 xformOp:rotateXYZ = (0, 0, 0)
+                float3 xformOp:rotateXYZ.timeSamples = {
+                    0: (0, 0, 0),
+                    0.125: (0, 0, 0),
+                    0.25: (0, 0, 0),
+                    0.375: (0, 0, 0),
+                    0.5: (0, 0, 0),
+                    0.625: (0, 0, 0),
+                    0.75: (0, 0, 0),
+                    0.875: (0, 0, 0),
+                    1: (0, 0, 0),
+                    1.125: (0, 0, 0),
+                    1.25: (0, 0, 0),
+                    1.375: (0, 0, 0),
+                    1.5: (0, 0, 0),
+                    1.625: (0, 0, 0),
+                    1.75: (0, 0, 0),
+                    1.875: (0, 0, 0),
+                    2: (0, 0, 0),
+                    2.125: (0, 0, 0),
+                    2.25: (0, 0, 0),
+                    2.375: (0, 0, 0),
+                    2.5: (0, 0, 0),
+                    2.625: (0, 0, 0),
+                    2.75: (0, 0, 0),
+                    2.875: (0, 0, 0),
+                    3: (0, 0, 0),
+                    3.125: (0, 0, 0),
+                    3.25: (0, 0, 0),
+                    3.375: (0, 0, 0),
+                    3.5: (0, 0, 0),
+                    3.625: (0, 0, 0),
+                    3.75: (0, 0, 0),
+                    3.875: (0, 0, 0),
+                    4: (0, 0, 0),
+                    4.125: (0, 0, 0),
+                    4.25: (0, 0, 0),
+                    4.375: (0, 0, 0),
+                    4.5: (0, 0, 0),
+                    4.625: (0, 0, 0),
+                    4.75: (0, 0, 0),
+                    4.875: (0, 0, 0),
+                    5: (0, 0, 0),
+                    5.125: (0, 0, 0),
+                    5.25: (0, 0, 0),
+                    5.375: (0, 0, 0),
+                    5.5: (0, 0, 0),
+                    5.625: (0, 0, 0),
+                    5.75: (0, 0, 0),
+                    5.875: (0, 0, 0),
+                    6: (0, 0, 0),
+                    6.125: (0, 0, 0),
+                    6.25: (0, 0, 0),
+                    6.375: (0, 0, 0),
+                    6.5: (0, 0, 0),
+                    6.625: (0, 0, 0),
+                    6.75: (0, 0, 0),
+                    6.875: (0, 0, 0),
+                    7: (0, 0, 0),
+                    7.125: (0, 0, 0),
+                    7.25: (0, 0, 0),
+                    7.375: (0, 0, 0),
+                    7.5: (0, 0, 0),
+                    7.625: (0, 0, 0),
+                    7.75: (0, 0, 0),
+                    7.875: (0, 0, 0),
+                    8: (0, 0, 0),
+                    8.125: (0, 0, 0),
+                    8.25: (0, 0, 0),
+                    8.375: (0, 0, 0),
+                    8.5: (0, 0, 0),
+                    8.625: (0, 0, 0),
+                    8.75: (0, 0, 0),
+                    8.875: (0, 0, 0),
+                    9: (0, 0, 0),
+                    9.125: (0, 0, 0),
+                    9.25: (0, 0, 0),
+                    9.375: (0, 0, 0),
+                    9.5: (0, 0, 0),
+                    9.625: (0, 0, 0),
+                    9.75: (0, 0, 0),
+                    9.875: (0, 0, 0),
+                    10: (0, 0, 0),
+                    10.125: (0, 0, 0),
+                    10.25: (0, 0, 0),
+                    10.375: (0, 0, 0),
+                    10.5: (0, 0, 0),
+                    10.625: (0, 0, 0),
+                    10.75: (0, 0, 0),
+                    10.875: (0, 0, 0),
+                    11: (0, 0, 0),
+                    11.125: (0, 0, 0),
+                    11.25: (0, 0, 0),
+                    11.375: (0, 0, 0),
+                    11.5: (0, 0, 0),
+                    11.625: (0, 0, 0),
+                    11.75: (0, 0, 0),
+                    11.875: (0, 0, 0),
+                    12: (0, 0, 0),
+                    12.125: (0, 0, 0),
+                    12.25: (0, 0, 0),
+                    12.375: (0, 0, 0),
+                    12.5: (0, 0, 0),
+                    12.625: (0, 0, 0),
+                    12.75: (0, 0, 0),
+                    12.875: (0, 0, 0),
+                    13: (0, 0, 0),
+                    13.125: (0, 0, 0),
+                    13.25: (0, 0, 0),
+                    13.375: (0, 0, 0),
+                    13.5: (0, 0, 0),
+                    13.625: (0, 0, 0),
+                    13.75: (0, 0, 0),
+                    13.875: (0, 0, 0),
+                    14: (0, 0, 0),
+                    14.125: (0, 0, 0),
+                    14.25: (0, 0, 0),
+                    14.375: (0, 0, 0),
+                    14.5: (0, 0, 0),
+                    14.625: (0, 0, 0),
+                    14.75: (0, 0, 0),
+                    14.875: (0, 0, 0),
+                    15: (0, 0, 0),
+                    15.125: (0, 0, 0),
+                    15.25: (0, 0, 0),
+                    15.375: (0, 0, 0),
+                    15.5: (0, 0, 0),
+                    15.625: (0, 0, 0),
+                    15.75: (0, 0, 0),
+                    15.875: (0, 0, 0),
+                    16: (0, 0, 0),
+                    16.125: (0, 0, 0),
+                    16.25: (0, 0, 0),
+                    16.375: (0, 0, 0),
+                    16.5: (0, 0, 0),
+                    16.625: (0, 0, 0),
+                    16.75: (0, 0, 0),
+                    16.875: (0, 0, 0),
+                    17: (0, 0, 0),
+                    17.125: (0, 0, 0),
+                    17.25: (0, 0, 0),
+                    17.375: (0, 0, 0),
+                    17.5: (0, 0, 0),
+                    17.625: (0, 0, 0),
+                    17.75: (0, 0, 0),
+                    17.875: (0, 0, 0),
+                    18: (0, 0, 0),
+                    18.125: (0, 0, 0),
+                    18.25: (0, 0, 0),
+                    18.375: (0, 0, 0),
+                    18.5: (0, 0, 0),
+                    18.625: (0, 0, 0),
+                    18.75: (0, 0, 0),
+                    18.875: (0, 0, 0),
+                    19: (0, 0, 0),
+                    19.125: (0, 0, 0),
+                    19.25: (0, 0, 0),
+                    19.375: (0, 0, 0),
+                    19.5: (0, 0, 0),
+                    19.625: (0, 0, 0),
+                    19.75: (0, 0, 0),
+                    19.875: (0, 0, 0),
+                    20: (0, 0, 0),
+                    20.125: (0, 0, 0),
+                    20.25: (0, 0, 0),
+                    20.375: (0, 0, 0),
+                    20.5: (0, 0, 0),
+                    20.625: (0, 0, 0),
+                    20.75: (0, 0, 0),
+                    20.875: (0, 0, 0),
+                    21: (0, 0, 0),
+                    21.125: (0, 0, 0),
+                    21.25: (0, 0, 0),
+                    21.375: (0, 0, 0),
+                    21.5: (0, 0, 0),
+                    21.625: (0, 0, 0),
+                    21.75: (0, 0, 0),
+                    21.875: (0, 0, 0),
+                    22: (0, 0, 0),
+                    22.125: (0, 0, 0),
+                    22.25: (0, 0, 0),
+                    22.375: (0, 0, 0),
+                    22.5: (0, 0, 0),
+                    22.625: (0, 0, 0),
+                    22.75: (0, 0, 0),
+                    22.875: (0, 0, 0),
+                    23: (0, 0, 0),
+                    23.125: (0, 0, 0),
+                    23.25: (0, 0, 0),
+                    23.375: (0, 0, 0),
+                    23.5: (0, 0, 0),
+                    23.625: (0, 0, 0),
+                    23.75: (0, 0, 0),
+                    23.875: (0, 0, 0),
+                    24: (0, 0, 0),
+                    24.125: (0, 0, 0),
+                    24.25: (0, 0, 0),
+                    24.375: (0, 0, 0),
+                    24.5: (0, 0, 0),
+                    24.625: (0, 0, 0),
+                    24.75: (0, 0, 0),
+                    24.875: (0, 0, 0),
+                    25: (0, 0, 0),
+                    25.125: (0, 0, 0),
+                    25.25: (0, 0, 0),
+                    25.375: (0, 0, 0),
+                    25.5: (0, 0, 0),
+                    25.625: (0, 0, 0),
+                    25.75: (0, 0, 0),
+                    25.875: (0, 0, 0),
+                    26: (0, 0, 0),
+                    26.125: (0, 0, 0),
+                    26.25: (0, 0, 0),
+                    26.375: (0, 0, 0),
+                    26.5: (0, 0, 0),
+                    26.625: (0, 0, 0),
+                    26.75: (0, 0, 0),
+                    26.875: (0, 0, 0),
+                    27: (0, 0, 0),
+                    27.125: (0, 0, 0),
+                    27.25: (0, 0, 0),
+                    27.375: (0, 0, 0),
+                    27.5: (0, 0, 0),
+                    27.625: (0, 0, 0),
+                    27.75: (0, 0, 0),
+                    27.875: (0, 0, 0),
+                    28: (0, 0, 0),
+                    28.125: (0, 0, 0),
+                    28.25: (0, 0, 0),
+                    28.375: (0, 0, 0),
+                    28.5: (0, 0, 0),
+                    28.625: (0, 0, 0),
+                    28.75: (0, 0, 0),
+                    28.875: (0, 0, 0),
+                    29: (0, 0, 0),
+                    29.125: (0, 0, 0),
+                    29.25: (0, 0, 0),
+                    29.375: (0, 0, 0),
+                    29.5: (0, 0, 0),
+                    29.625: (0, 0, 0),
+                    29.75: (0, 0, 0),
+                    29.875: (0, 0, 0),
+                    30: (0, 0, 0),
+                    30.125: (0, 0, 0),
+                    30.25: (0, 0, 0),
+                    30.375: (0, 0, 0),
+                    30.5: (0, 0, 0),
+                    30.625: (0, 0, 0),
+                    30.75: (0, 0, 0),
+                    30.875: (0, 0, 0),
+                    31: (0, 0, 0),
+                    31.125: (0, 0, 0),
+                    31.25: (0, 0, 0),
+                    31.375: (0, 0, 0),
+                    31.5: (0, 0, 0),
+                    31.625: (0, 0, 0),
+                    31.75: (0, 0, 0),
+                    31.875: (0, 0, 0),
+                    32: (0, 0, 0),
+                    32.125: (0, 0, 0),
+                    32.25: (0, 0, 0),
+                    32.375: (0, 0, 0),
+                    32.5: (0, 0, 0),
+                    32.625: (0, 0, 0),
+                    32.75: (0, 0, 0),
+                    32.875: (0, 0, 0),
+                    33: (0, 0, 0),
+                    33.125: (0, 0, 0),
+                    33.25: (0, 0, 0),
+                    33.375: (0, 0, 0),
+                    33.5: (0, 0, 0),
+                    33.625: (0, 0, 0),
+                    33.75: (0, 0, 0),
+                    33.875: (0, 0, 0),
+                    34: (0, 0, 0),
+                    34.125: (0, 0, 0),
+                    34.25: (0, 0, 0),
+                    34.375: (0, 0, 0),
+                    34.5: (0, 0, 0),
+                    34.625: (0, 0, 0),
+                    34.75: (0, 0, 0),
+                    34.875: (0, 0, 0),
+                    35: (0, 0, 0),
+                    35.125: (0, 0, 0),
+                    35.25: (0, 0, 0),
+                    35.375: (0, 0, 0),
+                    35.5: (0, 0, 0),
+                    35.625: (0, 0, 0),
+                    35.75: (0, 0, 0),
+                    35.875: (0, 0, 0),
+                    36: (0, 0, 0),
+                }
+                uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+
+                def Cube "Carrier"
+                {
+                    color3f[] primvars:displayColor = [(0.25, 0.29, 0.34)]
+                    double size = 1
+                    float3 xformOp:scale = (0.18, 0.92, 0.4)
+                    double3 xformOp:translate = (1.12, 0, 0.25)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "ForkLeft"
+                {
+                    color3f[] primvars:displayColor = [(0.13, 0.15, 0.18)]
+                    double size = 1
+                    float3 xformOp:scale = (1.35, 0.13, 0.1)
+                    double3 xformOp:translate = (1.7, 0.32, 0.08)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "ForkRight"
+                {
+                    color3f[] primvars:displayColor = [(0.13, 0.15, 0.18)]
+                    double size = 1
+                    float3 xformOp:scale = (1.35, 0.13, 0.1)
+                    double3 xformOp:translate = (1.7, -0.32, 0.08)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+            }
+        }
+
+        def Cube "SafetyBeacon"
+        {
+            color3f[] primvars:displayColor = [(0.1, 0.75, 0.3)]
+            double size = 1
+            float3 xformOp:scale = (0.18, 0.18, 0.25)
+            double3 xformOp:translate = (-0.1, 0, 2.35)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def Xform "ActivePayload"
+    {
+        double3 xformOp:translate = (3.85, 0, 0.32)
+        double3 xformOp:translate.timeSamples = {
+            0: (3.85, 0, 0.32),
+            0.125: (3.85, 0, 0.32),
+            0.25: (3.85, 0, 0.32),
+            0.375: (3.85, 0, 0.32),
+            0.5: (3.85, 0, 0.32),
+            0.625: (3.85, 0, 0.32),
+            0.75: (3.85, 0, 0.32),
+            0.875: (3.85, 0, 0.32),
+            1: (3.85, 0, 0.32),
+            1.125: (3.85, 0, 0.32),
+            1.25: (3.85, 0, 0.32),
+            1.375: (3.85, 0, 0.32),
+            1.5: (3.85, 0, 0.32),
+            1.625: (3.85, 0, 0.32),
+            1.75: (3.85, 0, 0.32),
+            1.875: (3.85, 0, 0.32),
+            2: (3.85, 0, 0.32),
+            2.125: (3.85, 0, 0.32),
+            2.25: (3.85, 0, 0.32),
+            2.375: (3.85, 0, 0.32),
+            2.5: (3.85, 0, 0.32),
+            2.625: (3.85, 0, 0.32),
+            2.75: (3.85, 0, 0.32),
+            2.875: (3.85, 0, 0.32),
+            3: (3.85, 0, 0.32),
+            3.125: (3.85, 0, 0.32),
+            3.25: (3.85, 0, 0.32),
+            3.375: (3.85, 0, 0.32),
+            3.5: (3.85, 0, 0.32),
+            3.625: (3.85, 0, 0.32),
+            3.75: (3.85, 0, 0.32),
+            3.875: (3.85, 0, 0.32),
+            4: (3.85, 0, 0.32),
+            4.125: (3.85, 0, 0.32),
+            4.25: (3.85, 0, 0.32),
+            4.375: (3.85, 0, 0.32),
+            4.5: (3.85, 0, 0.32),
+            4.625: (3.85, 0, 0.32),
+            4.75: (3.85, 0, 0.32),
+            4.875: (3.85, 0, 0.32),
+            5: (3.85, 0, 0.32),
+            5.125: (3.85, 0, 0.32),
+            5.25: (3.85, 0, 0.32),
+            5.375: (3.85, 0, 0.32),
+            5.5: (3.85, 0, 0.32),
+            5.625: (3.85, 0, 0.32),
+            5.75: (3.85, 0, 0.32),
+            5.875: (3.85, 0, 0.32),
+            6: (3.85, 0, 0.32),
+            6.125: (3.85, 0, 0.32),
+            6.25: (3.85, 0, 0.32),
+            6.375: (3.85, 0, 0.32),
+            6.5: (3.85, 0, 0.32),
+            6.625: (3.85, 0, 0.32),
+            6.75: (3.85, 0, 0.32),
+            6.875: (3.85, 0, 0.32),
+            7: (3.85, 0, 0.32),
+            7.125: (3.85, 0, 0.32),
+            7.25: (3.85, 0, 0.32),
+            7.375: (3.85, 0, 0.32),
+            7.5: (3.85, 0, 0.32),
+            7.625: (3.85, 0, 0.32),
+            7.75: (3.85, 0, 0.32),
+            7.875: (3.85, 0, 0.32),
+            8: (3.85, 0, 0.32),
+            8.125: (3.85, 0, 0.32),
+            8.25: (3.85, 0, 0.32),
+            8.375: (3.85, 0, 0.32),
+            8.5: (3.85, 0, 0.32),
+            8.625: (3.85, 0, 0.32),
+            8.75: (3.85, 0, 0.32),
+            8.875: (3.85, 0, 0.32),
+            9: (3.85, 0, 0.32),
+            9.125: (3.85, 0, 0.32),
+            9.25: (3.85, 0, 0.32),
+            9.375: (3.85, 0, 0.32),
+            9.5: (3.85, 0, 0.32),
+            9.625: (3.85, 0, 0.32),
+            9.75: (3.85, 0, 0.32),
+            9.875: (3.85, 0, 0.32),
+            10: (3.85, 0, 0.32),
+            10.125: (3.85, 0, 0.32),
+            10.25: (3.85, 0, 0.32),
+            10.375: (3.85, 0, 0.32),
+            10.5: (3.85, 0, 0.32),
+            10.625: (3.85, 0, 0.32),
+            10.75: (3.85, 0, 0.32),
+            10.875: (3.85, 0, 0.32),
+            11: (3.85, 0, 0.32),
+            11.125: (3.85, 0, 0.32),
+            11.25: (3.85, 0, 0.32),
+            11.375: (3.85, 0, 0.32),
+            11.5: (3.85, 0, 0.32),
+            11.625: (3.85, 0, 0.32),
+            11.75: (3.85, 0, 0.32),
+            11.875: (3.85, 0, 0.32),
+            12: (3.85, 0, 0.32),
+            12.125: (3.85, 0, 0.32),
+            12.25: (3.85, 0, 0.32),
+            12.375: (3.85, 0, 0.32),
+            12.5: (3.85, 0, 0.32),
+            12.625: (3.85, 0, 0.32),
+            12.75: (3.85, 0, 0.32),
+            12.875: (3.85, 0, 0.32),
+            13: (3.85, 0, 0.32),
+            13.125: (3.85, 0, 0.32),
+            13.25: (3.85, 0, 0.32),
+            13.375: (3.85, 0, 0.32),
+            13.5: (3.85, 0, 0.32),
+            13.625: (3.85, 0, 0.32),
+            13.75: (3.85, 0, 0.32),
+            13.875: (3.85, 0, 0.32),
+            14: (3.85, 0, 0.32),
+            14.125: (3.85, 0, 0.32),
+            14.25: (3.85, 0, 0.32),
+            14.375: (3.85, 0, 0.32),
+            14.5: (3.85, 0, 0.32),
+            14.625: (3.85, 0, 0.32),
+            14.75: (3.85, 0, 0.32),
+            14.875: (3.85, 0, 0.32),
+            15: (3.85, 0, 0.32),
+            15.125: (3.85, 0, 0.32),
+            15.25: (3.85, 0, 0.32),
+            15.375: (3.85, 0, 0.32),
+            15.5: (3.85, 0, 0.32),
+            15.625: (3.85, 0, 0.32),
+            15.75: (3.85, 0, 0.32),
+            15.875: (3.85, 0, 0.32),
+            16: (3.85, 0, 0.32),
+            16.125: (3.85, 0, 0.32),
+            16.25: (3.85, 0, 0.32),
+            16.375: (3.85, 0, 0.32),
+            16.5: (3.85, 0, 0.32),
+            16.625: (3.85, 0, 0.32),
+            16.75: (3.85, 0, 0.32),
+            16.875: (3.85, 0, 0.32),
+            17: (3.85, 0, 0.32),
+            17.125: (3.85, 0, 0.32),
+            17.25: (3.85, 0, 0.32),
+            17.375: (3.85, 0, 0.32),
+            17.5: (3.85, 0, 0.32),
+            17.625: (3.85, 0, 0.32),
+            17.75: (3.85, 0, 0.32),
+            17.875: (3.85, 0, 0.32),
+            18: (3.85, 0, 0.32),
+            18.125: (3.85, 0, 0.32),
+            18.25: (3.85, 0, 0.32),
+            18.375: (3.85, 0, 0.32),
+            18.5: (3.85, 0, 0.32),
+            18.625: (3.85, 0, 0.32),
+            18.75: (3.85, 0, 0.32),
+            18.875: (3.85, 0, 0.32),
+            19: (3.85, 0, 0.32),
+            19.125: (3.85, 0, 0.32),
+            19.25: (3.85, 0, 0.32),
+            19.375: (3.85, 0, 0.32),
+            19.5: (3.85, 0, 0.32),
+            19.625: (3.85, 0, 0.32),
+            19.75: (3.85, 0, 0.32),
+            19.875: (3.85, 0, 0.32),
+            20: (3.85, 0, 0.32),
+            20.125: (3.85, 0, 0.32),
+            20.25: (3.85, 0, 0.32),
+            20.375: (3.85, 0, 0.32),
+            20.5: (3.85, 0, 0.32),
+            20.625: (3.85, 0, 0.32),
+            20.75: (3.85, 0, 0.32),
+            20.875: (3.85, 0, 0.32),
+            21: (3.85, 0, 0.32),
+            21.125: (3.85, 0, 0.32),
+            21.25: (3.85, 0, 0.32),
+            21.375: (3.85, 0, 0.32),
+            21.5: (3.85, 0, 0.32),
+            21.625: (3.85, 0, 0.32),
+            21.75: (3.85, 0, 0.32),
+            21.875: (3.85, 0, 0.32),
+            22: (3.85, 0, 0.32),
+            22.125: (3.85, 0, 0.32),
+            22.25: (3.85, 0, 0.32),
+            22.375: (3.85, 0, 0.32),
+            22.5: (3.85, 0, 0.32),
+            22.625: (3.85, 0, 0.32),
+            22.75: (3.85, 0, 0.32),
+            22.875: (3.85, 0, 0.32),
+            23: (3.85, 0, 0.32),
+            23.125: (3.85, 0, 0.32),
+            23.25: (3.85, 0, 0.32),
+            23.375: (3.85, 0, 0.32),
+            23.5: (3.85, 0, 0.32),
+            23.625: (3.85, 0, 0.32),
+            23.75: (3.85, 0, 0.32),
+            23.875: (3.85, 0, 0.32),
+            24: (3.85, 0, 0.32),
+            24.125: (3.85, 0, 0.32),
+            24.25: (3.85, 0, 0.32),
+            24.375: (3.85, 0, 0.32),
+            24.5: (3.85, 0, 0.32),
+            24.625: (3.85, 0, 0.32),
+            24.75: (3.85, 0, 0.32),
+            24.875: (3.85, 0, 0.32),
+            25: (3.85, 0, 0.32),
+            25.125: (3.85, 0, 0.32),
+            25.25: (3.85, 0, 0.32),
+            25.375: (3.85, 0, 0.32),
+            25.5: (3.85, 0, 0.32),
+            25.625: (3.85, 0, 0.32),
+            25.75: (3.85, 0, 0.32),
+            25.875: (3.85, 0, 0.32),
+            26: (3.85, 0, 0.32),
+            26.125: (3.85, 0, 0.32),
+            26.25: (3.85, 0, 0.32),
+            26.375: (3.85, 0, 0.32),
+            26.5: (3.85, 0, 0.32),
+            26.625: (3.85, 0, 0.32),
+            26.75: (3.85, 0, 0.32),
+            26.875: (3.85, 0, 0.32),
+            27: (3.85, 0, 0.32),
+            27.125: (3.85, 0, 0.32),
+            27.25: (3.85, 0, 0.32),
+            27.375: (3.85, 0, 0.32),
+            27.5: (3.85, 0, 0.32),
+            27.625: (3.85, 0, 0.32),
+            27.75: (3.85, 0, 0.32),
+            27.875: (3.85, 0, 0.32),
+            28: (3.85, 0, 0.32),
+            28.125: (3.85, 0, 0.32),
+            28.25: (3.85, 0, 0.32),
+            28.375: (3.85, 0, 0.32),
+            28.5: (3.85, 0, 0.32),
+            28.625: (3.85, 0, 0.32),
+            28.75: (3.85, 0, 0.32),
+            28.875: (3.85, 0, 0.32),
+            29: (3.85, 0, 0.32),
+            29.125: (3.85, 0, 0.32),
+            29.25: (3.85, 0, 0.32),
+            29.375: (3.85, 0, 0.32),
+            29.5: (3.85, 0, 0.32),
+            29.625: (3.85, 0, 0.32),
+            29.75: (3.85, 0, 0.32),
+            29.875: (3.85, 0, 0.32),
+            30: (3.85, 0, 0.32),
+            30.125: (3.85, 0, 0.32),
+            30.25: (3.85, 0, 0.32),
+            30.375: (3.85, 0, 0.32),
+            30.5: (3.85, 0, 0.32),
+            30.625: (3.85, 0, 0.32),
+            30.75: (3.85, 0, 0.32),
+            30.875: (3.85, 0, 0.32),
+            31: (3.85, 0, 0.32),
+            31.125: (3.85, 0, 0.32),
+            31.25: (3.85, 0, 0.32),
+            31.375: (3.85, 0, 0.32),
+            31.5: (3.85, 0, 0.32),
+            31.625: (3.85, 0, 0.32),
+            31.75: (3.85, 0, 0.32),
+            31.875: (3.85, 0, 0.32),
+            32: (3.85, 0, 0.32),
+            32.125: (3.85, 0, 0.32),
+            32.25: (3.85, 0, 0.32),
+            32.375: (3.85, 0, 0.32),
+            32.5: (3.85, 0, 0.32),
+            32.625: (3.85, 0, 0.32),
+            32.75: (3.85, 0, 0.32),
+            32.875: (3.85, 0, 0.32),
+            33: (3.85, 0, 0.32),
+            33.125: (3.85, 0, 0.32),
+            33.25: (3.85, 0, 0.32),
+            33.375: (3.85, 0, 0.32),
+            33.5: (3.85, 0, 0.32),
+            33.625: (3.85, 0, 0.32),
+            33.75: (3.85, 0, 0.32),
+            33.875: (3.85, 0, 0.32),
+            34: (3.85, 0, 0.32),
+            34.125: (3.85, 0, 0.32),
+            34.25: (3.85, 0, 0.32),
+            34.375: (3.85, 0, 0.32),
+            34.5: (3.85, 0, 0.32),
+            34.625: (3.85, 0, 0.32),
+            34.75: (3.85, 0, 0.32),
+            34.875: (3.85, 0, 0.32),
+            35: (3.85, 0, 0.32),
+            35.125: (3.85, 0, 0.32),
+            35.25: (3.85, 0, 0.32),
+            35.375: (3.85, 0, 0.32),
+            35.5: (3.85, 0, 0.32),
+            35.625: (3.85, 0, 0.32),
+            35.75: (3.85, 0, 0.32),
+            35.875: (3.85, 0, 0.32),
+            36: (3.85, 0, 0.32),
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def "Pallet"
+        {
+            def Cube "Slat0"
+            {
+                color3f[] primvars:displayColor = [(0.48, 0.28, 0.1)]
+                double size = 1
+                float3 xformOp:scale = (1.15, 0.24, 0.1)
+                double3 xformOp:translate = (0, -0.42, 0.05)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Slat1"
+            {
+                color3f[] primvars:displayColor = [(0.48, 0.28, 0.1)]
+                double size = 1
+                float3 xformOp:scale = (1.15, 0.24, 0.1)
+                double3 xformOp:translate = (0, 0, 0.05)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Slat2"
+            {
+                color3f[] primvars:displayColor = [(0.48, 0.28, 0.1)]
+                double size = 1
+                float3 xformOp:scale = (1.15, 0.24, 0.1)
+                double3 xformOp:translate = (0, 0.42, 0.05)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+        }
+
+        def "Cargo"
+        {
+            def Cube "Box0"
+            {
+                color3f[] primvars:displayColor = [(0.72, 0.49, 0.22)]
+                double size = 1
+                float3 xformOp:scale = (0.5, 0.42, 0.55)
+                double3 xformOp:translate = (-0.28, -0.25, 0.38)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Box1"
+            {
+                color3f[] primvars:displayColor = [(0.72, 0.49, 0.22)]
+                double size = 1
+                float3 xformOp:scale = (0.5, 0.42, 0.55)
+                double3 xformOp:translate = (-0.28, 0.25, 0.38)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Box2"
+            {
+                color3f[] primvars:displayColor = [(0.72, 0.49, 0.22)]
+                double size = 1
+                float3 xformOp:scale = (0.5, 0.42, 0.55)
+                double3 xformOp:translate = (0.28, -0.25, 0.38)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Box3"
+            {
+                color3f[] primvars:displayColor = [(0.72, 0.49, 0.22)]
+                double size = 1
+                float3 xformOp:scale = (0.5, 0.42, 0.55)
+                double3 xformOp:translate = (0.28, 0.25, 0.38)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+        }
+    }
+
+    def "BackgroundLoads"
+    {
+        def "Load0"
+        {
+            def Cube "Pallet"
+            {
+                color3f[] primvars:displayColor = [(0.42, 0.24, 0.09)]
+                double size = 1
+                float3 xformOp:scale = (1, 0.75, 0.12)
+                double3 xformOp:translate = (4.9, 0.82, 0.12)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Cargo"
+            {
+                color3f[] primvars:displayColor = [(0.35, 0.55, 0.72)]
+                double size = 1
+                float3 xformOp:scale = (0.8, 0.6, 0.75)
+                double3 xformOp:translate = (4.9, 0.82, 0.55)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+        }
+
+        def "Load1"
+        {
+            def Cube "Pallet"
+            {
+                color3f[] primvars:displayColor = [(0.42, 0.24, 0.09)]
+                double size = 1
+                float3 xformOp:scale = (1, 0.75, 0.12)
+                double3 xformOp:translate = (4.9, -0.82, 0.12)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Cargo"
+            {
+                color3f[] primvars:displayColor = [(0.35, 0.55, 0.72)]
+                double size = 1
+                float3 xformOp:scale = (0.8, 0.6, 0.75)
+                double3 xformOp:translate = (4.9, -0.82, 0.55)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+        }
+    }
+
+    def Xform "Obstacle"
+    {
+        double3 xformOp:translate = (3.15, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cube "FallenBoxA"
+        {
+            color3f[] primvars:displayColor = [(0.78, 0.16, 0.12)]
+            double size = 1
+            float3 xformOp:scale = (0.85, 0.7, 0.85)
+            double3 xformOp:translate = (0, 0, 0.43)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+
+        def Cube "FallenBoxB"
+        {
+            color3f[] primvars:displayColor = [(0.92, 0.42, 0.08)]
+            double size = 1
+            float3 xformOp:scale = (0.65, 0.65, 0.65)
+            double3 xformOp:translate = (0.35, 0.3, 0.32)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+        }
+    }
+
+    def "Lights"
+    {
+        def DomeLight "Dome"
+        {
+            float inputs:intensity = 650
+        }
+
+        def RectLight "Key"
+        {
+            float inputs:height = 5
+            float inputs:intensity = 25000
+            float inputs:width = 8
+            double3 xformOp:translate = (-1, -2, 8)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Camera "DemoCamera" (
+        prepend apiSchemas = ["OmniRtxCameraAutoExposureAPI_1", "OmniRtxCameraExposureAPI_1"]
+        append apiSchemas = ["OmniSensorAPI"]
+    )
+    {
+        token cameraProjectionType = "pinhole"
+        float4[] clippingPlanes = []
+        float2 clippingRange = (1, 1000000)
+        string crossCameraReferenceName
+        float exposure:fStop = 5
+        float exposure:responsivity = 1.1026709
+        float exposure:time = 0.02
+        float focalLength = 24
+        float focusDistance = 400
+        float fStop = 0
+        float fthetaCx = 970.94244
+        float fthetaCy = 600.3748
+        float fthetaHeight = 1216
+        float fthetaMaxFov = 200
+        float fthetaPolyA = 0
+        float fthetaPolyB = 0.00245
+        float fthetaPolyC = 0
+        float fthetaPolyD = 0
+        float fthetaPolyE = 0
+        float fthetaPolyF = 0
+        float fthetaWidth = 1936
+        float horizontalAperture = 20.955
+        float horizontalApertureOffset = 0
+        string omni:sensor:marketName = ""
+        string omni:sensor:modelName = ""
+        string omni:sensor:modelVendor = ""
+        string omni:sensor:modelVersion = ""
+        float omni:sensor:tickRate = 0
+        float omni_col_sensor_col_tickRate
+        float openCVFx = 731.7879
+        float openCVFy = 731.7879
+        float p0 = -0.00037
+        float p1 = -0.00074
+        token projection = "perspective"
+        uniform token purpose = "default"
+        float s0 = -0.00058
+        float s1 = -0.00022
+        float s2 = 0.00019
+        float s3 = -0.0002
+        double shutter:close = 0
+        double shutter:open = 0
+        uniform token stereoRole = "mono"
+        float verticalApertureOffset = 0
+        float3 xformOp:rotateXYZ = (61.45463, -1.2722219e-14, -38.5584)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (-11.5, -14, 10.5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+}
+
+def PhysicsScene "PhysicsScene" (
+    prepend apiSchemas = ["NewtonSceneAPI", "PhysxSceneAPI"]
+)
+{
+}

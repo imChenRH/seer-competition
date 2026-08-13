@@ -1,0 +1,132 @@
+{
+  "schema_version": "1.0",
+  "runs": [
+    {
+      "run_id": "isaac-intervention-20260813",
+      "scenario": "intervention",
+      "source": "isaac_sim",
+      "terminal_status": "HUMAN_REQUIRED",
+      "event_count": 18,
+      "duration_s": 36.0,
+      "isaac_version": "6.0.1",
+      "controller": "deterministic_kinematic_rule_controller",
+      "video_probe": {
+        "width": 1280,
+        "height": 720,
+        "fps": 8.0,
+        "frame_count": 289,
+        "duration_s": 36.125
+      },
+      "files": {
+        "events.jsonl": {
+          "size_bytes": 13526,
+          "sha256": "ccaa5335a2774087d77e9cb43841fe77817e46916fa2518be78611b8c6511661"
+        },
+        "summary.json": {
+          "size_bytes": 483,
+          "sha256": "3cfb6275c1daf38dde2c168b4f19c4e94e03d9a383425f630b849e923322d503"
+        },
+        "scene.usda": {
+          "size_bytes": 76804,
+          "sha256": "244ff51c460d1cfc603e2d4cd6b3a10af484ad02c20f93679bb7936658195094"
+        },
+        "simulation.mp4": {
+          "size_bytes": 1865038,
+          "sha256": "4c80ef73767d5751ebb3d934ec7640c58d948eac3577ba1ccb959ad5f8d67a87"
+        }
+      }
+    },
+    {
+      "run_id": "isaac-normal-20260813",
+      "scenario": "normal",
+      "source": "isaac_sim",
+      "terminal_status": "COMPLETED",
+      "event_count": 20,
+      "duration_s": 51.0,
+      "isaac_version": "6.0.1",
+      "controller": "deterministic_kinematic_rule_controller",
+      "video_probe": {
+        "width": 1280,
+        "height": 720,
+        "fps": 8.0,
+        "frame_count": 409,
+        "duration_s": 51.125
+      },
+      "files": {
+        "events.jsonl": {
+          "size_bytes": 14490,
+          "sha256": "5e14ecba4e3bcb004ae99e551e1663a7dc968c0b206841ae4e9d0f52a5716f4f"
+        },
+        "summary.json": {
+          "size_bytes": 466,
+          "sha256": "3f57af13541523d52aa9bd3995c132c5c9d438f9b3f3ebb7634636f5b4246395"
+        },
+        "scene.usda": {
+          "size_bytes": 95974,
+          "sha256": "40a17eeda3be42cbbb9e038c715100516c47963b8827688dca3bd85fea1d6364"
+        },
+        "simulation.mp4": {
+          "size_bytes": 2727981,
+          "sha256": "56b67312105ff9fe86e021be96129d74ac86bdc22547f7f54c4210101d2ca361"
+        }
+      }
+    },
+    {
+      "run_id": "isaac-recovery-20260813",
+      "scenario": "recovery",
+      "source": "isaac_sim",
+      "terminal_status": "COMPLETED",
+      "event_count": 24,
+      "duration_s": 62.0,
+      "isaac_version": "6.0.1",
+      "controller": "deterministic_kinematic_rule_controller",
+      "video_probe": {
+        "width": 1280,
+        "height": 720,
+        "fps": 8.0,
+        "frame_count": 497,
+        "duration_s": 62.125
+      },
+      "files": {
+        "events.jsonl": {
+          "size_bytes": 17590,
+          "sha256": "94d38d2f31fd34c80d267b8df6c5041cba3294110e5b44eeec3e732fc53c1817"
+        },
+        "summary.json": {
+          "size_bytes": 470,
+          "sha256": "9c839b888ecc4a088dec6de61ef83010959063c499c766960417ff6a09a2932a"
+        },
+        "scene.usda": {
+          "size_bytes": 110750,
+          "sha256": "38bf1480528020bac1b66a14cc49e5b67e6a2b84f1041589246aaf47754dc6d8"
+        },
+        "simulation.mp4": {
+          "size_bytes": 3049028,
+          "sha256": "6bc01746a703b65701037492f88177b7e59f03019f78cb1d6421308d562d9aaf"
+        }
+      }
+    }
+  ],
+  "auxiliary_evidence": {
+    "FEISHU_LIVE_RECEIPT.json": {
+      "size_bytes": 1830,
+      "sha256": "877f0f55565a44bf0ef5bbfe03353cb148538dd24b30d4ea218dfd6d36f7f209"
+    },
+    "fastwam/README.md": {
+      "size_bytes": 541,
+      "sha256": "588bf6c25b495b3634af127f8fea87cb1aac8b713c71fa158e15cf1707f70957"
+    },
+    "fastwam/validation.log": {
+      "size_bytes": 801,
+      "sha256": "33ed304c4f286afb2f78096a847697464d90cc050d29113ff3757953d4a79434"
+    }
+  },
+  "generated_at": "2026-08-13T13:39:30.790131+00:00",
+  "environment": {
+    "simulator": "Isaac Sim 6.0.1",
+    "recording_host": "AutoDL Linux / NVIDIA RTX 4090",
+    "controller": "deterministic kinematic rule controller",
+    "payload_model": "explicit attach/release coupling"
+  },
+  "claim_boundary": "Demonstration-grade kinematic digital twin; not hardware, ROS 2, real perception, Fast-WAM forklift control, calibrated dynamics, or production safety evidence."
+}
