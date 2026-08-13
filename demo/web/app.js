@@ -1,12 +1,19 @@
 (function () {
   "use strict";
 
-  const select = document.getElementById("run-select");
   const video = document.getElementById("simulation-video");
   const noVideo = document.getElementById("no-video");
   const evidenceContent = document.getElementById("evidence-content");
   const fastwamContent = document.getElementById("fastwam-content");
+  const dispatchDetails = document.getElementById("dispatch-details");
+  const demoBoundary = document.getElementById("demo-boundary");
   const tabs = Array.from(document.querySelectorAll("[data-scenario]"));
+  const taskPresets = {
+    normal: "卸载3号集装箱货物到A区传送带",
+    recovery: "卸载3号集装箱货物到A区传送带",
+    intervention: "处理被倒塌货物遮挡的3号栈板",
+    fastwam: "验证 Fast-WAM 本地模型加载与单批推理"
+  };
   const skillNames = {
     "FORK-NAV-01": "进箱导航",
     "FORK-NAV-03": "精确对位",
@@ -22,6 +29,7 @@
   let activeEvents = [];
   let activeRunId = null;
   let renderGeneration = 0;
+  let consoleState = SeerProtocol.nextConsoleState(null, {type: "initialize", scenario: "normal"});
 
   function setText(id, value) {
     document.getElementById(id).textContent = String(value);
@@ -46,6 +54,30 @@
       tab.classList.toggle("active", active);
       tab.setAttribute("aria-selected", String(active));
     });
+  }
+
+  function collapseDetails() {
+    renderGeneration += 1;
+    activeRunId = null;
+    activeEvents = [];
+    evidenceContent.hidden = true;
+    fastwamContent.hidden = true;
+    dispatchDetails.hidden = true;
+    demoBoundary.hidden = true;
+    video.pause();
+    video.currentTime = 0;
+    setText("active-instruction", "未开始");
+    setText("active-behavior", "等待小脑层");
+    setText("active-audit", "#—");
+    document.getElementById("dispatch-plan").replaceChildren();
+  }
+
+  function selectScenario(scenario) {
+    consoleState = SeerProtocol.nextConsoleState(consoleState, {type: "select", scenario: scenario});
+    collapseDetails();
+    setActiveTab(scenario);
+    document.getElementById("task-input").value = taskPresets[scenario];
+    setText("chat-response", "已选择“" + taskPresets[scenario] + "”。点击发送后才会载入对应视频与审计证据。");
   }
 
   function renderSkills(events) {
@@ -143,10 +175,11 @@
     });
   }
 
-  async function renderRun(runId) {
+  async function renderRun(runId, expectedScenario) {
     const generation = ++renderGeneration;
     const pair = await Promise.all([fetchJson("/api/runs/" + encodeURIComponent(runId)), loadEvents(runId)]);
     if (generation !== renderGeneration) return;
+    if (consoleState.selectedScenario !== expectedScenario) return;
     const summary = pair[0];
     const events = pair[1];
     const reduced = SeerProtocol.reduceEvents(events);
@@ -154,8 +187,8 @@
     activeEvents = events;
     evidenceContent.hidden = false;
     fastwamContent.hidden = true;
-    setActiveTab(reduced.scenario);
-    select.value = runId;
+    dispatchDetails.hidden = false;
+    demoBoundary.hidden = false;
     setText("metric-status", reduced.terminalStatus);
     setText("metric-skills", reduced.completedSkills.length + " / 9");
     setText("metric-fallbacks", reduced.fallbackCount);
@@ -163,8 +196,6 @@
     setText("source-pill", reduced.source);
     setText("event-count", reduced.eventCount + " events");
     setText("run-meta", reduced.runId + " · " + reduced.scenario + " · " + (summary.controller || "evidence replay"));
-    const task = events.find(function (event) { return event.event_type === "task_started"; });
-    if (task && task.message) document.getElementById("task-input").value = task.message;
     renderSkills(events);
     renderFallbacks(events);
     renderLog(events);
@@ -181,6 +212,7 @@
       video.hidden = true;
       noVideo.hidden = false;
     }
+    return events;
   }
 
   function runForScenario(scenario) {
@@ -189,30 +221,53 @@
     }) || runs.find(function (run) { return run.scenario === scenario; });
   }
 
-  async function showFastWam() {
+  async function showFastWam(expectedScenario, taskDecision) {
     const generation = ++renderGeneration;
     activeRunId = null;
     activeEvents = [];
     video.pause();
-    setActiveTab("fastwam");
-    evidenceContent.hidden = true;
-    fastwamContent.hidden = false;
     const result = await fetchJson("/api/fastwam");
     if (generation !== renderGeneration) return;
+    if (consoleState.selectedScenario !== expectedScenario) return;
+    evidenceContent.hidden = true;
+    fastwamContent.hidden = false;
+    dispatchDetails.hidden = true;
+    demoBoundary.hidden = false;
     setText("fastwam-status", result.available ? "证据可用" : "无本地证据");
     setText("fastwam-claim", result.claim_boundary);
     setText("fastwam-shape", result.action_shape || "—");
     setText("fastwam-latency", result.single_call_latency_s === null ? "—" : result.single_call_latency_s.toFixed(2) + " s");
+    setText(
+      "chat-response",
+      taskDecision.accepted
+        ? "已发送独立验证任务；下方只展示 Fast-WAM 本地模型加载与单批推理证据，不外推为叉车控制能力。"
+        : "输入与证据不一致，未伪造 Fast-WAM 执行；已切换为可审计任务：" + taskDecision.task
+    );
   }
 
-  function dispatchCurrentEvidence() {
-    if (!activeRunId || activeEvents.length === 0) return;
-    const task = activeEvents.find(function (event) { return event.event_type === "task_started"; });
+  async function dispatchCurrentEvidence() {
+    const scenario = consoleState.selectedScenario;
+    consoleState = SeerProtocol.nextConsoleState(consoleState, {type: "dispatch"});
+    setText("chat-response", "任务已发送，正在读取本地可验证证据…");
+    if (scenario === "fastwam") {
+      const fastwamInput = document.getElementById("task-input");
+      const fastwamDecision = SeerProtocol.reconcileTask(fastwamInput.value, taskPresets.fastwam);
+      fastwamInput.value = fastwamDecision.task;
+      await showFastWam(scenario, fastwamDecision);
+      return;
+    }
+    const run = runForScenario(scenario);
+    if (!run) throw new Error("所选模式没有可验证运行");
+    const requested = document.getElementById("task-input").value.trim();
+    const events = await renderRun(run.run_id, scenario);
+    if (!events || consoleState.selectedScenario !== scenario) return;
+    const task = events.find(function (event) { return event.event_type === "task_started"; });
     const recorded = task && task.message ? task.message : "当前已验证任务";
     const input = document.getElementById("task-input");
-    if (input.value.trim() !== recorded) {
+    const taskDecision = SeerProtocol.reconcileTask(requested, recorded);
+    if (!taskDecision.accepted) {
       setText("chat-response", "输入与证据不一致，未伪造执行；已切换为可审计任务：" + recorded);
-      input.value = recorded;
+      input.value = taskDecision.task;
     } else {
       setText("chat-response", "意图已结构化并分发 " + SeerProtocol.dispatchPlan(activeEvents).length + " 个技能/Fallback 节点；开始重放已验证证据。");
     }
@@ -225,15 +280,8 @@
     try {
       const payload = await fetchJson("/api/runs");
       runs = payload.runs;
-      select.replaceChildren();
-      runs.forEach(function (run) {
-        const option = document.createElement("option");
-        option.value = run.run_id;
-        option.textContent = run.scenario + " · " + run.source + " · " + run.run_id;
-        select.append(option);
-      });
-      const defaultRun = SeerProtocol.chooseDefaultRun(runs);
-      await renderRun(defaultRun.run_id);
+      SeerProtocol.chooseDefaultRun(runs);
+      selectScenario("normal");
     } catch (error) {
       showError(error);
     }
@@ -244,19 +292,14 @@
     setText("chat-response", "加载失败，未执行任何动作。" + error.message);
   }
 
-  select.addEventListener("change", function () { renderRun(select.value).catch(showError); });
   tabs.forEach(function (tab) {
     tab.addEventListener("click", function () {
-      const scenario = tab.dataset.scenario;
-      if (scenario === "fastwam") {
-        showFastWam().catch(showError);
-        return;
-      }
-      const run = runForScenario(scenario);
-      if (run) renderRun(run.run_id).catch(showError);
+      selectScenario(tab.dataset.scenario);
     });
   });
-  document.getElementById("dispatch-button").addEventListener("click", dispatchCurrentEvidence);
+  document.getElementById("dispatch-button").addEventListener("click", function () {
+    dispatchCurrentEvidence().catch(showError);
+  });
   video.addEventListener("timeupdate", function () { updatePlaybackState(video.currentTime); });
   video.addEventListener("ended", function () { updatePlaybackState(video.duration || 0); });
   initialize();

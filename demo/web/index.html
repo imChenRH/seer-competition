@@ -7,15 +7,6 @@
   <link rel="stylesheet" href="/assets/styles.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand-mark">英知</div>
-    <div>
-      <p class="eyebrow">SEER × HVLA · 企业交流 Demo</p>
-      <h1>叉车任务证据控制台</h1>
-    </div>
-    <div class="truth-badge">数据仅来自已验证 JSONL</div>
-  </header>
-
   <main>
     <nav class="scenario-tabs panel" aria-label="演示场景" role="tablist">
       <button class="scenario-tab active" type="button" role="tab" aria-selected="true" data-scenario="normal">正常执行</button>
@@ -25,35 +16,57 @@
     </nav>
 
     <section class="agent-console panel" aria-label="AgentOS 任务对话">
-      <div class="agent-identity">
-        <span class="agent-orbit">A</span>
-        <div><p class="eyebrow">AGENTOS · BRAIN LAYER</p><h2>任务理解与技能分发</h2></div>
+      <div class="feishu-sidebar" aria-hidden="true">
+        <span class="sidebar-logo">飞</span>
+        <span class="sidebar-item active">聊</span>
+        <span class="sidebar-item">任</span>
+        <span class="sidebar-item">审</span>
       </div>
-      <div class="chat-stream" aria-live="polite">
-        <div class="chat-bubble assistant">输入仓储目标后，大脑层生成结构化意图；小脑层只执行可验证技能与 Fallback。</div>
-        <div id="chat-response" class="chat-bubble system">等待任务下发。</div>
-      </div>
-      <div class="task-composer">
-        <label for="task-input">任务指令</label>
-        <div class="composer-row">
-          <input id="task-input" value="卸载3号集装箱货物到A区传送带" autocomplete="off">
-          <button id="dispatch-button" type="button">发送并执行</button>
+      <div class="feishu-conversation">
+        <header class="feishu-header">
+          <div class="agent-identity">
+            <span class="agent-avatar">A</span>
+            <strong>agentos</strong>
+            <span class="agent-tag">智能体</span>
+          </div>
+          <div class="feishu-tools" aria-label="会话工具"><span>⌕</span><span>□+</span><span>✎</span><span>⚙</span></div>
+        </header>
+        <div class="feishu-thread">
+          <div class="reply-count">▣ 1 条回复</div>
+          <article class="agent-reply">
+            <p class="reply-context">回复 操作员：你好，我是你的 agentos</p>
+            <p>我是 <strong>AgentOS 智能调度员</strong>，负责把自然语言仓储任务转换为可审计的技能序列，并在异常时触发既定 Fallback 或人工介入。</p>
+            <h2>核心工作职责</h2>
+            <ol>
+              <li><strong>任务分解：</strong>只从技能库选择已定义能力并形成执行顺序。</li>
+              <li><strong>大脑与小脑协同：</strong>大脑层规划，小脑层执行，状态来自仿真与审计事件。</li>
+              <li><strong>安全与追溯：</strong>每个决策、恢复和终态都写入连续证据。</li>
+            </ol>
+            <div id="chat-response" class="chat-response" aria-live="polite">请选择上方模式，然后发送预填任务。</div>
+          </article>
+        </div>
+        <div class="feishu-composer">
+          <button class="quick-command" type="button" tabindex="-1">快捷指令⌄</button>
+          <div class="composer-box">
+            <input id="task-input" value="卸载3号集装箱货物到A区传送带" autocomplete="off" aria-label="任务指令">
+            <div class="composer-tools" aria-hidden="true"><span>Aa</span><span>☺</span><span>@</span><span>✂</span><span>⊕</span><span>⛶</span></div>
+            <button id="dispatch-button" type="button" aria-label="发送任务">➤</button>
+          </div>
+        </div>
+        <div id="dispatch-details" class="dispatch-details" hidden>
+          <div class="dispatch-strip">
+            <div><span>当前下发</span><strong id="active-instruction">未开始</strong></div>
+            <div><span>行为映射</span><strong id="active-behavior">等待小脑层</strong></div>
+            <div><span>审计游标</span><strong id="active-audit">#—</strong></div>
+          </div>
+          <ol id="dispatch-plan" class="dispatch-plan" aria-label="技能分发计划"></ol>
         </div>
       </div>
-      <div class="dispatch-strip">
-        <div><span>当前下发</span><strong id="active-instruction">未开始</strong></div>
-        <div><span>行为映射</span><strong id="active-behavior">等待小脑层</strong></div>
-        <div><span>审计游标</span><strong id="active-audit">#—</strong></div>
-      </div>
-      <ol id="dispatch-plan" class="dispatch-plan" aria-label="技能分发计划"></ol>
     </section>
 
-    <div id="evidence-content">
+    <div id="evidence-content" hidden>
     <section class="run-picker panel">
-      <div>
-        <label for="run-select">证据运行</label>
-        <select id="run-select" aria-label="选择证据运行"></select>
-      </div>
+      <strong>已验证证据运行</strong>
       <div id="run-meta" class="run-meta">正在读取本地证据…</div>
     </section>
 
@@ -114,7 +127,7 @@
       </aside>
     </section>
 
-    <aside class="limitations">
+    <aside class="limitations" id="demo-boundary" hidden>
       <strong>演示边界</strong>
       <span>确定性运动目标 + 显式 UsdPhysics 固定关节的仿真原型；不是仙工实机控制、真实感知、ROS 2 硬件闭环、标定力控或 Fast-WAM 叉车控制。</span>
     </aside>

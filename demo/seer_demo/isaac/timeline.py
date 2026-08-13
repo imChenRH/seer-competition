@@ -7,6 +7,7 @@ import math
 from typing import Mapping
 
 from ..scenarios import get_scenario
+from .layout import warehouse_layout_spec, world_from_local
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,8 +85,9 @@ class Timeline:
 
 @dataclass(frozen=True, slots=True)
 class _Pose:
-    base_x_m: float = -6.0
-    base_y_m: float = 0.0
+    base_x_m: float = -8.0
+    base_y_m: float = -1.0
+    yaw_deg: float = 0.0
     mast_height_m: float = 0.22
     fork_tilt_deg: float = 0.0
     payload_attached: bool = False
@@ -103,6 +105,7 @@ class _Segment:
     attempt: int = 1
     base_x_m: float | None = None
     base_y_m: float | None = None
+    yaw_deg: float | None = None
     mast_height_m: float | None = None
     fork_tilt_deg: float | None = None
     pallet_lateral_error_m: float | None = None
@@ -112,18 +115,68 @@ class _Segment:
 
 
 def _segments(scenario: str) -> tuple[_Segment, ...]:
+    layout = warehouse_layout_spec()
+
+    def container_point(local_x: float, local_y: float = 0.0):
+        return world_from_local(
+            layout.container.position,
+            layout.container.yaw_deg,
+            (local_x, local_y, 0.0),
+        )
+
+    entry = container_point(*layout.container_entry_local[:2])
+    aligned = container_point(*layout.container_alignment_local[:2])
+    pickup_y = 0.25 if scenario == "recovery" else 0.0
+    insert = container_point(2.25, pickup_y)
+    exit_pose = container_point(*layout.container_exit_local[:2])
+    conveyor_pose = layout.conveyor_alignment_target
     common_start = (
-        _Segment("enter_container", 10, skill_id="FORK-NAV-01", base_x_m=0.5),
-        _Segment("precision_approach", 8, skill_id="FORK-NAV-03", base_x_m=2.2),
+        _Segment(
+            "enter_container",
+            10,
+            skill_id="FORK-NAV-01",
+            base_x_m=entry[0],
+            base_y_m=entry[1],
+            yaw_deg=layout.container.yaw_deg,
+        ),
+        _Segment(
+            "precision_approach",
+            8,
+            skill_id="FORK-NAV-03",
+            base_x_m=aligned[0],
+            base_y_m=aligned[1],
+            yaw_deg=layout.container.yaw_deg,
+        ),
     )
     if scenario == "intervention":
         return common_start + (
             _Segment("occluded_view_1", 3, skill_id="FORK-PER-01", attempt=1),
-            _Segment("view_adjust_1", 2, fallback_id="FB-F02", attempt=1, base_y_m=0.15),
+            _Segment(
+                "view_adjust_1",
+                2,
+                fallback_id="FB-F02",
+                attempt=1,
+                base_x_m=container_point(2.2, 0.15)[0],
+                base_y_m=container_point(2.2, 0.15)[1],
+            ),
             _Segment("occluded_view_2", 3, skill_id="FORK-PER-01", attempt=2),
-            _Segment("view_adjust_2", 2, fallback_id="FB-F02", attempt=2, base_y_m=-0.15),
+            _Segment(
+                "view_adjust_2",
+                2,
+                fallback_id="FB-F02",
+                attempt=2,
+                base_x_m=container_point(2.2, -0.15)[0],
+                base_y_m=container_point(2.2, -0.15)[1],
+            ),
             _Segment("occluded_view_3", 3, skill_id="FORK-PER-01", attempt=3),
-            _Segment("safe_retreat", 4, fallback_id="FB-F07", base_x_m=-1.0, base_y_m=0.0),
+            _Segment(
+                "safe_retreat",
+                4,
+                fallback_id="FB-F07",
+                base_x_m=exit_pose[0],
+                base_y_m=exit_pose[1],
+                yaw_deg=layout.container.yaw_deg,
+            ),
             _Segment("safety_stop", 1, fallback_id="FB-F07", stop_at_end=True),
         )
     if scenario == "recovery":
@@ -139,7 +192,8 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
                 "lateral_realign",
                 8,
                 fallback_id="FB-F01",
-                base_y_m=0.25,
+                base_x_m=container_point(2.2, 0.25)[0],
+                base_y_m=container_point(2.2, 0.25)[1],
                 pallet_lateral_error_m=0.0,
             ),
             _Segment("pose_revalidated", 3, skill_id="FORK-PER-01", attempt=2),
@@ -147,11 +201,33 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
     else:
         perception = (_Segment("pose_verified", 3, skill_id="FORK-PER-01"),)
     common_finish = (
-        _Segment("insert_forks", 4, skill_id="FORK-OP-01", base_x_m=2.25, attach_at_end=True),
+        _Segment(
+            "insert_forks",
+            4,
+            skill_id="FORK-OP-01",
+            base_x_m=insert[0],
+            base_y_m=insert[1],
+            yaw_deg=layout.container.yaw_deg,
+            attach_at_end=True,
+        ),
         _Segment("lift_payload", 3, skill_id="FORK-OP-02", mast_height_m=1.05),
         _Segment("tilt_stabilize", 2, skill_id="FORK-OP-03", fork_tilt_deg=4.0),
-        _Segment("exit_container", 10, skill_id="FORK-NAV-02", base_x_m=-1.0),
-        _Segment("align_conveyor", 6, skill_id="FORK-OP-05", base_x_m=-5.0, base_y_m=-2.0),
+        _Segment(
+            "exit_container",
+            12,
+            skill_id="FORK-NAV-02",
+            base_x_m=exit_pose[0],
+            base_y_m=exit_pose[1],
+            yaw_deg=layout.container.yaw_deg,
+        ),
+        _Segment(
+            "align_conveyor",
+            10,
+            skill_id="FORK-OP-05",
+            base_x_m=conveyor_pose[0],
+            base_y_m=conveyor_pose[1],
+            yaw_deg=layout.conveyor.yaw_deg,
+        ),
         _Segment(
             "place_payload",
             5,
@@ -178,6 +254,7 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
         raise ValueError("fps must be a positive integer")
     initial_error = 0.25 if scenario == "recovery" else 0.0
     pose = _Pose(pallet_lateral_error_m=initial_error)
+    layout = warehouse_layout_spec()
     obstacle_visible = scenario == "intervention"
     pickup_y = 0.25 if scenario == "recovery" else 0.0
     frames: list[FrameState] = []
@@ -190,13 +267,20 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
         base_y = round(current.base_y_m, 6)
         mast_height = round(current.mast_height_m, 6)
         if attached:
-            payload_x = base_x + 1.6
-            payload_y = base_y
+            payload_x, payload_y, _ = world_from_local(
+                (base_x, base_y, 0.0),
+                current.yaw_deg,
+                (1.6, 0.0, 0.0),
+            )
             payload_z = mast_height + 0.25
         elif placed:
-            payload_x, payload_y, payload_z = -3.4, -2.0, 0.55
+            payload_x, payload_y, payload_z = layout.conveyor_payload_target
         else:
-            payload_x, payload_y, payload_z = 3.85, pickup_y, 0.32
+            payload_x, payload_y, payload_z = world_from_local(
+                layout.container.position,
+                layout.container.yaw_deg,
+                (layout.container_payload_local[0], pickup_y, layout.container_payload_local[2]),
+            )
         frames.append(
             FrameState(
                 frame=len(frames),
@@ -209,7 +293,7 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
                 base_x_m=base_x,
                 base_y_m=base_y,
                 base_z_m=0.0,
-                yaw_deg=0.0,
+                yaw_deg=round(current.yaw_deg, 6),
                 mast_height_m=mast_height,
                 fork_tilt_deg=round(current.fork_tilt_deg, 6),
                 payload_x_m=round(payload_x, 6),
@@ -232,6 +316,7 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
             start,
             base_x_m=start.base_x_m if segment.base_x_m is None else segment.base_x_m,
             base_y_m=start.base_y_m if segment.base_y_m is None else segment.base_y_m,
+            yaw_deg=start.yaw_deg if segment.yaw_deg is None else segment.yaw_deg,
             mast_height_m=(
                 start.mast_height_m if segment.mast_height_m is None else segment.mast_height_m
             ),
@@ -251,6 +336,7 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
                 start,
                 base_x_m=_interpolate(start.base_x_m, target.base_x_m, amount),
                 base_y_m=_interpolate(start.base_y_m, target.base_y_m, amount),
+                yaw_deg=_interpolate(start.yaw_deg, target.yaw_deg, amount),
                 mast_height_m=_interpolate(start.mast_height_m, target.mast_height_m, amount),
                 fork_tilt_deg=_interpolate(start.fork_tilt_deg, target.fork_tilt_deg, amount),
                 pallet_lateral_error_m=_interpolate(

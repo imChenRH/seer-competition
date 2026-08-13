@@ -150,6 +150,7 @@ def decision_snapshot(events: Iterable[Event], sim_time_s: float) -> dict[str, A
             "controller": controller,
             "base_x_m": _state_value(state, "base_x_m"),
             "base_y_m": _state_value(state, "base_y_m"),
+            "yaw_deg": _state_value(state, "yaw_deg"),
             "speed_mps": _state_value(state, "base_speed_mps"),
             "mast_height_m": _state_value(state, "mast_height_m"),
             "fork_tilt_deg": _state_value(state, "fork_tilt_deg"),
@@ -341,7 +342,7 @@ def render_overlay(
     cerebellum = snapshot["cerebellum"]
     draw.text((1350, 616), str(cerebellum["controller"]), font=h1, fill=white)
     metrics = [
-        f"base     x={cerebellum['base_x_m'] if cerebellum['base_x_m'] is not None else '—'} m  y={cerebellum['base_y_m'] if cerebellum['base_y_m'] is not None else '—'} m",
+        f"base     x={cerebellum['base_x_m'] if cerebellum['base_x_m'] is not None else '—'} m  y={cerebellum['base_y_m'] if cerebellum['base_y_m'] is not None else '—'} m  yaw={cerebellum['yaw_deg'] if cerebellum['yaw_deg'] is not None else '—'}°",
         f"speed    {cerebellum['speed_mps'] if cerebellum['speed_mps'] is not None else '—'} m/s",
         f"mast     {cerebellum['mast_height_m'] if cerebellum['mast_height_m'] is not None else '—'} m",
         f"tilt     {cerebellum['fork_tilt_deg'] if cerebellum['fork_tilt_deg'] is not None else '—'} deg",

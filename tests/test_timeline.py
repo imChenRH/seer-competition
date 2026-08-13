@@ -1,6 +1,13 @@
 import unittest
+import math
 
 from seer_demo.isaac.runner import IsaacTimelineBackend
+from seer_demo.isaac.layout import (
+    local_from_world,
+    static_physics_contract,
+    warehouse_layout_spec,
+    world_from_local,
+)
 from seer_demo.isaac.scene import (
     FORK_POCKET_CENTERS_Y,
     PHYSICS_SCHEMA_APIS,
@@ -16,6 +23,36 @@ from seer_demo.isaac.timeline import FORKLIFT_PARTS, build_timeline
 
 
 class IsaacTimelineTests(unittest.TestCase):
+    def test_rotated_facilities_are_separated_and_not_facing_each_other(self):
+        layout = warehouse_layout_spec()
+
+        self.assertEqual(layout.container.yaw_deg, 8.0)
+        self.assertEqual(layout.conveyor.yaw_deg, -6.0)
+        self.assertNotEqual(layout.container.yaw_deg, layout.loading_dock.yaw_deg)
+        separation = math.dist(layout.container.position[:2], layout.conveyor.position[:2])
+        self.assertGreater(separation, 8.0)
+        self.assertGreater(abs(layout.container.position[1] - layout.conveyor.position[1]), 4.0)
+        self.assertGreaterEqual(layout.conveyor_body_clearance_m, 0.45)
+
+    def test_all_key_facilities_have_an_explicit_static_collision_role(self):
+        contract = {item.name: item for item in static_physics_contract()}
+
+        self.assertEqual(
+            set(contract),
+            {
+                "ground",
+                "warehouse_shell",
+                "racks",
+                "container",
+                "loading_dock",
+                "conveyor",
+                "background_loads",
+                "obstacle",
+            },
+        )
+        self.assertTrue(all(item.collision_enabled for item in contract.values()))
+        self.assertTrue(all(item.rigid_body_kind == "static" for item in contract.values()))
+
     def test_scene_physics_contract_includes_required_usd_apis(self):
         self.assertEqual(
             set(PHYSICS_SCHEMA_APIS),
@@ -72,8 +109,9 @@ class IsaacTimelineTests(unittest.TestCase):
         self.assertNotEqual(establishing.position, pickup.position)
         self.assertNotEqual(pickup.position, placement.position)
         self.assertLess(pickup.position[1], 0.0)
-        self.assertAlmostEqual(pickup.look_at[0], 2.6, places=1)
-        self.assertAlmostEqual(placement.look_at[0], -3.4, places=1)
+        self.assertLess(abs(placement.position[1]), 3.3)
+        self.assertAlmostEqual(pickup.look_at[0], 3.1, places=1)
+        self.assertAlmostEqual(placement.look_at[0], -6.8, places=1)
 
     def test_scene_parts_use_local_coordinates_and_z_as_height(self):
         for name, part in FORKLIFT_PARTS.items():
@@ -87,8 +125,8 @@ class IsaacTimelineTests(unittest.TestCase):
     def test_normal_timeline_is_monotonic_and_places_payload(self):
         timeline = build_timeline("normal", fps=4)
 
-        self.assertEqual(timeline.duration_s, 51.0)
-        self.assertEqual(len(timeline.frames), 51 * 4 + 1)
+        self.assertGreaterEqual(timeline.duration_s, 55.0)
+        self.assertEqual(len(timeline.frames), int(timeline.duration_s * 4) + 1)
         self.assertEqual([frame.frame for frame in timeline.frames], list(range(len(timeline.frames))))
         self.assertEqual(
             [frame.sim_time_s for frame in timeline.frames],
@@ -97,15 +135,32 @@ class IsaacTimelineTests(unittest.TestCase):
         attached = [frame for frame in timeline.frames if frame.payload_attached]
         self.assertTrue(attached)
         for frame in attached:
-            self.assertAlmostEqual(frame.payload_x_m, frame.base_x_m + 1.6, places=6)
-            self.assertAlmostEqual(frame.payload_y_m, frame.base_y_m, places=6)
+            expected_x, expected_y, _ = world_from_local(
+                (frame.base_x_m, frame.base_y_m, 0.0),
+                frame.yaw_deg,
+                (1.6, 0.0, frame.payload_z_m),
+            )
+            self.assertAlmostEqual(frame.payload_x_m, expected_x, places=5)
+            self.assertAlmostEqual(frame.payload_y_m, expected_y, places=5)
             self.assertGreater(frame.payload_z_m, frame.mast_height_m)
         final = timeline.frames[-1]
         self.assertFalse(final.payload_attached)
         self.assertTrue(final.payload_placed)
         self.assertEqual(final.outcome, "COMPLETED")
-        self.assertAlmostEqual(final.payload_x_m, -3.4)
-        self.assertAlmostEqual(final.payload_y_m, -2.0)
+        layout = warehouse_layout_spec()
+        self.assertAlmostEqual(final.payload_x_m, layout.conveyor_payload_target[0], places=6)
+        self.assertAlmostEqual(final.payload_y_m, layout.conveyor_payload_target[1], places=6)
+
+    def test_timeline_visibly_turns_both_directions_and_aligns_to_facilities(self):
+        timeline = build_timeline("normal", fps=4)
+
+        yaw_values = [frame.yaw_deg for frame in timeline.frames]
+        self.assertGreater(max(yaw_values), 7.5)
+        self.assertLess(min(yaw_values), -5.5)
+        container_aligned = [frame for frame in timeline.frames if frame.phase == "precision_approach"][-1]
+        conveyor_aligned = [frame for frame in timeline.frames if frame.phase == "align_conveyor"][-1]
+        self.assertAlmostEqual(container_aligned.yaw_deg, 8.0)
+        self.assertAlmostEqual(conveyor_aligned.yaw_deg, -6.0)
 
     def test_recovery_timeline_contains_visible_fb_f01_lateral_correction(self):
         timeline = build_timeline("recovery", fps=4)
@@ -113,8 +168,19 @@ class IsaacTimelineTests(unittest.TestCase):
         recovery_frames = [frame for frame in timeline.frames if frame.fallback_id == "FB-F01"]
 
         self.assertTrue(recovery_frames)
-        self.assertAlmostEqual(recovery_frames[0].base_y_m, 0.0, places=2)
-        self.assertAlmostEqual(recovery_frames[-1].base_y_m, 0.25, places=2)
+        layout = warehouse_layout_spec()
+        first_local = local_from_world(
+            layout.container.position,
+            layout.container.yaw_deg,
+            (recovery_frames[0].base_x_m, recovery_frames[0].base_y_m, 0.0),
+        )
+        last_local = local_from_world(
+            layout.container.position,
+            layout.container.yaw_deg,
+            (recovery_frames[-1].base_x_m, recovery_frames[-1].base_y_m, 0.0),
+        )
+        self.assertAlmostEqual(first_local[1], 0.0, places=2)
+        self.assertAlmostEqual(last_local[1], 0.25, places=2)
         self.assertAlmostEqual(recovery_frames[-1].pallet_lateral_error_m, 0.0, places=6)
         self.assertEqual(timeline.frames[-1].outcome, "COMPLETED")
 
@@ -126,9 +192,19 @@ class IsaacTimelineTests(unittest.TestCase):
         self.assertTrue(final.obstacle_visible)
         self.assertTrue(final.stopped)
         self.assertFalse(any(frame.payload_attached for frame in timeline.frames))
-        self.assertAlmostEqual(final.base_x_m, -1.0)
+        layout = warehouse_layout_spec()
+        exit_target = world_from_local(
+            layout.container.position,
+            layout.container.yaw_deg,
+            layout.container_exit_local,
+        )
+        self.assertAlmostEqual(final.base_x_m, exit_target[0], places=6)
+        self.assertAlmostEqual(final.base_y_m, exit_target[1], places=6)
         tail = timeline.frames[-4:]
-        self.assertEqual({(frame.base_x_m, frame.base_y_m) for frame in tail}, {(-1.0, 0.0)})
+        self.assertEqual(
+            {(frame.base_x_m, frame.base_y_m) for frame in tail},
+            {(round(exit_target[0], 6), round(exit_target[1], 6))},
+        )
 
     def test_invalid_fps_and_scenario_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "fps"):
@@ -173,7 +249,8 @@ class IsaacTimelineTests(unittest.TestCase):
         state = derive_kinematic_observation(
             base=(2.2, 0.25, 0.0),
             lift=(2.2, 0.25, 1.05),
-            payload=(3.8, 0.25, 1.30),
+            payload=(3.585641, 1.05, 1.30),
+            yaw_deg=30.0,
             fork_tilt_deg=4.0,
             obstacle_visible=False,
             base_speed_mps=0.0,
@@ -184,12 +261,14 @@ class IsaacTimelineTests(unittest.TestCase):
         self.assertFalse(state["payload_placed"])
         self.assertAlmostEqual(state["pallet_lateral_error_m"], 0.0)
         self.assertEqual(state["fork_tilt_deg"], 4.0)
+        self.assertEqual(state["yaw_deg"], 30.0)
         self.assertTrue(state["stopped"])
 
         retreat = derive_kinematic_observation(
             base=(-1.0, 0.0, 0.0),
             lift=(-1.0, 0.0, 0.22),
             payload=(3.85, 0.0, 0.32),
+            yaw_deg=0.0,
             fork_tilt_deg=0.0,
             obstacle_visible=True,
             base_speed_mps=0.2,
@@ -205,6 +284,7 @@ class IsaacTimelineTests(unittest.TestCase):
             base=(2.2, 0.0, 0.0),
             lift=(2.2, 0.0, 1.05),
             payload=(3.8, 0.0, 1.30),
+            yaw_deg=0.0,
             fork_tilt_deg=4.0,
             obstacle_visible=False,
             base_speed_mps=0.0,
@@ -213,6 +293,49 @@ class IsaacTimelineTests(unittest.TestCase):
 
         self.assertFalse(state["payload_attached"])
         self.assertFalse(state["physical_attachment_enabled"])
+
+    def test_unattached_pallet_error_is_measured_in_vehicle_local_coordinates(self):
+        layout = warehouse_layout_spec()
+        base = world_from_local(
+            layout.container.position,
+            layout.container.yaw_deg,
+            layout.container_alignment_local,
+        )
+        payload = layout.container_payload_target
+
+        state = derive_kinematic_observation(
+            base=base,
+            lift=(base[0], base[1], 0.22),
+            payload=payload,
+            yaw_deg=layout.container.yaw_deg,
+            fork_tilt_deg=0.0,
+            obstacle_visible=False,
+            base_speed_mps=0.0,
+            physical_attachment_enabled=False,
+        )
+
+        self.assertAlmostEqual(state["pallet_lateral_error_m"], 0.0, places=6)
+
+    def test_view_adjustment_reports_container_local_lateral_offset(self):
+        layout = warehouse_layout_spec()
+        base = world_from_local(
+            layout.container.position,
+            layout.container.yaw_deg,
+            (2.2, -0.15, 0.0),
+        )
+
+        state = derive_kinematic_observation(
+            base=base,
+            lift=(base[0], base[1], 0.22),
+            payload=layout.container_payload_target,
+            yaw_deg=layout.container.yaw_deg,
+            fork_tilt_deg=0.0,
+            obstacle_visible=True,
+            base_speed_mps=0.0,
+            physical_attachment_enabled=False,
+        )
+
+        self.assertAlmostEqual(state["camera_lateral_offset_m"], -0.15, places=6)
 
 
 if __name__ == "__main__":

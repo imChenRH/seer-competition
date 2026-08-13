@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .layout import (
+    local_from_world,
+    static_physics_contract,
+    warehouse_layout_spec,
+)
 from .timeline import FORKLIFT_PARTS, FrameState
 
 
@@ -80,14 +85,14 @@ def warehouse_asset_specs(asset_root: Path | str) -> tuple[WarehouseAssetSpec, .
 
 def camera_pose_for_phase(phase: str) -> CameraPose:
     if phase in {"precision_approach", "offset_detected", "pose_verified", "pose_revalidated", "occluded_view_1", "occluded_view_2", "occluded_view_3", "view_adjust_1", "view_adjust_2"}:
-        return CameraPose((-3.8, -5.0, 5.4), (2.7, 0.0, 0.8))
+        return CameraPose((-3.8, -4.8, 5.4), (3.1, 1.7, 0.8))
     if phase in {"insert_forks", "lift_payload", "tilt_stabilize"}:
-        return CameraPose((-2.8, -5.2, 4.0), (2.6, 0.0, 0.85))
+        return CameraPose((-2.8, -4.8, 4.0), (3.1, 1.7, 0.85))
     if phase in {"align_conveyor", "place_payload"}:
-        return CameraPose((-10.5, -5.2, 4.8), (-3.4, -2.0, 0.75))
+        return CameraPose((-14.0, 0.5, 6.8), (-6.8, -4.1, 0.75))
     if phase in {"safe_retreat", "safety_stop"}:
-        return CameraPose((-9.5, -5.4, 6.2), (-0.5, 0.0, 0.9))
-    return CameraPose((-16.5, -5.6, 6.2), (-0.5, 0.0, 0.9))
+        return CameraPose((-9.5, -5.4, 6.2), (-0.8, 1.2, 0.9))
+    return CameraPose((-16.5, -5.6, 6.2), (0.0, 1.3, 0.9))
 
 
 def derive_kinematic_observation(
@@ -95,6 +100,7 @@ def derive_kinematic_observation(
     base,
     lift,
     payload,
+    yaw_deg: float,
     fork_tilt_deg: float,
     obstacle_visible: bool,
     base_speed_mps: float,
@@ -105,10 +111,14 @@ def derive_kinematic_observation(
     lift_xyz = tuple(float(value) for value in lift)
     payload_xyz = tuple(float(value) for value in payload)
     mast_height = lift_xyz[2] - base_xyz[2]
-    relative_payload = (
-        payload_xyz[0] - base_xyz[0],
-        payload_xyz[1] - base_xyz[1],
-        payload_xyz[2] - base_xyz[2] - mast_height,
+    relative_payload = local_from_world(
+        base_xyz,
+        float(yaw_deg),
+        (
+            payload_xyz[0],
+            payload_xyz[1],
+            payload_xyz[2] - mast_height,
+        ),
     )
     geometry_attached = (
         abs(relative_payload[0] - 1.6) <= 0.03
@@ -116,18 +126,26 @@ def derive_kinematic_observation(
         and abs(relative_payload[2] - 0.25) <= 0.03
     )
     payload_attached = geometry_attached and bool(physical_attachment_enabled)
+    layout = warehouse_layout_spec()
+    base_in_container = local_from_world(
+        layout.container.position,
+        layout.container.yaw_deg,
+        base_xyz,
+    )
+    placement = layout.conveyor_payload_target
     payload_placed = (
         not payload_attached
-        and abs(payload_xyz[0] + 3.4) <= 0.03
-        and abs(payload_xyz[1] + 2.0) <= 0.03
-        and abs(payload_xyz[2] - 0.55) <= 0.03
+        and abs(payload_xyz[0] - placement[0]) <= 0.03
+        and abs(payload_xyz[1] - placement[1]) <= 0.03
+        and abs(payload_xyz[2] - placement[2]) <= 0.03
     )
     stopped = abs(float(base_speed_mps)) <= 0.01
-    pallet_error = 0.0 if payload_attached else payload_xyz[1] - base_xyz[1]
+    pallet_error = 0.0 if payload_attached else relative_payload[1]
     return {
         "base_x_m": round(base_xyz[0], 6),
         "base_y_m": round(base_xyz[1], 6),
         "base_z_m": round(base_xyz[2], 6),
+        "yaw_deg": round(float(yaw_deg), 6),
         "base_speed_mps": round(float(base_speed_mps), 6),
         "mast_height_m": round(mast_height, 6),
         "fork_tilt_deg": round(float(fork_tilt_deg), 6),
@@ -138,13 +156,16 @@ def derive_kinematic_observation(
         "physical_attachment_enabled": bool(physical_attachment_enabled),
         "payload_placed": payload_placed,
         "pallet_lateral_error_m": round(pallet_error, 6),
+        "camera_lateral_offset_m": round(base_in_container[1], 6),
         "obstacle_visible": bool(obstacle_visible),
         "stopped": stopped,
         "safe_retreat_complete": (
             base_xyz[0] <= -0.9 and not payload_attached
         ),
         "aligned_with_conveyor": (
-            base_xyz[0] <= -4.9 and base_xyz[1] <= -1.9
+            abs(base_xyz[0] - layout.conveyor_alignment_target[0]) <= 0.08
+            and abs(base_xyz[1] - layout.conveyor_alignment_target[1]) <= 0.08
+            and abs(float(yaw_deg) - layout.conveyor.yaw_deg) <= 0.5
         ),
     }
 
@@ -160,6 +181,7 @@ class SceneHandles:
     obstacle_root: Any
     beacon: Any
     referenced_assets: tuple[str, ...]
+    static_collision_prims: tuple[str, ...]
 
 
 def build_scene(
@@ -182,6 +204,7 @@ def build_scene(
     physics_scene.CreateGravityMagnitudeAttr(9.81)
 
     materials: dict[str, Any] = {}
+    layout = warehouse_layout_spec()
 
     def preview_material(name: str, color, *, metallic=0.0, roughness=0.55):
         material = UsdShade.Material.Define(stage, f"/World/Looks/{name}")
@@ -259,7 +282,26 @@ def build_scene(
         if material is not None and prim.IsValid():
             UsdShade.MaterialBindingAPI.Apply(prim).Bind(material, materialPurpose="physics")
 
-    # Open container uses Z as height; front is open at x=0.
+    # The loading dock remains static and axis-aligned while the container is
+    # deliberately yawed, making alignment a visible part of the task.
+    loading_dock_root = stage.DefinePrim("/World/LoadingDock", "Xform")
+    loading_dock_api = UsdGeom.XformCommonAPI(loading_dock_root)
+    loading_dock_api.SetTranslate(Gf.Vec3d(*layout.loading_dock.position))
+    loading_dock_api.SetRotate(
+        Gf.Vec3f(0.0, 0.0, layout.loading_dock.yaw_deg),
+        UsdGeom.XformCommonAPI.RotationOrderXYZ,
+    )
+    box("/World/LoadingDock/Deck", (6.0, 1.1, 0.22), (0.0, 0.0, 0.11), (0.30, 0.34, 0.38), material_name="WarehouseSteel")
+    box("/World/LoadingDock/Bumper", (0.30, 1.1, 0.52), (-3.0, 0.0, 0.26), (0.90, 0.62, 0.04), material_name="SafetyYellow")
+
+    # Open container uses local Z as height; front is open at local x=0.
+    container_root = stage.DefinePrim("/World/Container", "Xform")
+    container_api = UsdGeom.XformCommonAPI(container_root)
+    container_api.SetTranslate(Gf.Vec3d(*layout.container.position))
+    container_api.SetRotate(
+        Gf.Vec3f(0.0, 0.0, layout.container.yaw_deg),
+        UsdGeom.XformCommonAPI.RotationOrderXYZ,
+    )
     box("/World/Container/Floor", (6.0, 2.8, 0.12), (3.0, 0.0, 0.06), (0.31, 0.34, 0.37))
     box("/World/Container/Back", (0.12, 2.8, 3.0), (6.0, 0.0, 1.50), (0.46, 0.18, 0.12))
     box("/World/Container/Left", (6.0, 0.10, 3.0), (3.0, 1.40, 1.50), (0.55, 0.22, 0.14))
@@ -270,16 +312,23 @@ def build_scene(
     for index, y in enumerate((-1.22, 1.22)):
         box(f"/World/Container/DoorFrame{index}", (0.12, 0.12, 3.0), (0.0, y, 1.50), (0.75, 0.33, 0.16))
 
-    # Conveyor target is offset from the inbound lane so the complete route stays visible.
-    box("/World/Conveyor/Base", (3.2, 1.35, 0.62), (-3.4, -2.0, 0.31), (0.12, 0.25, 0.38))
+    # The conveyor is farther away, laterally offset and counter-yawed.
+    conveyor_root = stage.DefinePrim("/World/Conveyor", "Xform")
+    conveyor_api = UsdGeom.XformCommonAPI(conveyor_root)
+    conveyor_api.SetTranslate(Gf.Vec3d(*layout.conveyor.position))
+    conveyor_api.SetRotate(
+        Gf.Vec3f(0.0, 0.0, layout.conveyor.yaw_deg),
+        UsdGeom.XformCommonAPI.RotationOrderXYZ,
+    )
+    box("/World/Conveyor/Base", (3.2, 1.35, 0.62), (0.0, 0.0, 0.31), (0.12, 0.25, 0.38))
     for index in range(9):
         box(
             f"/World/Conveyor/Roller{index}",
             (0.16, 1.15, 0.16),
-            (-4.65 + index * 0.31, -2.0, 0.70),
+            (-1.25 + index * 0.31, 0.0, 0.70),
             (0.52, 0.58, 0.63),
         )
-    box("/World/Conveyor/Target", (1.4, 1.15, 0.025), (-3.4, -2.0, 0.80), (0.10, 0.65, 0.42))
+    box("/World/Conveyor/Target", (0.95, 1.15, 0.025), (-1.25, 0.0, 0.80), (0.10, 0.65, 0.42))
 
     # Forklift is one root with local child geometry. Lift is the only moving child group.
     forklift_root = stage.DefinePrim("/World/Forklift", "Xform")
@@ -318,6 +367,13 @@ def build_scene(
     payload_joint.CreateJointEnabledAttr(False)
 
     # Background pallets show the container is a multi-load task, not an isolated cube.
+    background_root = stage.DefinePrim("/World/BackgroundLoads", "Xform")
+    background_api = UsdGeom.XformCommonAPI(background_root)
+    background_api.SetTranslate(Gf.Vec3d(*layout.container.position))
+    background_api.SetRotate(
+        Gf.Vec3f(0.0, 0.0, layout.container.yaw_deg),
+        UsdGeom.XformCommonAPI.RotationOrderXYZ,
+    )
     for row, (x, y) in enumerate(((4.9, 0.82), (4.9, -0.82))):
         box(f"/World/BackgroundLoads/Load{row}/Pallet", (1.0, 0.75, 0.12), (x, y, 0.12), (0.42, 0.24, 0.09))
         box(f"/World/BackgroundLoads/Load{row}/Cargo", (0.80, 0.60, 0.75), (x, y, 0.55), (0.35, 0.55, 0.72))
@@ -325,7 +381,10 @@ def build_scene(
     obstacle_root = stage.DefinePrim("/World/Obstacle", "Xform")
     box("/World/Obstacle/FallenBoxA", (0.85, 0.70, 0.85), (0.0, 0.0, 0.43), (0.78, 0.16, 0.12))
     box("/World/Obstacle/FallenBoxB", (0.65, 0.65, 0.65), (0.35, 0.30, 0.32), (0.92, 0.42, 0.08))
-    UsdGeom.XformCommonAPI(obstacle_root).SetTranslate(Gf.Vec3d(3.15, 0.0, 0.0))
+    obstacle_position = layout.container_payload_target
+    UsdGeom.XformCommonAPI(obstacle_root).SetTranslate(
+        Gf.Vec3d(obstacle_position[0] - 0.70, obstacle_position[1], 0.0)
+    )
     imageable = UsdGeom.Imageable(obstacle_root)
     if scenario == "intervention":
         imageable.MakeVisible()
@@ -339,6 +398,21 @@ def build_scene(
     bind_physics("/World/Forklift", "OfficialMetal")
     for wheel_name in ("wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr"):
         bind_physics(f"/World/Forklift/Body/{wheel_name}", "OfficialRubber")
+
+    static_collision_prims: list[str] = []
+    for spec in static_physics_contract():
+        root = stage.GetPrimAtPath(spec.prim_path)
+        if not root.IsValid():
+            raise RuntimeError(f"static physics root missing: {spec.prim_path}")
+        for prim in stage.Traverse():
+            path = str(prim.GetPath())
+            if path != spec.prim_path and not path.startswith(spec.prim_path + "/"):
+                continue
+            if prim.GetTypeName() != "Cube":
+                continue
+            if not prim.HasAPI(UsdPhysics.CollisionAPI):
+                raise RuntimeError(f"static collision missing: {path}")
+            static_collision_prims.append(path)
 
     dome = UsdLux.DomeLight.Define(stage, "/World/Lights/Dome")
     dome.CreateIntensityAttr(500.0)
@@ -367,6 +441,7 @@ def build_scene(
         obstacle_root,
         beacon,
         tuple(referenced_assets),
+        tuple(sorted(set(static_collision_prims))),
     )
 
 
@@ -382,6 +457,10 @@ def apply_frame(handles: SceneHandles, frame: FrameState) -> None:
     tilt_api = UsdGeom.XformCommonAPI(handles.fork_tilt_root)
     payload_api = UsdGeom.XformCommonAPI(handles.payload_root)
     base_api.SetTranslate(base_value)
+    base_api.SetRotate(
+        Gf.Vec3f(0.0, 0.0, frame.yaw_deg),
+        UsdGeom.XformCommonAPI.RotationOrderXYZ,
+    )
     lift_api.SetTranslate(lift_value)
     tilt_api.SetRotate(
         tilt_value,
@@ -390,6 +469,9 @@ def apply_frame(handles: SceneHandles, frame: FrameState) -> None:
     payload_api.SetTranslate(payload_value)
     sample_time = Usd.TimeCode(frame.sim_time_s)
     handles.forklift_root.GetAttribute("xformOp:translate").Set(base_value, sample_time)
+    handles.forklift_root.GetAttribute("xformOp:rotateXYZ").Set(
+        Gf.Vec3f(0.0, 0.0, frame.yaw_deg), sample_time
+    )
     handles.lift_root.GetAttribute("xformOp:translate").Set(lift_value, sample_time)
     handles.fork_tilt_root.GetAttribute("xformOp:rotateXYZ").Set(tilt_value, sample_time)
     handles.payload_root.GetAttribute("xformOp:translate").Set(payload_value, sample_time)
@@ -410,12 +492,14 @@ def observe_scene(handles: SceneHandles, *, base_speed_mps: float = 0.0) -> dict
     lift = UsdGeom.Xformable(handles.lift_root).ComputeLocalToWorldTransform(time_code).ExtractTranslation()
     payload = UsdGeom.Xformable(handles.payload_root).ComputeLocalToWorldTransform(time_code).ExtractTranslation()
     rotation = handles.fork_tilt_root.GetAttribute("xformOp:rotateXYZ").Get(time_code)
+    base_rotation = handles.forklift_root.GetAttribute("xformOp:rotateXYZ").Get(time_code)
     visibility = UsdGeom.Imageable(handles.obstacle_root).ComputeVisibility(time_code)
     physical_attachment_enabled = bool(handles.payload_joint.GetJointEnabledAttr().Get(time_code))
     return derive_kinematic_observation(
         base=base,
         lift=lift,
         payload=payload,
+        yaw_deg=float(base_rotation[2]),
         fork_tilt_deg=float(rotation[1]),
         obstacle_visible=visibility != UsdGeom.Tokens.invisible,
         base_speed_mps=base_speed_mps,

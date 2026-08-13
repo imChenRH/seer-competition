@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from seer_demo.contracts import load_events
@@ -18,6 +19,15 @@ def scenario_events(name: str):
 
 
 class DecisionSnapshotTests(unittest.TestCase):
+    def test_cerebellum_snapshot_projects_observed_vehicle_yaw(self):
+        events = list(scenario_events("normal"))
+        event = events[3]
+        events[3] = replace(event, state={**event.state, "yaw_deg": 8.0})
+
+        snapshot = decision_snapshot(events, events[3].sim_time_s)
+
+        self.assertEqual(snapshot["cerebellum"]["yaw_deg"], 8.0)
+
     def test_normal_snapshot_projects_brain_dispatch_and_cerebellum_observation(self):
         snapshot = decision_snapshot(scenario_events("normal"), 26.0)
 

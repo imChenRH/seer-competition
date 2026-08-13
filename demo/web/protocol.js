@@ -101,10 +101,36 @@
     });
   }
 
+  function nextConsoleState(state, action) {
+    const allowed = new Set(["normal", "recovery", "intervention", "fastwam"]);
+    if (!action || typeof action.type !== "string") throw new Error("控制台动作无效");
+    if (action.type === "initialize" || action.type === "select") {
+      if (!allowed.has(action.scenario)) throw new Error("未知演示模式");
+      return Object.freeze({selectedScenario: action.scenario, detailView: "hidden"});
+    }
+    if (action.type === "dispatch") {
+      if (!state || !allowed.has(state.selectedScenario)) throw new Error("尚未选择演示模式");
+      return Object.freeze({
+        selectedScenario: state.selectedScenario,
+        detailView: state.selectedScenario === "fastwam" ? "fastwam" : "evidence"
+      });
+    }
+    throw new Error("未知控制台动作");
+  }
+
+  function reconcileTask(requested, recorded) {
+    if (typeof requested !== "string" || typeof recorded !== "string" || !recorded.trim()) {
+      throw new Error("任务文本无效");
+    }
+    return Object.freeze({accepted: requested.trim() === recorded.trim(), task: recorded.trim()});
+  }
+
   global.SeerProtocol = Object.freeze({
     chooseDefaultRun: chooseDefaultRun,
     dispatchPlan: dispatchPlan,
     eventAtTime: eventAtTime,
+    nextConsoleState: nextConsoleState,
+    reconcileTask: reconcileTask,
     validateEvents: validateEvents,
     reduceEvents: reduceEvents
   });

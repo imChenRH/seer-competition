@@ -19,24 +19,24 @@
       },
       "files": {
         "events.jsonl": {
-          "size_bytes": 14102,
-          "sha256": "537fa5429d0cf930d03facf23a7e5d884ad6ac9e6d76326c9c343ebc13bfe40f"
+          "size_bytes": 15163,
+          "sha256": "1b70bca29c9c33bffce00d34f4a001196f7bdd12704f62ec1e10b162ecd2b523"
         },
         "summary.json": {
-          "size_bytes": 1882,
-          "sha256": "656589efb8001d311572555dd1e8a4e1b03735244f43319114e3638e8edff8d5"
+          "size_bytes": 3948,
+          "sha256": "5332e1c46e6931d9e3d607e03ad6945a8e18163fbdfb93645fde31692d52fb72"
         },
         "scene.usda": {
-          "size_bytes": 193613,
-          "sha256": "0437d531f75ae97f1bb612fe239242781002a76e1f90c318e8fbc876d3dc683c"
+          "size_bytes": 209728,
+          "sha256": "20b59d620f6bcbb550bdbe37964810c751e47bb566c57344ca4a284bd4451814"
         },
         "simulation.mp4": {
-          "size_bytes": 3388860,
-          "sha256": "bc51bb866e25d441df31b8bdf2e69caebb1caaffe513a22a131880b92e84891f"
+          "size_bytes": 3298822,
+          "sha256": "39ca9f899db81e765d9897de91d5d1833ed02dd68fca8415a2954c3de8cdd16b"
         },
         "presentation.mp4": {
-          "size_bytes": 5019823,
-          "sha256": "e8242af8d3784a22c515a969904dd06ab86404fc72be4102fd50f10f837085a6"
+          "size_bytes": 4846438,
+          "sha256": "71dbf98cd24701dac5f4b4517f5230ae609b877bf21661a4c346655a7d8d1daf"
         }
       },
       "presentation_probe": {
@@ -60,37 +60,37 @@
         "width": 1280,
         "height": 720,
         "fps": 8.0,
-        "frame_count": 409,
-        "duration_s": 51.125
+        "frame_count": 457,
+        "duration_s": 57.125
       },
       "files": {
         "events.jsonl": {
-          "size_bytes": 15128,
-          "sha256": "ddd52fe5859072f3da13a455f0a56415b0aaed48f7db54e3010c3a9065cb2521"
+          "size_bytes": 16330,
+          "sha256": "3c7ae03e0c21f3b3d9c33f582ec8ede77f4d2010ee49f81a4ae588829eb8ba93"
         },
         "summary.json": {
-          "size_bytes": 1865,
-          "sha256": "765731acbd221a85a1017697ae37579a2a5b399f04278966261c44e9b78f1ffa"
+          "size_bytes": 3931,
+          "sha256": "9c336b54ad99d3aa034dcee13905006e4f98647367f7237b4f10987d43dfc79d"
         },
         "scene.usda": {
-          "size_bytes": 215901,
-          "sha256": "3dc9e98b77e2e85f8dcc3f5ab6670792ccc205bb95caf894e23d8aa4645793c3"
+          "size_bytes": 248558,
+          "sha256": "5cd09f15d351a892a36b075b366bcf28d89ffc5f689f741b55cda09f8f174e70"
         },
         "simulation.mp4": {
-          "size_bytes": 4968406,
-          "sha256": "5d541131adb2c5ae91a19282b4457a75d90915a179920e75e7025f68ebf3a152"
+          "size_bytes": 5287042,
+          "sha256": "2d87916cad594d65a49d4d87f498b013a6860a7cab217f940829e361e1782dbf"
         },
         "presentation.mp4": {
-          "size_bytes": 6938761,
-          "sha256": "1e1e90b6fb80634521f7e648be650d368ee0cc5c8a06efcb8f0b483e96e5a6ca"
+          "size_bytes": 7367957,
+          "sha256": "894d180795ca9a0d4aed0e45acd5b0eaee6136a929e1486a1b937d14a72d4cb0"
         }
       },
       "presentation_probe": {
         "width": 2560,
         "height": 1080,
         "fps": 8.0,
-        "frame_count": 409,
-        "duration_s": 51.125
+        "frame_count": 457,
+        "duration_s": 57.125
       }
     },
     {
@@ -106,37 +106,37 @@
         "width": 1280,
         "height": 720,
         "fps": 8.0,
-        "frame_count": 497,
-        "duration_s": 62.125
+        "frame_count": 545,
+        "duration_s": 68.125
       },
       "files": {
         "events.jsonl": {
-          "size_bytes": 18372,
-          "sha256": "fce230a7b4b586c39f8b5e3356fe73642a5a9e1c9150b2aa1cf079b90a6ae927"
+          "size_bytes": 19834,
+          "sha256": "9d7f4cf09b9fd9f072e2df203756bb71ed144a4ff716328d2f066a597d257f83"
         },
         "summary.json": {
-          "size_bytes": 1869,
-          "sha256": "2cb9705e26a68f5cfe4400de0ce17a40a621ecc7bdbfaadbe1fce9468775099a"
+          "size_bytes": 3935,
+          "sha256": "eb0bc99530fda3deae625c6e5f2c7c877afb690e4ffcd762fefb008088896810"
         },
         "scene.usda": {
-          "size_bytes": 232965,
-          "sha256": "54e27460d70b3537c9409ff33584bf092be5f6e9e973adf2c33c114d7e5e43da"
+          "size_bytes": 268038,
+          "sha256": "26d23de854a6c31979d485b46895637c36c1947c162a51e4b8ccfed0026a3a83"
         },
         "simulation.mp4": {
-          "size_bytes": 5835550,
-          "sha256": "58f05929f98698e9db6f30c695b5f484870337be36bf90d7a0d9fc0b11dbf35c"
+          "size_bytes": 6207206,
+          "sha256": "91538857a1812ec358e91db18bb182880e65fa20fccf6a5a221ca5c45b2ad7b4"
         },
         "presentation.mp4": {
-          "size_bytes": 8095501,
-          "sha256": "e7ffabca26421c3740c1e17c36c80176a2b7eb2e2b4634164fa19b2a1ee2b691"
+          "size_bytes": 8779596,
+          "sha256": "c7dd25d78f8924c0726f8fa7895d541a677a39bd0b944f741c0117261a4fcaca"
         }
       },
       "presentation_probe": {
         "width": 2560,
         "height": 1080,
         "fps": 8.0,
-        "frame_count": 497,
-        "duration_s": 62.125
+        "frame_count": 545,
+        "duration_s": 68.125
       }
     }
   ],
@@ -154,7 +154,7 @@
       "sha256": "33ed304c4f286afb2f78096a847697464d90cc050d29113ff3757953d4a79434"
     }
   },
-  "generated_at": "2026-08-13T20:02:16.414553+00:00",
+  "generated_at": "2026-08-13T21:20:17.402080+00:00",
   "environment": {
     "simulator": "Isaac Sim 6.0.1",
     "recording_host": "AutoDL Linux / NVIDIA RTX 4090",

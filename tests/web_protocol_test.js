@@ -69,4 +69,20 @@ assert(dispatch.length === 1, "dispatch plan uses started actions only");
 assert(dispatch[0].identifier === "FB-F01", "fallback dispatch identifier");
 assert(dispatch[0].layer === "cerebellum", "dispatch layer is explicit");
 
+let consoleState = SeerProtocol.nextConsoleState(null, {type: "initialize", scenario: "normal"});
+assert(consoleState.selectedScenario === "normal", "initial scenario");
+assert(consoleState.detailView === "hidden", "initial detail hidden");
+consoleState = SeerProtocol.nextConsoleState(consoleState, {type: "select", scenario: "recovery"});
+assert(consoleState.selectedScenario === "recovery", "selection changes scenario");
+assert(consoleState.detailView === "hidden", "selection collapses prior evidence");
+consoleState = SeerProtocol.nextConsoleState(consoleState, {type: "dispatch"});
+assert(consoleState.detailView === "evidence", "recorded scenario dispatch reveals evidence");
+consoleState = SeerProtocol.nextConsoleState(consoleState, {type: "select", scenario: "fastwam"});
+assert(consoleState.detailView === "hidden", "fastwam selection is also gated");
+consoleState = SeerProtocol.nextConsoleState(consoleState, {type: "dispatch"});
+assert(consoleState.detailView === "fastwam", "fastwam dispatch reveals independent proof");
+assert(SeerProtocol.reconcileTask("  recorded task ", "recorded task").accepted, "matching task is accepted");
+const rejectedTask = SeerProtocol.reconcileTask("invented task", "recorded task");
+assert(!rejectedTask.accepted && rejectedTask.task === "recorded task", "unrecorded task falls back to evidence task");
+
 print("protocol assertions: " + assertions);

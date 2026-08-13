@@ -17,11 +17,18 @@ class WebProtocolTests(unittest.TestCase):
             self.assertIn(f'data-scenario="{scenario}"', html)
         self.assertIn('id="task-input"', html)
         self.assertIn('id="dispatch-button"', html)
+        self.assertIn('id="evidence-content" hidden', html)
+        self.assertNotIn('id="run-select"', html)
+        self.assertIn('class="feishu-sidebar"', html)
+        self.assertIn('class="feishu-conversation"', html)
         self.assertIn('id="active-instruction"', html)
         self.assertIn("机械臂模型、任务数据与后训练", html)
         self.assertIn("eventAtTime", source)
         self.assertIn("dispatchPlan", source)
         self.assertGreaterEqual(source.count("if (generation !== renderGeneration) return;"), 2)
+        self.assertIn("selectedScenario", source)
+        self.assertIn("collapseDetails", source)
+        self.assertNotIn("select.addEventListener", source)
 
     def test_console_prefers_declared_presentation_and_retains_raw_fallback(self):
         source = (ROOT / "demo" / "web" / "app.js").read_text(encoding="utf-8")
@@ -43,7 +50,7 @@ class WebProtocolTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("protocol assertions: 20", result.stdout)
+        self.assertIn("protocol assertions: 29", result.stdout)
 
 
 if __name__ == "__main__":

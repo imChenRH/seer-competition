@@ -9,7 +9,9 @@
 | 安全停车和人工介入 | VERIFIED | intervention 场景三次遮挡失败，FB-F07 退回并停稳 | intervention JSONL 与视频 |
 | Isaac Sim 执行 | DEMO_IMPLEMENTED | Isaac Sim 6.0.1 中以确定性运动目标驱动的可重复数字孪生 | `demo/seer_demo/isaac/`、scene/video/summary |
 | USD 物理语义 | VERIFIED | 正式 USDA 写入 PhysicsScene、CollisionAPI、RigidBodyAPI、MassAPI、ArticulationRootAPI 与 FixedJoint；因基座采用运动学目标，ArticulationRoot 不作为有效动力学闭环证据 | `scene.usda`、`summary.physics_contract`、正式运行告警 |
+| 静态设施碰撞 | VERIFIED | 地面、仓库外壳、货架、集装箱、月台、传送带、背景载荷和障碍物八类设施都具有静态碰撞；每份正式场景验证 186 个碰撞 Prim | `summary.static_physics_contract`、`summary.static_collision_prim_count`、`tests/test_timeline.py` |
 | 载荷叉取与放置 | DEMO_IMPLEMENTED | 两个叉孔与货叉对齐；只有相对几何满足且 `FixedJoint` 启用才报告挂接，放置后关节关闭 | normal/recovery JSONL 的 `physical_attachment_enabled`、USDA 时间采样与视频 |
+| 偏航与路径对齐 | VERIFIED | 叉车偏航在 Z 轴双向变化；路径、载荷、相机偏差和放置误差按设施局部坐标计算 | 三份 `scene.usda`、`summary.facility_layout`、`tests/test_timeline.py` |
 | 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一仿真时钟；右侧不是隐藏思维过程 | `presentation.mp4`、`demo/seer_demo/presentation.py` |
 | 飞书 → Isaac 闭环 | DEMO_IMPLEMENTED | 同主机/同证据目录的单实例桥接可认领、一次启动、以哈希收据恢复回放 | `tests/test_bridge.py`；经 manifest 哈希的操作员见证回执（不是飞书签名证明） |
 | Fast-WAM 能加载推理 | VERIFIED | 独立技术验证输出形状 `[1,7]`，首次单次约 0.86 s | 经顶层 manifest 哈希的脱敏验证日志 |
