@@ -1,7 +1,6 @@
-# 本地凭证与中间产物
+# 本地凭证（永不提交）
 demo/.env
 凭证汇总.md
-*.mp4
-shots_*.png
+# 其他不提交
 *.dmp
 MinerU_markdown_*.md
