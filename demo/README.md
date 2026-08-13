@@ -1,20 +1,20 @@
 # SEER–HVLA 叉车卸货 Demo
 
-项目目标、架构、完成内容、正式证据、企业展示流程和下一阶段计划统一汇总于 [`项目总结与交付说明.md`](项目总结与交付说明.md)。
+项目目标、架构、完成内容、正式证据、企业展示流程和下一阶段计划统一汇总于 [`项目总结与交付说明.md`](项目总结与交付说明.md)；本轮四项升级的逐项验收、降级说明和待人类输入见 [`UPGRADE-REPORT-2026-08-13.md`](UPGRADE-REPORT-2026-08-13.md) 与 [`NEEDS-HUMAN.md`](NEEDS-HUMAN.md)。
 
-这是一个**证据驱动的企业交流 Demo**：Aily/飞书负责生成和认领任务，单进程桥接只启动一次 Isaac runner；Isaac Sim 6.0.1 运行规则控制的运动学数字孪生；每一步把实际观测写入连续 JSONL；只读网页从 JSONL 与录像还原结果。
+这是一个**证据驱动的企业交流 Demo**：Aily/飞书负责生成和认领任务，单进程桥接只启动一次 Isaac runner；Isaac Sim 6.0.1 使用确定性运动目标与显式 `UsdPhysics.FixedJoint` 载荷挂接；每一步把实际观测写入连续 JSONL；网页从 JSONL 与录像还原大脑—小脑分发过程。
 
 当前工程采用“局部重构”路线。业务场景、九技能、Fallback、飞书表、AutoDL/Isaac 环境与 Fast-WAM 独立验证继续保留；旧执行器、旧桥接与硬编码网页不再作为正式证据。严格审计见 [`AUDIT.md`](AUDIT.md)，对外声明边界见 [`CLAIMS.md`](CLAIMS.md)。
 
 ## 当前能证明什么
 
-- normal：九技能按顺序执行，载荷的耦合、搬运与释放由 USD 几何关系观测，终态为 `COMPLETED`。
+- normal：九技能按顺序执行；只有托盘几何对齐且 `FixedJoint` 已启用才报告叉取，释放后关节关闭，终态为 `COMPLETED`。
 - recovery：首次栈板对位失败，执行 `FB-F01` 横向修正，第二次通过，终态为 `COMPLETED`。
 - intervention：三次遮挡失败，执行 `FB-F02` 与 `FB-F07`，车辆退回并停稳，终态为 `HUMAN_REQUIRED`。
 - 所有结果均来自同一事件契约；序号连续、仿真时间单调，且最后只有一个终态事件。
 - 桥接层在同一主机、同一证据目录内持有进程排他锁，再对任务进行乐观认领；未通过整批事件校验时不会写成成功。
 
-它**不能**证明生产级动力学、安全、感知、ROS 2、仙工 SRC-5000 实机控制，也不能证明 Fast-WAM 已控制叉车。当前控制器是确定性规则控制的运动学数字孪生，载荷采用显式耦合；异常由场景条件注入。
+它**不能**证明生产级动力学、安全、感知、ROS 2、仙工 SRC-5000 实机控制，也不能证明 Fast-WAM 已控制叉车。当前控制方式是“确定性运动目标 + 显式物理挂接”的可重复演示降级，不是标定力控；异常由场景条件注入。
 
 ## Mac 上运行
 
@@ -48,9 +48,21 @@ events.jsonl     连续、可机器验证的唯一事实源
 summary.json     从 JSONL 验证结果派生的摘要
 scene.usda       此次运行导出的 OpenUSD 场景
 simulation.mp4   与此次运行一致的 Isaac 录像
+presentation.mp4 左侧仿真、右侧大脑/小脑与审计摘要的同步展示视频
 ```
 
 `frames/` 是可再生成的中间文件，不需要提交 Git。
+
+如需在 Mac 重新合成左右分屏视频，先为渲染工具安装唯一的 Python 依赖，并确认系统存在 `ffmpeg`/`ffprobe`：
+
+```bash
+python3 -m venv .venv-presentation
+.venv-presentation/bin/pip install -r demo/requirements-presentation.txt
+.venv-presentation/bin/python scripts/build_split_presentation.py \
+  demo/evidence/isaac-normal-20260813
+```
+
+脚本会验证原始片与演示片的帧率、帧数、时长和 2560×1080 分辨率，再更新对应 `summary.json`；不会把左右两侧使用不同时间轴的视频写成正式证据。
 
 ## 飞书桥接
 
@@ -72,12 +84,12 @@ Aily/飞书待执行任务
 
 ## 建议的 6–8 分钟企业展示
 
-1. 先说明边界：当前是 Isaac 运动学数字孪生，不是实机或 Fast-WAM 闭环。
-2. 在飞书/Aily 创建 normal 任务，展示任务被认领且只运行一次。
-3. 打开操作台，同时展示录像、九技能时间线与连续审计事件。
-4. 切换 recovery，指出第一次失败、`FB-F01` 与第二次成功的同源事件。
-5. 切换 intervention，指出三次失败、退回、停稳以及 `HUMAN_REQUIRED`；不要把它说成完成。
-6. 单独展示 Fast-WAM 加载与 `[1,7]` 输出证据，明确它尚未接管叉车。
+1. 先说明边界：当前是确定性运动目标与显式载荷挂接的 Isaac Demo，不是实机或 Fast-WAM 闭环。
+2. 在 AgentOS 输入框发送 normal 的已验证任务，展示大脑层意图、技能分发、小脑层执行与审计游标同步推进。
+3. 播放 `presentation.mp4`：左半屏是仓库内部操作，右半屏是结构化决策摘要，不展示隐藏思维过程。
+4. 切换“自动恢复”，指出第一次失败、`FB-F01` 与第二次成功的同源事件。
+5. 切换“安全介入”，指出三次失败、退回、停稳以及 `HUMAN_REQUIRED`；不要把它说成完成。
+6. 切换“Fast-WAM 验证”，展示 `[1,7]` 与 0.86 s 独立证据，同时明确它尚未接管叉车。
 7. 向仙工确认实机接口：底盘/门架/货叉指令、状态频率、坐标系、急停、安全 PLC、仿真模型和日志格式。
 
 ## 验证

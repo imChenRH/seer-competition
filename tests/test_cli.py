@@ -78,6 +78,12 @@ class DemoCliTests(unittest.TestCase):
             self.assertIn("Isaac python launcher not found", result.stderr)
             self.assertNotIn("Usage:", result.stderr)
 
+    def test_isaac_launcher_forwards_optional_simready_asset_root(self):
+        source = (ROOT / "scripts" / "run_isaac_demo.sh").read_text(encoding="utf-8")
+
+        self.assertIn("ISAAC_WAREHOUSE_ASSET_ROOT", source)
+        self.assertIn("--warehouse-asset-root", source)
+
 
 if __name__ == "__main__":
     unittest.main()

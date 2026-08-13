@@ -9,7 +9,7 @@
       "event_count": 18,
       "duration_s": 36.0,
       "isaac_version": "6.0.1",
-      "controller": "deterministic_kinematic_rule_controller",
+      "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
       "video_probe": {
         "width": 1280,
         "height": 720,
@@ -19,21 +19,32 @@
       },
       "files": {
         "events.jsonl": {
-          "size_bytes": 13526,
-          "sha256": "ccaa5335a2774087d77e9cb43841fe77817e46916fa2518be78611b8c6511661"
+          "size_bytes": 14102,
+          "sha256": "537fa5429d0cf930d03facf23a7e5d884ad6ac9e6d76326c9c343ebc13bfe40f"
         },
         "summary.json": {
-          "size_bytes": 483,
-          "sha256": "3cfb6275c1daf38dde2c168b4f19c4e94e03d9a383425f630b849e923322d503"
+          "size_bytes": 1882,
+          "sha256": "656589efb8001d311572555dd1e8a4e1b03735244f43319114e3638e8edff8d5"
         },
         "scene.usda": {
-          "size_bytes": 76804,
-          "sha256": "244ff51c460d1cfc603e2d4cd6b3a10af484ad02c20f93679bb7936658195094"
+          "size_bytes": 193613,
+          "sha256": "0437d531f75ae97f1bb612fe239242781002a76e1f90c318e8fbc876d3dc683c"
         },
         "simulation.mp4": {
-          "size_bytes": 1865038,
-          "sha256": "4c80ef73767d5751ebb3d934ec7640c58d948eac3577ba1ccb959ad5f8d67a87"
+          "size_bytes": 3388860,
+          "sha256": "bc51bb866e25d441df31b8bdf2e69caebb1caaffe513a22a131880b92e84891f"
+        },
+        "presentation.mp4": {
+          "size_bytes": 5019823,
+          "sha256": "e8242af8d3784a22c515a969904dd06ab86404fc72be4102fd50f10f837085a6"
         }
+      },
+      "presentation_probe": {
+        "width": 2560,
+        "height": 1080,
+        "fps": 8.0,
+        "frame_count": 289,
+        "duration_s": 36.125
       }
     },
     {
@@ -44,7 +55,7 @@
       "event_count": 20,
       "duration_s": 51.0,
       "isaac_version": "6.0.1",
-      "controller": "deterministic_kinematic_rule_controller",
+      "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
       "video_probe": {
         "width": 1280,
         "height": 720,
@@ -54,21 +65,32 @@
       },
       "files": {
         "events.jsonl": {
-          "size_bytes": 14490,
-          "sha256": "5e14ecba4e3bcb004ae99e551e1663a7dc968c0b206841ae4e9d0f52a5716f4f"
+          "size_bytes": 15128,
+          "sha256": "ddd52fe5859072f3da13a455f0a56415b0aaed48f7db54e3010c3a9065cb2521"
         },
         "summary.json": {
-          "size_bytes": 466,
-          "sha256": "3f57af13541523d52aa9bd3995c132c5c9d438f9b3f3ebb7634636f5b4246395"
+          "size_bytes": 1865,
+          "sha256": "765731acbd221a85a1017697ae37579a2a5b399f04278966261c44e9b78f1ffa"
         },
         "scene.usda": {
-          "size_bytes": 95974,
-          "sha256": "40a17eeda3be42cbbb9e038c715100516c47963b8827688dca3bd85fea1d6364"
+          "size_bytes": 215901,
+          "sha256": "3dc9e98b77e2e85f8dcc3f5ab6670792ccc205bb95caf894e23d8aa4645793c3"
         },
         "simulation.mp4": {
-          "size_bytes": 2727981,
-          "sha256": "56b67312105ff9fe86e021be96129d74ac86bdc22547f7f54c4210101d2ca361"
+          "size_bytes": 4968406,
+          "sha256": "5d541131adb2c5ae91a19282b4457a75d90915a179920e75e7025f68ebf3a152"
+        },
+        "presentation.mp4": {
+          "size_bytes": 6938761,
+          "sha256": "1e1e90b6fb80634521f7e648be650d368ee0cc5c8a06efcb8f0b483e96e5a6ca"
         }
+      },
+      "presentation_probe": {
+        "width": 2560,
+        "height": 1080,
+        "fps": 8.0,
+        "frame_count": 409,
+        "duration_s": 51.125
       }
     },
     {
@@ -79,7 +101,7 @@
       "event_count": 24,
       "duration_s": 62.0,
       "isaac_version": "6.0.1",
-      "controller": "deterministic_kinematic_rule_controller",
+      "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
       "video_probe": {
         "width": 1280,
         "height": 720,
@@ -89,21 +111,32 @@
       },
       "files": {
         "events.jsonl": {
-          "size_bytes": 17590,
-          "sha256": "94d38d2f31fd34c80d267b8df6c5041cba3294110e5b44eeec3e732fc53c1817"
+          "size_bytes": 18372,
+          "sha256": "fce230a7b4b586c39f8b5e3356fe73642a5a9e1c9150b2aa1cf079b90a6ae927"
         },
         "summary.json": {
-          "size_bytes": 470,
-          "sha256": "9c839b888ecc4a088dec6de61ef83010959063c499c766960417ff6a09a2932a"
+          "size_bytes": 1869,
+          "sha256": "2cb9705e26a68f5cfe4400de0ce17a40a621ecc7bdbfaadbe1fce9468775099a"
         },
         "scene.usda": {
-          "size_bytes": 110750,
-          "sha256": "38bf1480528020bac1b66a14cc49e5b67e6a2b84f1041589246aaf47754dc6d8"
+          "size_bytes": 232965,
+          "sha256": "54e27460d70b3537c9409ff33584bf092be5f6e9e973adf2c33c114d7e5e43da"
         },
         "simulation.mp4": {
-          "size_bytes": 3049028,
-          "sha256": "6bc01746a703b65701037492f88177b7e59f03019f78cb1d6421308d562d9aaf"
+          "size_bytes": 5835550,
+          "sha256": "58f05929f98698e9db6f30c695b5f484870337be36bf90d7a0d9fc0b11dbf35c"
+        },
+        "presentation.mp4": {
+          "size_bytes": 8095501,
+          "sha256": "e7ffabca26421c3740c1e17c36c80176a2b7eb2e2b4634164fa19b2a1ee2b691"
         }
+      },
+      "presentation_probe": {
+        "width": 2560,
+        "height": 1080,
+        "fps": 8.0,
+        "frame_count": 497,
+        "duration_s": 62.125
       }
     }
   ],
@@ -121,12 +154,13 @@
       "sha256": "33ed304c4f286afb2f78096a847697464d90cc050d29113ff3757953d4a79434"
     }
   },
-  "generated_at": "2026-08-13T13:39:30.790131+00:00",
+  "generated_at": "2026-08-13T20:02:16.414553+00:00",
   "environment": {
     "simulator": "Isaac Sim 6.0.1",
     "recording_host": "AutoDL Linux / NVIDIA RTX 4090",
-    "controller": "deterministic kinematic rule controller",
-    "payload_model": "explicit attach/release coupling"
+    "controller": "deterministic kinematic targets with explicit physics attachment",
+    "payload_model": "geometry observation plus time-sampled UsdPhysics.FixedJoint",
+    "presentation": "2560x1080 auditable event projection synchronized to source video"
   },
-  "claim_boundary": "Demonstration-grade kinematic digital twin; not hardware, ROS 2, real perception, Fast-WAM forklift control, calibrated dynamics, or production safety evidence."
+  "claim_boundary": "Demonstration-grade deterministic motion targets with explicit USD physics attachment; not hardware, ROS 2, real perception, Fast-WAM forklift control, calibrated dynamics, force control, or production safety evidence."
 }

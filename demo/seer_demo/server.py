@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import hashlib
 import json
 import mimetypes
 from pathlib import Path
@@ -13,6 +14,14 @@ from .contracts import load_events, validate_scenario_events
 
 
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+
+
+def _available_declared_media(run_dir: Path, value: object) -> str | None:
+    if not isinstance(value, str) or not value or Path(value).name != value:
+        return None
+    if not (run_dir / value).is_file():
+        return None
+    return value
 
 
 class EvidenceCatalog:
@@ -57,18 +66,56 @@ class EvidenceCatalog:
                 raise ValueError(f"summary field {key} does not match events")
         result = dict(summary)
         result["run_id"] = run_id
-        result["has_video"] = (run_dir / "simulation.mp4").is_file() and summary.get(
-            "video_file"
-        ) == "simulation.mp4"
+        result["has_video"] = _available_declared_media(
+            run_dir, summary.get("video_file")
+        ) is not None
+        result["has_presentation"] = _available_declared_media(
+            run_dir, summary.get("presentation_file")
+        ) is not None
         return result
 
     def events_path(self, run_id: str) -> Path:
         self.get_summary(run_id)
         return self._run_dir(run_id) / "events.jsonl"
 
+    def fastwam_summary(self) -> dict[str, object]:
+        evidence_dir = self.root / "fastwam"
+        log_path = evidence_dir / "validation.log"
+        readme_path = evidence_dir / "README.md"
+        boundary = (
+            "仅证明本地 checkpoint 可加载到 CUDA 并完成一次单批推理；不证明已控制叉车、"
+            "完成后训练、达到论文实时指标或接入本仿真闭环。"
+        )
+        if not log_path.is_file() or not readme_path.is_file():
+            return {
+                "available": False,
+                "action_shape": None,
+                "single_call_latency_s": None,
+                "claim_boundary": boundary,
+                "validation_log_sha256": None,
+            }
+        log = log_path.read_text(encoding="utf-8")
+        shape_match = re.search(r"INFERENCE_OK, action: torch\.Size\(\[([^]]+)\]\)", log)
+        latency_match = re.search(r"推理耗时\s+([0-9]+(?:\.[0-9]+)?)s", log)
+        available = "MODEL_LOADED" in log and "ON_CUDA" in log and "VERIFY_DONE" in log
+        return {
+            "available": available,
+            "action_shape": f"[{shape_match.group(1)}]" if available and shape_match else None,
+            "single_call_latency_s": float(latency_match.group(1)) if available and latency_match else None,
+            "claim_boundary": boundary,
+            "validation_log_sha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+        }
+
     def media_path(self, run_id: str, filename: str) -> Path:
         summary = self.get_summary(run_id)
-        if filename != "simulation.mp4" or summary.get("video_file") != filename:
+        if Path(filename).name != filename:
+            raise FileNotFoundError(filename)
+        declared = {
+            value
+            for value in (summary.get("video_file"), summary.get("presentation_file"))
+            if isinstance(value, str) and Path(value).name == value
+        }
+        if filename not in declared:
             raise FileNotFoundError(filename)
         path = self._run_dir(run_id) / filename
         if not path.is_file():
@@ -104,6 +151,8 @@ def create_server(host: str, port: int, evidence_root: Path | str, web_root: Pat
                     return self._send_file(asset_map[path])
                 if path == "/api/runs":
                     return self._send_json({"runs": catalog.list_runs()})
+                if path == "/api/fastwam":
+                    return self._send_json(catalog.fastwam_summary())
                 match = re.fullmatch(r"/api/runs/([^/]+)(/events)?", path)
                 if match:
                     run_id, events_suffix = match.groups()

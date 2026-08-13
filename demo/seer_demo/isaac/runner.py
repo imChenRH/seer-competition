@@ -122,6 +122,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--fps", type=int, default=8)
     parser.add_argument("--resolution", type=_parse_resolution, default=(1280, 720))
+    parser.add_argument(
+        "--warehouse-asset-root",
+        type=Path,
+        help="optional root of the NVIDIA SimReady Warehouse-01 asset tree",
+    )
     return parser
 
 
@@ -171,23 +176,37 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
         import omni.timeline
         from omni.replicator.core.functional import write_image
 
-        from .scene import apply_frame, build_scene, observe_scene
+        from .scene import (
+            PHYSICS_SCHEMA_APIS,
+            WAREHOUSE_EXTENT_M,
+            apply_frame,
+            build_scene,
+            camera_pose_for_phase,
+            observe_scene,
+        )
 
         output_dir: Path = args.output_dir
         output_dir.mkdir(parents=True, exist_ok=True)
         frames_dir = output_dir / "frames"
         frames_dir.mkdir(parents=True, exist_ok=True)
         timeline = build_timeline(args.scenario, fps=args.fps)
-        handles = build_scene(output_dir / "scene.usda", args.scenario)
+        handles = build_scene(
+            output_dir / "scene.usda",
+            args.scenario,
+            warehouse_asset_root=args.warehouse_asset_root,
+        )
         omni.timeline.get_timeline_interface().play()
         for _ in range(60):
             app.update()
 
+        initial_camera = camera_pose_for_phase(timeline.frames[0].phase)
         camera = rep.functional.create.camera(
-            position=(-11.5, -14.0, 10.5),
-            look_at=(-0.5, -0.2, 0.9),
+            position=initial_camera.position,
+            look_at=initial_camera.look_at,
             parent="/World",
             name="DemoCamera",
+            focal_length=30.0,
+            clipping_range=(0.1, 1000.0),
         )
         render_product = rep.create.render_product(camera, resolution=(width, height), name="DemoRender")
         rgb = rep.annotators.get("rgb")
@@ -195,8 +214,19 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
         observations: dict[tuple[str, str, int], dict[str, object]] = {}
         previous_base: tuple[float, float] | None = None
         previous_time: float | None = None
+        previous_camera_pose = None
         for index, frame in enumerate(timeline.frames):
             apply_frame(handles, frame)
+            camera_pose = camera_pose_for_phase(frame.phase)
+            if camera_pose != previous_camera_pose:
+                rep.functional.modify.pose(
+                    camera,
+                    position_value=camera_pose.position,
+                    look_at_value=camera_pose.look_at,
+                    look_at_up_axis=(0.0, 0.0, 1.0),
+                    write_to_usd=True,
+                )
+                previous_camera_pose = camera_pose
             rep.orchestrator.step(rt_subframes=2)
             write_image(path=str(frames_dir / f"frame_{index:05d}.png"), data=rgb.get_data())
             observed = observe_scene(handles, base_speed_mps=0.0)
@@ -249,7 +279,15 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
         summary.update(
             {
                 "generated_at": datetime.now(timezone.utc).isoformat(),
-                "controller": "deterministic_kinematic_rule_controller",
+                "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
+                "control_mode": "kinematic_targets_with_explicit_physics_attachment_v2",
+                "physics_contract": list(PHYSICS_SCHEMA_APIS),
+                "physics_attachment": "UsdPhysics.FixedJoint",
+                "physics_downgrade_reason": (
+                    "The demonstration authors deterministic kinematic targets for reproducibility; "
+                    "pickup truth additionally requires an explicit enabled FixedJoint plus measured "
+                    "geometry. It is not a calibrated force-control or production dynamics claim."
+                ),
                 "isaac_version": "6.0.1",
                 "frame_count": len(timeline.frames),
                 "fps": args.fps,
@@ -257,6 +295,11 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
                 "events_file": "events.jsonl",
                 "video_file": "simulation.mp4",
                 "scene_file": "scene.usda",
+                "warehouse_extent_m": list(WAREHOUSE_EXTENT_M),
+                "warehouse_asset_root": str(args.warehouse_asset_root) if args.warehouse_asset_root else None,
+                "warehouse_asset_count": len(handles.referenced_assets),
+                "warehouse_assets": list(handles.referenced_assets),
+                "camera_strategy": "phase_based_internal_operation_views_v1",
             }
         )
         (output_dir / "summary.json").write_text(

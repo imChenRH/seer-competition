@@ -24,7 +24,13 @@ fi
 
 export OMNI_KIT_ACCEPT_EULA=YES
 export PYTHONPATH="$repo_root/demo${PYTHONPATH:+:$PYTHONPATH}"
-exec "$isaac_root/python.sh" -m seer_demo.isaac.runner \
-  --scenario "$scenario" \
-  --output-dir "$output_dir" \
+runner_args=(
+  -m seer_demo.isaac.runner
+  --scenario "$scenario"
+  --output-dir "$output_dir"
   --run-id "$run_id"
+)
+if [[ -n "${ISAAC_WAREHOUSE_ASSET_ROOT:-}" ]]; then
+  runner_args+=(--warehouse-asset-root "$ISAAC_WAREHOUSE_ASSET_ROOT")
+fi
+exec "$isaac_root/python.sh" "${runner_args[@]}"

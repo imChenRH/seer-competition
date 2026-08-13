@@ -7,8 +7,10 @@
 | 九技能任务分解与审计 | VERIFIED | Aily/状态机按固定九技能编排，并产生连续事件 | `tests/test_engine.py`；各运行 `events.jsonl` |
 | Fallback 自动恢复 | VERIFIED | recovery 场景首次偏移失败，执行 FB-F01 后第二次通过 | recovery JSONL 与视频 |
 | 安全停车和人工介入 | VERIFIED | intervention 场景三次遮挡失败，FB-F07 退回并停稳 | intervention JSONL 与视频 |
-| Isaac Sim 执行 | DEMO_IMPLEMENTED | Isaac Sim 6.0.1 中的规则控制运动学数字孪生 | `demo/seer_demo/isaac/`、scene/video/summary |
-| 载荷叉取与放置 | DEMO_IMPLEMENTED | 载荷耦合和释放由 USD 相对几何位置推导，画面与状态事件一致 | normal/recovery JSONL 状态、带时间采样的 USDA 与视频 |
+| Isaac Sim 执行 | DEMO_IMPLEMENTED | Isaac Sim 6.0.1 中以确定性运动目标驱动的可重复数字孪生 | `demo/seer_demo/isaac/`、scene/video/summary |
+| USD 物理语义 | VERIFIED | 正式 USDA 写入 PhysicsScene、CollisionAPI、RigidBodyAPI、MassAPI、ArticulationRootAPI 与 FixedJoint；因基座采用运动学目标，ArticulationRoot 不作为有效动力学闭环证据 | `scene.usda`、`summary.physics_contract`、正式运行告警 |
+| 载荷叉取与放置 | DEMO_IMPLEMENTED | 两个叉孔与货叉对齐；只有相对几何满足且 `FixedJoint` 启用才报告挂接，放置后关节关闭 | normal/recovery JSONL 的 `physical_attachment_enabled`、USDA 时间采样与视频 |
+| 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一仿真时钟；右侧不是隐藏思维过程 | `presentation.mp4`、`demo/seer_demo/presentation.py` |
 | 飞书 → Isaac 闭环 | DEMO_IMPLEMENTED | 同主机/同证据目录的单实例桥接可认领、一次启动、以哈希收据恢复回放 | `tests/test_bridge.py`；经 manifest 哈希的操作员见证回执（不是飞书签名证明） |
 | Fast-WAM 能加载推理 | VERIFIED | 独立技术验证输出形状 `[1,7]`，首次单次约 0.86 s | 经顶层 manifest 哈希的脱敏验证日志 |
 | Fast-WAM 190 ms | PAPER_METRIC | 论文报告指标，未在本机复现 | 论文引用；不得写成 Demo 实测 |
@@ -16,7 +18,7 @@
 | ROS 2 真实闭环 | NOT_IMPLEMENTED | 当前桥接为进程/API 边界，不宣称 ROS 2 | 无 |
 | 仙工 SRC-5000 实机控制 | NOT_IMPLEMENTED | 仅是未来企业接口目标 | 无 |
 | 真实 RGB-D/雷达感知 | NOT_IMPLEMENTED | 当前异常由确定性场景条件产生 | 无 |
-| 动力学/轮胎/载荷标定 | NOT_IMPLEMENTED | 当前为运动学轨迹，不代表真实叉车性能 | 无 |
+| 动力学/轮胎/载荷标定 | NOT_IMPLEMENTED | 当前虽有 USD 物理 schema 与显式挂接，仍无企业参数标定，不代表真实叉车性能 | 无 |
 
 ## 禁止出现在正式演示中的无条件说法
 

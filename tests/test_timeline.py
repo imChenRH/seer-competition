@@ -1,11 +1,80 @@
 import unittest
 
 from seer_demo.isaac.runner import IsaacTimelineBackend
-from seer_demo.isaac.scene import derive_kinematic_observation
+from seer_demo.isaac.scene import (
+    FORK_POCKET_CENTERS_Y,
+    PHYSICS_SCHEMA_APIS,
+    WAREHOUSE_EXTENT_M,
+    camera_pose_for_phase,
+    derive_kinematic_observation,
+    pallet_part_specs,
+    physical_attachment_for_frame,
+    warehouse_asset_specs,
+    warehouse_rack_positions,
+)
 from seer_demo.isaac.timeline import FORKLIFT_PARTS, build_timeline
 
 
 class IsaacTimelineTests(unittest.TestCase):
+    def test_scene_physics_contract_includes_required_usd_apis(self):
+        self.assertEqual(
+            set(PHYSICS_SCHEMA_APIS),
+            {
+                "PhysicsScene",
+                "CollisionAPI",
+                "RigidBodyAPI",
+                "MassAPI",
+                "ArticulationRootAPI",
+                "FixedJoint",
+            },
+        )
+
+    def test_pallet_has_two_open_fork_pockets_aligned_with_forks(self):
+        parts = pallet_part_specs()
+
+        self.assertEqual(FORK_POCKET_CENTERS_Y, (-0.32, 0.32))
+        self.assertGreaterEqual(len(parts), 5)
+        runners = [part for part in parts if part.role == "runner"]
+        for pocket_y in FORK_POCKET_CENTERS_Y:
+            self.assertTrue(
+                all(abs(part.position[1] - pocket_y) > (part.size[1] + 0.16) / 2 for part in runners)
+            )
+
+    def test_explicit_physics_attachment_tracks_payload_coupling_only(self):
+        timeline = build_timeline("normal", fps=2)
+
+        self.assertEqual(
+            [physical_attachment_for_frame(frame) for frame in timeline.frames],
+            [frame.payload_attached for frame in timeline.frames],
+        )
+
+    def test_large_warehouse_layout_keeps_central_task_lane_clear(self):
+        self.assertGreaterEqual(WAREHOUSE_EXTENT_M[0], 40.0)
+        self.assertGreaterEqual(WAREHOUSE_EXTENT_M[1], 26.0)
+        racks = warehouse_rack_positions()
+        self.assertGreaterEqual(len(racks), 8)
+        self.assertTrue(all(abs(y) >= 4.5 for _, y in racks))
+        self.assertTrue(all(abs(x) <= WAREHOUSE_EXTENT_M[0] / 2 for x, _ in racks))
+
+    def test_simready_asset_specs_use_official_physics_material_library(self):
+        specs = warehouse_asset_specs("/assets/warehouse")
+
+        self.assertGreaterEqual(len(specs), 4)
+        self.assertTrue(all("/Props/materials/physics/" in str(spec.path) for spec in specs))
+        self.assertTrue(all(spec.path.suffix in {".usd", ".usda"} for spec in specs))
+        self.assertTrue(all(str(spec.path).startswith("/assets/warehouse/") for spec in specs))
+
+    def test_camera_strategy_uses_distinct_internal_operation_views(self):
+        establishing = camera_pose_for_phase("enter_container")
+        pickup = camera_pose_for_phase("insert_forks")
+        placement = camera_pose_for_phase("place_payload")
+
+        self.assertNotEqual(establishing.position, pickup.position)
+        self.assertNotEqual(pickup.position, placement.position)
+        self.assertLess(pickup.position[1], 0.0)
+        self.assertAlmostEqual(pickup.look_at[0], 2.6, places=1)
+        self.assertAlmostEqual(placement.look_at[0], -3.4, places=1)
+
     def test_scene_parts_use_local_coordinates_and_z_as_height(self):
         for name, part in FORKLIFT_PARTS.items():
             x, y, z = part.local_position
@@ -108,6 +177,7 @@ class IsaacTimelineTests(unittest.TestCase):
             fork_tilt_deg=4.0,
             obstacle_visible=False,
             base_speed_mps=0.0,
+            physical_attachment_enabled=True,
         )
 
         self.assertTrue(state["payload_attached"])
@@ -123,11 +193,26 @@ class IsaacTimelineTests(unittest.TestCase):
             fork_tilt_deg=0.0,
             obstacle_visible=True,
             base_speed_mps=0.2,
+            physical_attachment_enabled=False,
         )
         self.assertTrue(retreat["safe_retreat_complete"])
         self.assertFalse(retreat["stopped"])
         self.assertFalse(retreat["payload_attached"])
         self.assertTrue(retreat["obstacle_visible"])
+
+    def test_geometry_alignment_without_fixed_joint_is_not_reported_as_attached(self):
+        state = derive_kinematic_observation(
+            base=(2.2, 0.0, 0.0),
+            lift=(2.2, 0.0, 1.05),
+            payload=(3.8, 0.0, 1.30),
+            fork_tilt_deg=4.0,
+            obstacle_visible=False,
+            base_speed_mps=0.0,
+            physical_attachment_enabled=False,
+        )
+
+        self.assertFalse(state["payload_attached"])
+        self.assertFalse(state["physical_attachment_enabled"])
 
 
 if __name__ == "__main__":

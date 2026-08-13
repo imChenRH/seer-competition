@@ -17,6 +17,38 @@
   </header>
 
   <main>
+    <nav class="scenario-tabs panel" aria-label="演示场景" role="tablist">
+      <button class="scenario-tab active" type="button" role="tab" aria-selected="true" data-scenario="normal">正常执行</button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="recovery">自动恢复</button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="intervention">安全介入</button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="fastwam">Fast-WAM 验证</button>
+    </nav>
+
+    <section class="agent-console panel" aria-label="AgentOS 任务对话">
+      <div class="agent-identity">
+        <span class="agent-orbit">A</span>
+        <div><p class="eyebrow">AGENTOS · BRAIN LAYER</p><h2>任务理解与技能分发</h2></div>
+      </div>
+      <div class="chat-stream" aria-live="polite">
+        <div class="chat-bubble assistant">输入仓储目标后，大脑层生成结构化意图；小脑层只执行可验证技能与 Fallback。</div>
+        <div id="chat-response" class="chat-bubble system">等待任务下发。</div>
+      </div>
+      <div class="task-composer">
+        <label for="task-input">任务指令</label>
+        <div class="composer-row">
+          <input id="task-input" value="卸载3号集装箱货物到A区传送带" autocomplete="off">
+          <button id="dispatch-button" type="button">发送并执行</button>
+        </div>
+      </div>
+      <div class="dispatch-strip">
+        <div><span>当前下发</span><strong id="active-instruction">未开始</strong></div>
+        <div><span>行为映射</span><strong id="active-behavior">等待小脑层</strong></div>
+        <div><span>审计游标</span><strong id="active-audit">#—</strong></div>
+      </div>
+      <ol id="dispatch-plan" class="dispatch-plan" aria-label="技能分发计划"></ol>
+    </section>
+
+    <div id="evidence-content">
     <section class="run-picker panel">
       <div>
         <label for="run-select">证据运行</label>
@@ -35,7 +67,7 @@
     <section class="workspace">
       <article class="video-card panel">
         <div class="section-heading">
-          <div><p class="eyebrow">ISAAC SIM VIEW</p><h2>对应仿真画面</h2></div>
+          <div><p class="eyebrow">ISAAC SIM × ARCHITECTURE VIEW</p><h2>仿真与双层架构同步画面</h2></div>
           <span id="source-pill" class="pill">—</span>
         </div>
         <video id="simulation-video" controls preload="metadata" playsinline></video>
@@ -58,10 +90,33 @@
         <div id="event-log" class="event-log"></div>
       </article>
     </section>
+    </div>
+
+    <section id="fastwam-content" class="fastwam-panel panel" hidden>
+      <div class="fastwam-hero">
+        <div><p class="eyebrow">INDEPENDENT MODEL CHECK</p><h2>Fast-WAM 独立验证</h2></div>
+        <span id="fastwam-status" class="pill">读取中</span>
+      </div>
+      <p id="fastwam-claim" class="fastwam-claim">正在读取本地验证证据。</p>
+      <div class="fastwam-metrics">
+        <div><span>动作张量</span><strong id="fastwam-shape">—</strong></div>
+        <div><span>首次单次调用</span><strong id="fastwam-latency">—</strong></div>
+        <div><span>验证范围</span><strong>模型加载 + 单批推理</strong></div>
+      </div>
+      <div class="fastwam-flow" aria-label="Fast-WAM 未来机械臂接入路径">
+        <div><span>01 · 大脑层</span><strong>AgentOS 生成简单机械臂任务</strong></div>
+        <div><span>02 · 小脑层</span><strong>Fast-WAM 输出 7 维候选动作</strong></div>
+        <div class="pending"><span>03 · 待人类输入</span><strong>机械臂模型、任务数据与后训练</strong></div>
+      </div>
+      <aside class="limitations fastwam-boundary">
+        <strong>不可外推</strong>
+        <span>此页不宣称 Fast-WAM 已控制叉车、完成后训练、达到论文实时指标或接入本仿真闭环；机械臂示例在模型和数据到位前只展示接入路径。</span>
+      </aside>
+    </section>
 
     <aside class="limitations">
       <strong>演示边界</strong>
-      <span>规则控制的 Isaac Sim 运动学数字孪生原型；不是仙工实机控制、真实感知、ROS 2 硬件闭环或 Fast-WAM 叉车控制。Fast-WAM 结果单独验证。</span>
+      <span>确定性运动目标 + 显式 UsdPhysics 固定关节的仿真原型；不是仙工实机控制、真实感知、ROS 2 硬件闭环、标定力控或 Fast-WAM 叉车控制。</span>
     </aside>
   </main>
 

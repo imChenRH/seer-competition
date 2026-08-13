@@ -67,6 +67,35 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn("javascript", headers["Content-Type"])
 
+    def test_fastwam_endpoint_reports_absent_evidence_without_inventing_result(self):
+        status, headers, body = self.fetch("/api/fastwam")
+        payload = json.loads(body)
+
+        self.assertEqual(status, 200)
+        self.assertIn("application/json", headers["Content-Type"])
+        self.assertFalse(payload["available"])
+        self.assertIsNone(payload["action_shape"])
+        self.assertIsNone(payload["single_call_latency_s"])
+
+    def test_fastwam_endpoint_parses_only_completed_local_validation_markers(self):
+        evidence = self.evidence_root / "fastwam"
+        evidence.mkdir()
+        (evidence / "README.md").write_text("# bounded evidence\n", encoding="utf-8")
+        (evidence / "validation.log").write_text(
+            "MODEL_LOADED\nON_CUDA\n"
+            "INFERENCE_OK, action: torch.Size([1, 7]) | 推理耗时 0.86s\n"
+            "VERIFY_DONE\n",
+            encoding="utf-8",
+        )
+
+        _, _, body = self.fetch("/api/fastwam")
+        payload = json.loads(body)
+
+        self.assertTrue(payload["available"])
+        self.assertEqual(payload["action_shape"], "[1, 7]")
+        self.assertEqual(payload["single_call_latency_s"], 0.86)
+        self.assertEqual(len(payload["validation_log_sha256"]), 64)
+
     def test_lists_only_validated_evidence_runs(self):
         _, headers, body = self.fetch("/api/runs")
         payload = json.loads(body)
@@ -117,6 +146,43 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(json.loads(summary_body)["run_id"], "normal-proof")
         self.assertIn("application/x-ndjson", event_headers["Content-Type"])
         self.assertEqual(len(event_body.decode("utf-8").splitlines()), json.loads(summary_body)["event_count"])
+
+    def test_serves_only_summary_declared_raw_and_presentation_media(self):
+        run_dir = self.evidence_root / "normal-proof"
+        summary_path = run_dir / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        summary.update(
+            {
+                "video_file": "simulation.mp4",
+                "presentation_file": "presentation.mp4",
+            }
+        )
+        summary_path.write_text(json.dumps(summary), encoding="utf-8")
+        (run_dir / "simulation.mp4").write_bytes(b"raw-video")
+        (run_dir / "presentation.mp4").write_bytes(b"split-video")
+        (run_dir / "secret.mp4").write_bytes(b"secret")
+
+        _, _, list_body = self.fetch("/api/runs")
+        listed = json.loads(list_body)["runs"][0]
+        self.assertTrue(listed["has_video"])
+        self.assertTrue(listed["has_presentation"])
+        self.assertEqual(self.fetch("/media/normal-proof/simulation.mp4")[2], b"raw-video")
+        self.assertEqual(self.fetch("/media/normal-proof/presentation.mp4")[2], b"split-video")
+        with self.assertRaises(HTTPError) as raised:
+            self.fetch("/media/normal-proof/secret.mp4")
+        self.assertEqual(raised.exception.code, 404)
+        raised.exception.close()
+
+    def test_invalid_presentation_basename_is_not_exposed(self):
+        run_dir = self.evidence_root / "normal-proof"
+        summary_path = run_dir / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        summary["presentation_file"] = "../secret.mp4"
+        summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+        _, _, body = self.fetch("/api/runs")
+
+        self.assertFalse(json.loads(body)["runs"][0]["has_presentation"])
 
     def test_rejects_unknown_and_traversal_paths(self):
         for path in (

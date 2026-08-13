@@ -18,12 +18,14 @@ def main() -> int:
     manifest["environment"] = {
         "simulator": "Isaac Sim 6.0.1",
         "recording_host": "AutoDL Linux / NVIDIA RTX 4090",
-        "controller": "deterministic kinematic rule controller",
-        "payload_model": "explicit attach/release coupling",
+        "controller": "deterministic kinematic targets with explicit physics attachment",
+        "payload_model": "geometry observation plus time-sampled UsdPhysics.FixedJoint",
+        "presentation": "2560x1080 auditable event projection synchronized to source video",
     }
     manifest["claim_boundary"] = (
-        "Demonstration-grade kinematic digital twin; not hardware, ROS 2, real perception, "
-        "Fast-WAM forklift control, calibrated dynamics, or production safety evidence."
+        "Demonstration-grade deterministic motion targets with explicit USD physics attachment; "
+        "not hardware, ROS 2, real perception, Fast-WAM forklift control, calibrated dynamics, "
+        "force control, or production safety evidence."
     )
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(output)

@@ -95,6 +95,24 @@ def _assert_video(summary: Mapping[str, object], video: Mapping[str, object]) ->
         raise ValueError("video frame_count disagrees with summary")
 
 
+def _assert_presentation(summary: Mapping[str, object], video: Mapping[str, object]) -> None:
+    if "presentation_resolution" in summary:
+        expected_width, expected_height = (
+            int(value) for value in str(summary["presentation_resolution"]).split("x")
+        )
+        if (video.get("width"), video.get("height")) != (expected_width, expected_height):
+            raise ValueError("presentation resolution disagrees with summary")
+    if "presentation_fps" in summary and abs(
+        float(video.get("fps", -1)) - float(summary["presentation_fps"])
+    ) > 1e-6:
+        raise ValueError("presentation fps disagrees with summary")
+    if (
+        "presentation_frame_count" in summary
+        and video.get("frame_count") != summary["presentation_frame_count"]
+    ):
+        raise ValueError("presentation frame_count disagrees with summary")
+
+
 def build_manifest(
     evidence_root: Path | str,
     *,
@@ -108,6 +126,11 @@ def build_manifest(
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         events_path = _safe_declared_file(run_dir, summary.get("events_file"), "events")
         video_path = _safe_declared_file(run_dir, summary.get("video_file"), "video")
+        presentation_path = None
+        if summary.get("presentation_file") is not None:
+            presentation_path = _safe_declared_file(
+                run_dir, summary.get("presentation_file"), "presentation"
+            )
         scene_path = _safe_declared_file(run_dir, summary.get("scene_file"), "scene")
         validation = validate_scenario_events(
             load_events(events_path), expected_scenario=str(summary["scenario"])
@@ -115,23 +138,31 @@ def build_manifest(
         _assert_summary(summary, validation)
         video = dict(video_probe(video_path))
         _assert_video(summary, video)
+        presentation = None
+        if presentation_path is not None:
+            presentation = dict(video_probe(presentation_path))
+            _assert_presentation(summary, presentation)
         files = {}
-        for path in (events_path, summary_path, scene_path, video_path):
+        declared_paths = [events_path, summary_path, scene_path, video_path]
+        if presentation_path is not None:
+            declared_paths.append(presentation_path)
+        for path in declared_paths:
             files[path.name] = {"size_bytes": path.stat().st_size, "sha256": sha256_file(path)}
-        runs.append(
-            {
-                "run_id": validation.run_id,
-                "scenario": validation.scenario,
-                "source": validation.source,
-                "terminal_status": validation.terminal_status,
-                "event_count": validation.event_count,
-                "duration_s": validation.duration_s,
-                "isaac_version": summary.get("isaac_version"),
-                "controller": summary.get("controller"),
-                "video_probe": video,
-                "files": files,
-            }
-        )
+        run_record = {
+            "run_id": validation.run_id,
+            "scenario": validation.scenario,
+            "source": validation.source,
+            "terminal_status": validation.terminal_status,
+            "event_count": validation.event_count,
+            "duration_s": validation.duration_s,
+            "isaac_version": summary.get("isaac_version"),
+            "controller": summary.get("controller"),
+            "video_probe": video,
+            "files": files,
+        }
+        if presentation is not None:
+            run_record["presentation_probe"] = presentation
+        runs.append(run_record)
     if not runs:
         raise ValueError(f"no validated evidence runs found below {root}")
     auxiliary_evidence: dict[str, dict[str, object]] = {}

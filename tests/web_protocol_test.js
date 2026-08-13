@@ -61,5 +61,12 @@ const runs = [
 ];
 assert(SeerProtocol.chooseDefaultRun(runs).run_id === "normal-formal", "formal normal is default");
 assert(SeerProtocol.chooseDefaultRun([runs[0]]).run_id === "intervention-latest", "first run fallback");
+assert(SeerProtocol.eventAtTime(valid, 0).event_type === "task_started", "zero-time event");
+assert(SeerProtocol.eventAtTime(valid, 2.9).fallback_id === "FB-F01", "latest event at time");
+assert(SeerProtocol.eventAtTime(valid, -1) === null, "no event before timeline");
+const dispatch = SeerProtocol.dispatchPlan(valid);
+assert(dispatch.length === 1, "dispatch plan uses started actions only");
+assert(dispatch[0].identifier === "FB-F01", "fallback dispatch identifier");
+assert(dispatch[0].layer === "cerebellum", "dispatch layer is explicit");
 
 print("protocol assertions: " + assertions);

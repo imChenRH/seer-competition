@@ -72,8 +72,39 @@
     }) || runs[0];
   }
 
+  function eventAtTime(events, simTimeS) {
+    if (!Array.isArray(events) || typeof simTimeS !== "number") return null;
+    let current = null;
+    events.some(function (event) {
+      if (!event || typeof event.sim_time_s !== "number" || event.sim_time_s > simTimeS) {
+        return true;
+      }
+      current = event;
+      return false;
+    });
+    return current;
+  }
+
+  function dispatchPlan(events) {
+    if (!Array.isArray(events)) return [];
+    return events.filter(function (event) {
+      return event && (event.event_type === "skill_started" || event.event_type === "fallback_started");
+    }).map(function (event) {
+      return Object.freeze({
+        sequence: event.sequence,
+        simTimeS: event.sim_time_s,
+        kind: event.event_type === "fallback_started" ? "fallback" : "skill",
+        identifier: event.fallback_id || event.skill_id,
+        layer: "cerebellum",
+        message: event.message || ""
+      });
+    });
+  }
+
   global.SeerProtocol = Object.freeze({
     chooseDefaultRun: chooseDefaultRun,
+    dispatchPlan: dispatchPlan,
+    eventAtTime: eventAtTime,
     validateEvents: validateEvents,
     reduceEvents: reduceEvents
   });

@@ -143,6 +143,91 @@ class EvidenceManifestTests(unittest.TestCase):
                 },
             )
 
+    def test_manifest_hashes_and_probes_optional_presentation_separately(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            run = root / "isaac-normal-test"
+            run.mkdir()
+            events = run / "events.jsonl"
+            with EventWriter(events, "isaac-normal-test", "normal", "isaac_sim") as writer:
+                DemoEngine(ObservedIsaacBackend("normal"), writer).run("normal")
+            validation = validate_events(load_events(events))
+            summary = {
+                "run_id": validation.run_id,
+                "scenario": validation.scenario,
+                "source": validation.source,
+                "event_count": validation.event_count,
+                "terminal_status": validation.terminal_status,
+                "duration_s": validation.duration_s,
+                "resolution": "1280x720",
+                "fps": 8,
+                "frame_count": 409,
+                "presentation_resolution": "2560x1080",
+                "presentation_fps": 8,
+                "presentation_frame_count": 409,
+                "events_file": "events.jsonl",
+                "video_file": "simulation.mp4",
+                "presentation_file": "presentation.mp4",
+                "scene_file": "scene.usda",
+            }
+            (run / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+            (run / "simulation.mp4").write_bytes(b"raw")
+            presentation = run / "presentation.mp4"
+            presentation.write_bytes(b"presentation")
+            (run / "scene.usda").write_text("#usda 1.0", encoding="utf-8")
+
+            def probe(path):
+                width, height = (2560, 1080) if path.name == "presentation.mp4" else (1280, 720)
+                return {"width": width, "height": height, "fps": 8.0, "frame_count": 409, "duration_s": 51.125}
+
+            manifest = build_manifest(root, require_auxiliary=False, video_probe=probe)
+
+            recorded = manifest["runs"][0]
+            self.assertEqual(recorded["video_probe"]["width"], 1280)
+            self.assertEqual(recorded["presentation_probe"]["width"], 2560)
+            self.assertEqual(
+                recorded["files"]["presentation.mp4"]["sha256"],
+                sha256_file(presentation),
+            )
+
+    def test_manifest_rejects_presentation_that_disagrees_with_declared_resolution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            run = root / "isaac-normal-test"
+            run.mkdir()
+            events = run / "events.jsonl"
+            with EventWriter(events, "isaac-normal-test", "normal", "isaac_sim") as writer:
+                DemoEngine(ObservedIsaacBackend("normal"), writer).run("normal")
+            validation = validate_events(load_events(events))
+            (run / "summary.json").write_text(
+                json.dumps(
+                    {
+                        "run_id": validation.run_id,
+                        "scenario": validation.scenario,
+                        "source": validation.source,
+                        "event_count": validation.event_count,
+                        "terminal_status": validation.terminal_status,
+                        "duration_s": validation.duration_s,
+                        "events_file": "events.jsonl",
+                        "video_file": "simulation.mp4",
+                        "presentation_file": "presentation.mp4",
+                        "presentation_resolution": "2560x1080",
+                        "scene_file": "scene.usda",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (run / "simulation.mp4").write_bytes(b"raw")
+            (run / "presentation.mp4").write_bytes(b"bad")
+            (run / "scene.usda").write_text("#usda 1.0", encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "presentation resolution"):
+                build_manifest(
+                    root,
+                    require_auxiliary=False,
+                    video_probe=lambda _: {"width": 1280, "height": 720},
+                )
+
     def test_manifest_rejects_summary_that_disagrees_with_events(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
