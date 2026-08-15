@@ -2,6 +2,13 @@ import unittest
 import math
 
 from seer_demo.isaac.runner import IsaacTimelineBackend
+from seer_demo.isaac.collision import (
+    OrientedBox,
+    Pose2D,
+    boxes_overlap_3d,
+    find_forbidden_collisions,
+    swept_poses,
+)
 from seer_demo.isaac.layout import (
     local_from_world,
     static_physics_contract,
@@ -23,6 +30,54 @@ from seer_demo.isaac.timeline import FORKLIFT_PARTS, build_timeline
 
 
 class IsaacTimelineTests(unittest.TestCase):
+    def test_swept_guard_detects_the_old_diagonal_conveyor_clip(self):
+        start = Pose2D(-0.985402, 1.191240, 8.0)
+        end = Pose2D(-9.281922, -3.855056, -6.0)
+        conveyor = OrientedBox(
+            "conveyor_keepout",
+            (-6.0, -4.2),
+            (3.2, 1.35),
+            -6.0,
+            0.0,
+            0.78,
+        )
+
+        collisions = find_forbidden_collisions(start, end, (conveyor,))
+
+        self.assertTrue(collisions)
+        self.assertEqual(collisions[0].dynamic_name, "forklift_body")
+        self.assertEqual(collisions[0].static_name, "conveyor_keepout")
+        self.assertGreaterEqual(collisions[0].sample_index, 1)
+
+    def test_obb_guard_respects_xy_and_z_separation(self):
+        low = OrientedBox("low", (0.0, 0.0), (1.0, 1.0), 0.0, 0.0, 0.5)
+        high = OrientedBox("high", (0.0, 0.0), (1.0, 1.0), 0.0, 0.6, 1.0)
+        left = OrientedBox("left", (-2.0, 0.0), (1.0, 1.0), 25.0, 0.0, 1.0)
+        right = OrientedBox("right", (2.0, 0.0), (1.0, 1.0), -25.0, 0.0, 1.0)
+        rotated_overlap = OrientedBox(
+            "rotated_overlap", (0.5, 0.0), (1.0, 1.0), 45.0, 0.0, 1.0
+        )
+
+        self.assertFalse(boxes_overlap_3d(low, high))
+        self.assertFalse(boxes_overlap_3d(left, right))
+        self.assertTrue(boxes_overlap_3d(low, rotated_overlap))
+
+    def test_swept_pose_sampling_respects_translation_and_yaw_limits(self):
+        poses = swept_poses(
+            Pose2D(0.0, 0.0, 179.0),
+            Pose2D(0.10, 0.0, -179.0),
+            translation_step_m=0.025,
+            yaw_step_deg=0.5,
+        )
+
+        self.assertEqual(len(poses), 5)
+        self.assertEqual(poses[0], Pose2D(0.0, 0.0, 179.0))
+        self.assertAlmostEqual(poses[-1].x_m, 0.10)
+        self.assertAlmostEqual(poses[-1].yaw_deg, 181.0)
+        for previous, current in zip(poses, poses[1:]):
+            self.assertLessEqual(math.dist(previous.position, current.position), 0.0250001)
+            self.assertLessEqual(abs(current.yaw_deg - previous.yaw_deg), 0.500001)
+
     def test_rotated_facilities_are_separated_and_not_facing_each_other(self):
         layout = warehouse_layout_spec()
 
