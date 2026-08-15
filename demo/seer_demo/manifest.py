@@ -5,12 +5,14 @@ from __future__ import annotations
 from fractions import Fraction
 import hashlib
 import json
+import math
 from pathlib import Path
 import shutil
 import subprocess
 from typing import Callable, Mapping
 
 from .contracts import load_events, validate_scenario_events
+from .isaac.collision import COLLISION_GUARD_VERSION
 
 
 AUXILIARY_EVIDENCE_FILES = (
@@ -77,29 +79,55 @@ def _safe_declared_file(run_dir: Path, value: object, label: str) -> Path:
     return path
 
 
-def _assert_summary(summary: Mapping[str, object], validation) -> None:
+def assert_collision_summary(summary: Mapping[str, object]) -> None:
+    """Reject self-declared certification unless every bound is coherent."""
+    numeric_clearance = summary.get("minimum_body_clearance_m")
+    numeric_contact_error = summary.get("maximum_contact_error_m")
+    numeric_placement_error = summary.get("maximum_horizontal_placement_error_m")
+    valid_collision_certification = (
+        summary.get("collision_guard") == COLLISION_GUARD_VERSION
+        and summary.get("collision_check_semantics")
+        == "z-overlapping SAT candidate pairs after explicit allowed-contact filtering"
+        and summary.get("collision_certified") is True
+        and type(summary.get("collision_check_count")) is int
+        and int(summary["collision_check_count"]) > 0
+        and type(summary.get("forbidden_collision_count")) is int
+        and int(summary["forbidden_collision_count"]) == 0
+        and isinstance(numeric_clearance, (int, float))
+        and not isinstance(numeric_clearance, bool)
+        and math.isfinite(float(numeric_clearance))
+        and float(numeric_clearance) >= 0.05
+        and summary.get("maximum_allowed_contact_error_m") == 0.01
+        and isinstance(numeric_contact_error, (int, float))
+        and not isinstance(numeric_contact_error, bool)
+        and math.isfinite(float(numeric_contact_error))
+        and 0.0 <= float(numeric_contact_error) <= 0.01
+        and type(summary.get("contact_violation_count")) is int
+        and int(summary["contact_violation_count"]) == 0
+        and summary.get("maximum_allowed_horizontal_placement_error_m") == 0.02
+        and isinstance(numeric_placement_error, (int, float))
+        and not isinstance(numeric_placement_error, bool)
+        and math.isfinite(float(numeric_placement_error))
+        and 0.0 <= float(numeric_placement_error) <= 0.02
+    )
+    if not valid_collision_certification:
+        raise ValueError("Isaac summary lacks valid collision certification")
+
+
+def assert_summary_matches_validation(
+    summary: Mapping[str, object], validation
+) -> None:
     for key in ("run_id", "scenario", "source", "event_count", "terminal_status", "duration_s"):
         actual = getattr(validation, key)
         if summary.get(key) != actual:
             raise ValueError(f"summary {key} disagrees with validated events")
     if validation.source == "isaac_sim":
-        valid_collision_certification = (
-            summary.get("collision_guard") == "2.5D_OBB_SAT_SWEEP_V1"
-            and summary.get("collision_certified") is True
-            and type(summary.get("collision_check_count")) is int
-            and int(summary["collision_check_count"]) > 0
-            and type(summary.get("forbidden_collision_count")) is int
-            and int(summary["forbidden_collision_count"]) == 0
-            and isinstance(summary.get("minimum_body_clearance_m"), (int, float))
-            and not isinstance(summary.get("minimum_body_clearance_m"), bool)
-            and float(summary["minimum_body_clearance_m"]) >= 0.05
-            and summary.get("maximum_allowed_contact_error_m") == 0.01
-        )
-        if not valid_collision_certification:
-            raise ValueError("Isaac summary lacks valid collision certification")
+        assert_collision_summary(summary)
 
 
-def _assert_video(summary: Mapping[str, object], video: Mapping[str, object]) -> None:
+def assert_video_matches_summary(
+    summary: Mapping[str, object], video: Mapping[str, object]
+) -> None:
     if "resolution" in summary:
         expected_width, expected_height = (int(value) for value in str(summary["resolution"]).split("x"))
         if (video.get("width"), video.get("height")) != (expected_width, expected_height):
@@ -150,9 +178,9 @@ def build_manifest(
         validation = validate_scenario_events(
             load_events(events_path), expected_scenario=str(summary["scenario"])
         )
-        _assert_summary(summary, validation)
+        assert_summary_matches_validation(summary, validation)
         video = dict(video_probe(video_path))
-        _assert_video(summary, video)
+        assert_video_matches_summary(summary, video)
         presentation = None
         if presentation_path is not None:
             presentation = dict(video_probe(presentation_path))
@@ -175,6 +203,11 @@ def build_manifest(
             "collision_guard": summary.get("collision_guard"),
             "collision_check_count": summary.get("collision_check_count"),
             "minimum_body_clearance_m": summary.get("minimum_body_clearance_m"),
+            "maximum_contact_error_m": summary.get("maximum_contact_error_m"),
+            "maximum_horizontal_placement_error_m": summary.get(
+                "maximum_horizontal_placement_error_m"
+            ),
+            "contact_violation_count": summary.get("contact_violation_count"),
             "forbidden_collision_count": summary.get("forbidden_collision_count"),
             "collision_certified": summary.get("collision_certified"),
             "video_probe": video,

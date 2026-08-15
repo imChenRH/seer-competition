@@ -46,17 +46,36 @@ class DecisionSnapshotTests(unittest.TestCase):
             scenario_events("normal"),
             26.0,
             collision_summary={
-                "collision_guard": "2.5D_OBB_SAT_SWEEP_V1",
+                "collision_guard": "2.5D_OBB_SAT_SWEEP_V2",
+                "collision_check_semantics": "z-overlapping SAT candidate pairs after explicit allowed-contact filtering",
                 "collision_certified": True,
                 "forbidden_collision_count": 0,
                 "minimum_body_clearance_m": 0.15,
+                "collision_check_count": 100,
+                "maximum_allowed_contact_error_m": 0.01,
+                "maximum_contact_error_m": 0.005,
+                "maximum_allowed_horizontal_placement_error_m": 0.02,
+                "maximum_horizontal_placement_error_m": 0.01,
+                "contact_violation_count": 0,
             },
         )
 
-        self.assertEqual(snapshot["safety"]["collision_guard"], "2.5D_OBB_SAT_SWEEP_V1")
+        self.assertEqual(snapshot["safety"]["collision_guard"], "2.5D_OBB_SAT_SWEEP_V2")
         self.assertTrue(snapshot["safety"]["collision_certified"])
         self.assertEqual(snapshot["safety"]["forbidden_collision_count"], 0)
         self.assertEqual(snapshot["safety"]["minimum_body_clearance_m"], 0.15)
+
+    def test_snapshot_rejects_self_declared_but_incoherent_collision_summary(self):
+        with self.assertRaisesRegex(ValueError, "collision certification"):
+            decision_snapshot(
+                scenario_events("normal"),
+                26.0,
+                collision_summary={
+                    "collision_guard": "WRONG",
+                    "collision_certified": True,
+                    "forbidden_collision_count": 4,
+                },
+            )
 
     def test_recovery_snapshot_shows_failed_perception_and_fallback_dispatch(self):
         snapshot = decision_snapshot(scenario_events("recovery"), 24.0)
@@ -88,6 +107,14 @@ class DecisionSnapshotTests(unittest.TestCase):
 
 
 class PresentationMediaTests(unittest.TestCase):
+    def test_split_builder_binds_summary_to_events_and_source_video(self):
+        source = (ROOT / "scripts" / "build_split_presentation.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("assert_summary_matches_validation(summary, validation)", source)
+        self.assertIn("assert_video_matches_summary(summary, source_probe)", source)
+
     def test_frame_time_maps_frame_index_to_source_clock(self):
         self.assertEqual(frame_time_s(0, 8.0), 0.0)
         self.assertEqual(frame_time_s(80, 8.0), 10.0)

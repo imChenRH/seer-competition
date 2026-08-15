@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from functools import lru_cache
 import math
 from typing import Mapping
 
 from ..scenarios import get_scenario
 from .layout import (
     INSERTION_MAST_HEIGHT_M,
+    PAYLOAD_ATTACHMENT_X_OFFSET_M,
     PAYLOAD_ATTACHMENT_Z_OFFSET_M,
     warehouse_layout_spec,
     world_from_local,
@@ -54,6 +56,7 @@ class FrameState:
     payload_x_m: float
     payload_y_m: float
     payload_z_m: float
+    payload_yaw_deg: float
     payload_attached: bool
     payload_placed: bool
     pallet_lateral_error_m: float
@@ -72,6 +75,7 @@ class FrameState:
             "payload_x_m": self.payload_x_m,
             "payload_y_m": self.payload_y_m,
             "payload_z_m": self.payload_z_m,
+            "payload_yaw_deg": self.payload_yaw_deg,
             "payload_attached": self.payload_attached,
             "payload_placed": self.payload_placed,
             "pallet_lateral_error_m": self.pallet_lateral_error_m,
@@ -130,15 +134,18 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
         )
 
     entry_local_x = (
-        0.10 if scenario == "intervention" else layout.container_entry_local[0]
+        -0.45 if scenario == "intervention" else layout.container_entry_local[0]
     )
     entry = container_point(entry_local_x, 0.0)
     approach_local_x = (
-        0.25 if scenario == "intervention" else layout.container_alignment_local[0]
+        -0.45 if scenario == "intervention" else layout.container_alignment_local[0]
     )
     aligned = container_point(approach_local_x, 0.0)
     pickup_y = 0.25 if scenario == "recovery" else 0.0
-    insert = container_point(2.25, pickup_y)
+    insert = container_point(
+        layout.container_payload_local[0] - PAYLOAD_ATTACHMENT_X_OFFSET_M,
+        pickup_y,
+    )
     exit_pose = container_point(*layout.container_exit_local[:2])
     conveyor_detour = world_from_local(
         layout.conveyor.position,
@@ -213,8 +220,8 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
                 "lateral_realign",
                 8,
                 fallback_id="FB-F01",
-                base_x_m=container_point(2.2, 0.25)[0],
-                base_y_m=container_point(2.2, 0.25)[1],
+                base_x_m=container_point(layout.container_alignment_local[0], 0.25)[0],
+                base_y_m=container_point(layout.container_alignment_local[0], 0.25)[1],
                 pallet_lateral_error_m=0.0,
             ),
             _Segment("pose_revalidated", 3, skill_id="FORK-PER-01", attempt=2),
@@ -287,6 +294,7 @@ def _interpolate(start: float, end: float, amount: float) -> float:
     return start + (end - start) * _smooth(amount)
 
 
+@lru_cache(maxsize=12)
 def build_timeline(scenario: str, fps: int = 8) -> Timeline:
     get_scenario(scenario)
     if not isinstance(fps, int) or fps <= 0:
@@ -309,17 +317,20 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
             payload_x, payload_y, _ = world_from_local(
                 (base_x, base_y, 0.0),
                 current.yaw_deg,
-                (1.6, 0.0, 0.0),
+                (PAYLOAD_ATTACHMENT_X_OFFSET_M, 0.0, 0.0),
             )
             payload_z = mast_height + PAYLOAD_ATTACHMENT_Z_OFFSET_M
+            payload_yaw = current.yaw_deg
         elif placed:
             payload_x, payload_y, payload_z = layout.conveyor_payload_target
+            payload_yaw = layout.conveyor.yaw_deg
         else:
             payload_x, payload_y, payload_z = world_from_local(
                 layout.container.position,
                 layout.container.yaw_deg,
                 (layout.container_payload_local[0], pickup_y, layout.container_payload_local[2]),
             )
+            payload_yaw = layout.container.yaw_deg
         frames.append(
             FrameState(
                 frame=len(frames),
@@ -338,6 +349,7 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
                 payload_x_m=round(payload_x, 6),
                 payload_y_m=round(payload_y, 6),
                 payload_z_m=round(payload_z, 6),
+                payload_yaw_deg=round(payload_yaw, 6),
                 payload_attached=attached,
                 payload_placed=placed,
                 pallet_lateral_error_m=round(current.pallet_lateral_error_m, 6),

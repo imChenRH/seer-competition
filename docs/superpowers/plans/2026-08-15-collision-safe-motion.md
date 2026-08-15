@@ -176,7 +176,7 @@ Expected: zero forbidden collisions in every scenario.
 - Modify: `tests/test_presentation.py`
 
 **Interfaces:**
-- Produces summary keys `collision_guard`, `collision_check_count`, `minimum_body_clearance_m`, `maximum_allowed_contact_error_m`, `forbidden_collision_count`.
+- Produces summary keys `collision_guard`, `collision_check_count`, `collision_check_semantics`, `minimum_body_clearance_m`, `maximum_allowed_contact_error_m`, `maximum_contact_error_m`, `maximum_allowed_horizontal_placement_error_m`, `maximum_horizontal_placement_error_m`, `forbidden_collision_count`, `contact_violation_count`.
 - Consumes `certify_timeline()` and per-frame guard functions.
 
 - [x] **Step 1: Write failing tests that reject a forged colliding timeline and require collision fields in presentation snapshots**

@@ -6,13 +6,18 @@ from seer_demo.isaac.runner import IsaacTimelineBackend
 from seer_demo.isaac.collision import (
     OrientedBox,
     Pose2D,
+    box_separation_xy,
     boxes_overlap_3d,
     assert_timeline_collision_safe,
     certify_timeline,
+    dynamic_boxes_for_transition,
     find_forbidden_collisions,
     swept_poses,
+    warehouse_static_boxes,
 )
 from seer_demo.isaac.layout import (
+    PAYLOAD_ATTACHMENT_X_OFFSET_M,
+    active_payload_geometry_specs,
     conveyor_geometry_specs,
     local_from_world,
     static_physics_contract,
@@ -34,6 +39,120 @@ from seer_demo.isaac.timeline import FORKLIFT_PARTS, build_timeline
 
 
 class IsaacTimelineTests(unittest.TestCase):
+    def test_payload_pose_matches_vehicle_and_facility_yaw(self):
+        timeline = build_timeline("normal", fps=8)
+        attached = next(frame for frame in timeline.frames if frame.payload_attached)
+        placed = timeline.frames[-1]
+        initial = timeline.frames[0]
+
+        self.assertEqual(initial.payload_yaw_deg, warehouse_layout_spec().container.yaw_deg)
+        self.assertEqual(attached.payload_yaw_deg, attached.yaw_deg)
+        self.assertEqual(placed.payload_yaw_deg, warehouse_layout_spec().conveyor.yaw_deg)
+
+    def test_tilted_fork_and_carrier_envelopes_follow_shared_transform(self):
+        timeline = build_timeline("normal", fps=8)
+        tilted = next(
+            frame for frame in reversed(timeline.frames)
+            if frame.phase == "tilt_stabilize"
+        )
+        boxes = {
+            box.name: box
+            for box in dynamic_boxes_for_transition(tilted, tilted)[0]
+        }
+
+        self.assertGreater(boxes["fork_left"].z_max - boxes["fork_left"].z_min, 0.10)
+        self.assertIn("fork_carrier", boxes)
+
+    def test_forks_contact_deck_without_intersecting_cargo(self):
+        specs = active_payload_geometry_specs()
+        deck_top = max(
+            spec.position[2] + spec.size[2] / 2
+            for spec in specs
+            if spec.role == "deck"
+        )
+        cargo_bottom = min(
+            spec.position[2] - spec.size[2] / 2
+            for spec in specs
+            if spec.role == "cargo"
+        )
+        self.assertAlmostEqual(cargo_bottom, deck_top)
+
+        timeline = build_timeline("normal", fps=8)
+        attached_index = next(
+            index for index, frame in enumerate(timeline.frames)
+            if frame.payload_attached
+        )
+        boxes = dynamic_boxes_for_transition(
+            timeline.frames[attached_index], timeline.frames[attached_index]
+        )[0]
+        forks = [box for box in boxes if box.name in {"fork_left", "fork_right"}]
+        cargos = [
+            box for box in boxes if box.name.startswith("active_payload_cargo_")
+        ]
+        decks = [
+            box for box in boxes if box.name.startswith("active_payload_deck_")
+        ]
+
+        self.assertFalse(
+            any(boxes_overlap_3d(fork, cargo) for fork in forks for cargo in cargos)
+        )
+        self.assertTrue(
+            any(
+                box_separation_xy(fork, deck) == 0.0
+                and abs(fork.z_max - deck.z_min) <= 1e-6
+                for fork in forks
+                for deck in decks
+            )
+        )
+
+    def test_payload_clearance_and_dynamic_pair_guard_reject_carrier_overlap(self):
+        timeline = build_timeline("normal", fps=8)
+        attached_index = next(
+            index for index, frame in enumerate(timeline.frames)
+            if frame.payload_attached
+        )
+        attached = timeline.frames[attached_index]
+        self.assertEqual(PAYLOAD_ATTACHMENT_X_OFFSET_M, 1.82)
+        forged_x, forged_y, _ = world_from_local(
+            (attached.base_x_m, attached.base_y_m, 0.0),
+            attached.yaw_deg,
+            (1.60, 0.0, 0.0),
+        )
+        forged_frames = list(timeline.frames)
+        forged_frames[attached_index] = replace(
+            attached,
+            payload_x_m=forged_x,
+            payload_y_m=forged_y,
+        )
+        forged = replace(timeline, frames=tuple(forged_frames))
+
+        certification = certify_timeline(forged)
+
+        self.assertTrue(
+            any(
+                "fork_carrier" in {hit.dynamic_name, hit.static_name}
+                and any(
+                    name.startswith("active_payload_")
+                    for name in {hit.dynamic_name, hit.static_name}
+                )
+                for hit in certification.collisions
+            ),
+            certification.collisions[:8],
+        )
+
+    def test_static_guard_contains_every_collision_shell_and_container_rail(self):
+        names = {box.name for box in warehouse_static_boxes("normal")}
+
+        self.assertTrue(
+            {
+                "warehouse_back_wall",
+                "warehouse_side_wall",
+                "warehouse_ceiling_beam_0",
+                "container_right_top_rail",
+                "container_roof_back_rail",
+            }.issubset(names)
+        )
+
     def test_collision_certification_rejects_a_forged_colliding_timeline(self):
         timeline = build_timeline("normal", fps=8)
         collision_index = next(
@@ -84,12 +203,99 @@ class IsaacTimelineTests(unittest.TestCase):
     def test_collision_certification_exports_formal_summary_fields(self):
         summary = certify_timeline(build_timeline("normal", fps=8)).to_summary()
 
-        self.assertEqual(summary["collision_guard"], "2.5D_OBB_SAT_SWEEP_V1")
+        self.assertEqual(summary["collision_guard"], "2.5D_OBB_SAT_SWEEP_V2")
         self.assertTrue(summary["collision_certified"])
         self.assertEqual(summary["forbidden_collision_count"], 0)
         self.assertGreater(summary["collision_check_count"], 0)
         self.assertGreaterEqual(summary["minimum_body_clearance_m"], 0.05)
         self.assertEqual(summary["maximum_allowed_contact_error_m"], 0.01)
+        self.assertLessEqual(summary["maximum_contact_error_m"], 0.01)
+        self.assertEqual(
+            summary["maximum_allowed_horizontal_placement_error_m"], 0.02
+        )
+        self.assertLessEqual(summary["maximum_horizontal_placement_error_m"], 0.02)
+        self.assertEqual(summary["contact_violation_count"], 0)
+
+    def test_contact_certification_rejects_forged_support_height(self):
+        timeline = build_timeline("normal", fps=8)
+        forged_frames = list(timeline.frames)
+        forged_frames[-1] = replace(
+            forged_frames[-1], payload_z_m=forged_frames[-1].payload_z_m + 0.02
+        )
+
+        certification = certify_timeline(
+            replace(timeline, frames=tuple(forged_frames))
+        )
+
+        self.assertGreater(certification.maximum_contact_error_m, 0.01)
+        self.assertTrue(certification.contact_violations)
+        self.assertFalse(certification.to_summary()["collision_certified"])
+
+    def test_collision_certification_rejects_payload_below_container_floor(self):
+        timeline = build_timeline("normal", fps=8)
+        forged_frames = list(timeline.frames)
+        forged_frames[0] = replace(
+            forged_frames[0], payload_z_m=forged_frames[0].payload_z_m - 0.009
+        )
+
+        certification = certify_timeline(
+            replace(timeline, frames=tuple(forged_frames))
+        )
+
+        self.assertTrue(
+            any(
+                hit.dynamic_name.startswith("active_payload_runner_")
+                and hit.static_name == "container_floor"
+                for hit in certification.collisions
+            )
+        )
+        self.assertFalse(certification.to_summary()["collision_certified"])
+
+    def test_contact_certification_rejects_detached_fixed_joint_pose(self):
+        timeline = build_timeline("normal", fps=8)
+        forged_frames = list(timeline.frames)
+        attached_index = next(
+            index for index, frame in enumerate(forged_frames)
+            if frame.payload_attached
+        )
+        forged_frames[attached_index] = replace(
+            forged_frames[attached_index],
+            payload_x_m=forged_frames[attached_index].payload_x_m + 0.10,
+        )
+
+        certification = certify_timeline(
+            replace(timeline, frames=tuple(forged_frames))
+        )
+
+        self.assertTrue(
+            any("attachment position error" in item for item in certification.contact_violations)
+        )
+        self.assertFalse(certification.to_summary()["collision_certified"])
+
+    def test_contact_certification_rejects_horizontal_placement_error(self):
+        timeline = build_timeline("normal", fps=8)
+        forged_frames = list(timeline.frames)
+        forged_frames[-1] = replace(
+            forged_frames[-1], payload_x_m=forged_frames[-1].payload_x_m + 0.03
+        )
+
+        certification = certify_timeline(
+            replace(timeline, frames=tuple(forged_frames))
+        )
+
+        self.assertTrue(
+            any("placement position error" in item for item in certification.contact_violations)
+        )
+        self.assertFalse(certification.to_summary()["collision_certified"])
+
+    def test_transition_sampling_covers_payload_yaw_when_base_is_stationary(self):
+        timeline = build_timeline("normal", fps=8)
+        frame = timeline.frames[0]
+        rotated = replace(frame, payload_yaw_deg=frame.payload_yaw_deg + 90.0)
+
+        samples = dynamic_boxes_for_transition(frame, rotated)
+
+        self.assertGreaterEqual(len(samples), 181)
 
     def test_all_scenarios_have_zero_forbidden_swept_collisions(self):
         for scenario in ("normal", "recovery", "intervention"):
@@ -174,10 +380,12 @@ class IsaacTimelineTests(unittest.TestCase):
         rotated_overlap = OrientedBox(
             "rotated_overlap", (0.5, 0.0), (1.0, 1.0), 45.0, 0.0, 1.0
         )
+        touching = OrientedBox("touching", (0.0, 0.0), (1.0, 1.0), 0.0, 0.5, 1.0)
 
         self.assertFalse(boxes_overlap_3d(low, high))
         self.assertFalse(boxes_overlap_3d(left, right))
         self.assertTrue(boxes_overlap_3d(low, rotated_overlap))
+        self.assertTrue(boxes_overlap_3d(low, touching))
 
     def test_swept_pose_sampling_respects_translation_and_yaw_limits(self):
         poses = swept_poses(
@@ -224,6 +432,15 @@ class IsaacTimelineTests(unittest.TestCase):
         )
         self.assertTrue(all(item.collision_enabled for item in contract.values()))
         self.assertTrue(all(item.rigid_body_kind == "static" for item in contract.values()))
+
+    def test_hidden_fault_obstacle_is_not_an_active_collider(self):
+        normal = {item.name for item in static_physics_contract("normal")}
+        intervention = {
+            item.name for item in static_physics_contract("intervention")
+        }
+
+        self.assertNotIn("obstacle", normal)
+        self.assertIn("obstacle", intervention)
 
     def test_scene_physics_contract_includes_required_usd_apis(self):
         self.assertEqual(
@@ -310,7 +527,7 @@ class IsaacTimelineTests(unittest.TestCase):
             expected_x, expected_y, _ = world_from_local(
                 (frame.base_x_m, frame.base_y_m, 0.0),
                 frame.yaw_deg,
-                (1.6, 0.0, frame.payload_z_m),
+                (PAYLOAD_ATTACHMENT_X_OFFSET_M, 0.0, frame.payload_z_m),
             )
             self.assertAlmostEqual(frame.payload_x_m, expected_x, places=5)
             self.assertAlmostEqual(frame.payload_y_m, expected_y, places=5)
@@ -418,11 +635,17 @@ class IsaacTimelineTests(unittest.TestCase):
         self.assertFalse(result.success)
 
     def test_observed_state_is_derived_from_geometry_and_actual_motion(self):
+        payload_x, payload_y, _ = world_from_local(
+            (2.2, 0.25, 0.0),
+            30.0,
+            (PAYLOAD_ATTACHMENT_X_OFFSET_M, 0.0, 0.0),
+        )
         state = derive_kinematic_observation(
             base=(2.2, 0.25, 0.0),
             lift=(2.2, 0.25, 1.05),
-            payload=(3.585641, 1.05, 1.065),
+            payload=(payload_x, payload_y, 1.065),
             yaw_deg=30.0,
+            payload_yaw_deg=30.0,
             fork_tilt_deg=4.0,
             obstacle_visible=False,
             base_speed_mps=0.0,

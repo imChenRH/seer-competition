@@ -16,7 +16,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "demo"))
 
 from seer_demo.contracts import load_events, validate_scenario_events  # noqa: E402
-from seer_demo.manifest import probe_video  # noqa: E402
+from seer_demo.manifest import (  # noqa: E402
+    assert_summary_matches_validation,
+    assert_video_matches_summary,
+    probe_video,
+)
 from seer_demo.presentation import build_ffmpeg_command, render_overlay_frames  # noqa: E402
 
 
@@ -50,8 +54,12 @@ def main() -> int:
     source_video = declared_file(run_dir, summary.get("video_file"), "source video")
     events_path = declared_file(run_dir, summary.get("events_file"), "events")
     events = load_events(events_path)
-    validate_scenario_events(events, expected_scenario=str(summary["scenario"]))
+    validation = validate_scenario_events(
+        events, expected_scenario=str(summary["scenario"])
+    )
+    assert_summary_matches_validation(summary, validation)
     source_probe = probe_video(source_video)
+    assert_video_matches_summary(summary, source_probe)
     fps = float(source_probe["fps"])
     frame_count = int(source_probe["frame_count"])
     output_name = str(args.output)

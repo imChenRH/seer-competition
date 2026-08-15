@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 from .contracts import Event
+from .manifest import assert_collision_summary
 
 
 CANVAS_SIZE = (2560, 1080)
@@ -87,6 +88,8 @@ def decision_snapshot(
     """Project the event stream into display state without inventing hidden reasoning."""
 
     materialized = list(events)
+    if collision_summary is not None:
+        assert_collision_summary(collision_summary)
     visible = _events_at(materialized, sim_time_s)
     if not visible:
         raise ValueError("no event exists at or before the requested simulation time")

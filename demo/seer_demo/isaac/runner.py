@@ -309,7 +309,7 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
                 "warehouse_assets": list(handles.referenced_assets),
                 "facility_layout": asdict(warehouse_layout_spec()),
                 "static_physics_contract": [
-                    asdict(item) for item in static_physics_contract()
+                    asdict(item) for item in static_physics_contract(args.scenario)
                 ],
                 "static_collision_prim_count": len(handles.static_collision_prims),
                 "camera_strategy": "phase_based_internal_operation_views_v1",

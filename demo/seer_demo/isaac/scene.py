@@ -7,17 +7,24 @@ from pathlib import Path
 from typing import Any
 
 from .layout import (
-    BACKGROUND_LOAD_LOCAL_POSITIONS,
+    INTERVENTION_OBSTACLE_X_OFFSET_M,
     PAYLOAD_ATTACHMENT_Z_OFFSET_M,
+    PAYLOAD_ATTACHMENT_X_OFFSET_M,
+    WAREHOUSE_EXTENT_M,
+    active_payload_geometry_specs,
+    background_load_geometry_specs,
+    container_geometry_specs,
     conveyor_geometry_specs,
+    forklift_lift_geometry_specs,
     local_from_world,
+    loading_dock_geometry_specs,
     static_physics_contract,
     warehouse_layout_spec,
+    warehouse_shell_geometry_specs,
 )
 from .timeline import FORKLIFT_PARTS, FrameState
 
 
-WAREHOUSE_EXTENT_M = (44.0, 28.0)
 PHYSICS_SCHEMA_APIS = (
     "PhysicsScene",
     "CollisionAPI",
@@ -55,12 +62,11 @@ class PalletPartSpec:
 def pallet_part_specs() -> tuple[PalletPartSpec, ...]:
     """Build a pallet with two unobstructed, fork-aligned entry pockets."""
     wood = (0.48, 0.28, 0.10)
-    parts: list[PalletPartSpec] = []
-    for index, y in enumerate((-0.52, -0.26, 0.0, 0.26, 0.52)):
-        parts.append(PalletPartSpec("deck", (1.15, 0.18, 0.09), (0.0, y, 0.16), wood))
-    for y in (-0.58, 0.0, 0.58):
-        parts.append(PalletPartSpec("runner", (1.15, 0.12, 0.10), (0.0, y, 0.05), wood))
-    return tuple(parts)
+    return tuple(
+        PalletPartSpec(spec.role, spec.size, spec.position, wood)
+        for spec in active_payload_geometry_specs()
+        if spec.role != "cargo"
+    )
 
 
 def physical_attachment_for_frame(frame: FrameState) -> bool:
@@ -108,6 +114,7 @@ def derive_kinematic_observation(
     obstacle_visible: bool,
     base_speed_mps: float,
     physical_attachment_enabled: bool,
+    payload_yaw_deg: float = 0.0,
 ) -> dict[str, object]:
     """Derive state from measured transforms/visibility, never scenario labels."""
     base_xyz = tuple(float(value) for value in base)
@@ -124,9 +131,12 @@ def derive_kinematic_observation(
         ),
     )
     geometry_attached = (
-        abs(relative_payload[0] - 1.6) <= 0.03
+        abs(relative_payload[0] - PAYLOAD_ATTACHMENT_X_OFFSET_M) <= 0.03
         and abs(relative_payload[1]) <= 0.03
         and abs(relative_payload[2] - PAYLOAD_ATTACHMENT_Z_OFFSET_M) <= 0.03
+        and abs(
+            (float(payload_yaw_deg) - float(yaw_deg) + 180.0) % 360.0 - 180.0
+        ) <= 0.5
     )
     payload_attached = geometry_attached and bool(physical_attachment_enabled)
     layout = warehouse_layout_spec()
@@ -155,6 +165,7 @@ def derive_kinematic_observation(
         "payload_x_m": round(payload_xyz[0], 6),
         "payload_y_m": round(payload_xyz[1], 6),
         "payload_z_m": round(payload_xyz[2], 6),
+        "payload_yaw_deg": round(float(payload_yaw_deg), 6),
         "payload_attached": payload_attached,
         "physical_attachment_enabled": bool(physical_attachment_enabled),
         "payload_placed": payload_placed,
@@ -247,14 +258,19 @@ def build_scene(
         box(f"/World/Grid/X_{x+20}", (0.018, depth - 1.0, 0.012), (float(x), 0.0, 0.012), (0.28, 0.32, 0.37), collision=False)
     for y in range(-12, 13, 2):
         box(f"/World/Grid/Y_{y+12}", (width - 2.0, 0.018, 0.012), (0.0, float(y), 0.012), (0.28, 0.32, 0.37), collision=False)
-    box("/World/Warehouse/BackWall", (width - 1.0, 0.22, 7.5), (0.0, depth / 2 - 0.5, 3.75), (0.19, 0.23, 0.27), material_name="WarehouseSteel")
-    box("/World/Warehouse/SideWall", (0.22, depth - 1.0, 7.5), (width / 2 - 0.5, 0.0, 3.75), (0.18, 0.22, 0.26), material_name="WarehouseSteel")
-    for index, x in enumerate(range(-18, 19, 6)):
-        box(f"/World/Warehouse/CeilingBeam{index}", (0.18, depth - 1.0, 0.26), (float(x), 0.0, 7.0), (0.12, 0.15, 0.18), material_name="WarehouseSteel")
+    for spec in warehouse_shell_geometry_specs():
+        color = (0.12, 0.15, 0.18) if spec.role == "ceiling_beam" else (0.19, 0.23, 0.27)
+        box(
+            f"/World/Warehouse/{spec.name}",
+            spec.size,
+            spec.position,
+            color,
+            material_name="WarehouseSteel",
+        )
     for index, y in enumerate((-3.3, 3.3)):
-        box(f"/World/Safety/MainLane{index}", (width - 5.0, 0.08, 0.025), (0.0, y, 0.025), (0.95, 0.75, 0.06), material_name="SafetyYellow")
-    box("/World/Safety/ExitLaneLeft", (10.0, 0.07, 0.025), (-1.0, 1.55, 0.025), (0.95, 0.75, 0.06))
-    box("/World/Safety/ExitLaneRight", (10.0, 0.07, 0.025), (-1.0, -1.55, 0.025), (0.95, 0.75, 0.06))
+        box(f"/World/Safety/MainLane{index}", (width - 5.0, 0.08, 0.025), (0.0, y, 0.025), (0.95, 0.75, 0.06), material_name="SafetyYellow", collision=False)
+    box("/World/Safety/ExitLaneLeft", (10.0, 0.07, 0.025), (-1.0, 1.55, 0.025), (0.95, 0.75, 0.06), collision=False)
+    box("/World/Safety/ExitLaneRight", (10.0, 0.07, 0.025), (-1.0, -1.55, 0.025), (0.95, 0.75, 0.06), collision=False)
 
     # Programmatic pallet racks make the scene useful even without optional NVIDIA assets.
     for rack_index, (rack_x, rack_y) in enumerate(warehouse_rack_positions()):
@@ -294,8 +310,14 @@ def build_scene(
         Gf.Vec3f(0.0, 0.0, layout.loading_dock.yaw_deg),
         UsdGeom.XformCommonAPI.RotationOrderXYZ,
     )
-    box("/World/LoadingDock/Deck", (6.0, 1.1, 0.22), (0.0, 0.0, 0.11), (0.30, 0.34, 0.38), material_name="WarehouseSteel")
-    box("/World/LoadingDock/Bumper", (0.30, 1.1, 0.52), (-3.0, 0.0, 0.26), (0.90, 0.62, 0.04), material_name="SafetyYellow")
+    for spec in loading_dock_geometry_specs():
+        box(
+            f"/World/LoadingDock/{spec.name}",
+            spec.size,
+            spec.position,
+            (0.90, 0.62, 0.04) if spec.role == "bumper" else (0.30, 0.34, 0.38),
+            material_name="SafetyYellow" if spec.role == "bumper" else "WarehouseSteel",
+        )
 
     # Open container uses local Z as height; front is open at local x=0.
     container_root = stage.DefinePrim("/World/Container", "Xform")
@@ -305,15 +327,15 @@ def build_scene(
         Gf.Vec3f(0.0, 0.0, layout.container.yaw_deg),
         UsdGeom.XformCommonAPI.RotationOrderXYZ,
     )
-    box("/World/Container/Floor", (6.0, 2.8, 0.12), (3.0, 0.0, 0.06), (0.31, 0.34, 0.37))
-    box("/World/Container/Back", (0.12, 2.8, 3.0), (6.0, 0.0, 1.50), (0.46, 0.18, 0.12))
-    box("/World/Container/Left", (6.0, 0.10, 3.0), (3.0, 1.40, 1.50), (0.55, 0.22, 0.14))
-    # Camera-side panels are structural cutaways; rails preserve the container silhouette
-    # without hiding fork insertion and payload contact from the evidence camera.
-    box("/World/Container/RightTopRail", (6.0, 0.10, 0.12), (3.0, -1.40, 2.94), (0.55, 0.22, 0.14))
-    box("/World/Container/RoofBackRail", (0.12, 2.8, 0.12), (5.94, 0.0, 2.94), (0.50, 0.20, 0.13))
-    for index, y in enumerate((-1.22, 1.22)):
-        box(f"/World/Container/DoorFrame{index}", (0.12, 0.12, 3.0), (0.0, y, 1.50), (0.75, 0.33, 0.16))
+    # Camera-side panels are structural cutaways; top rails preserve the silhouette.
+    for spec in container_geometry_specs():
+        color = {
+            "support_floor": (0.31, 0.34, 0.37),
+            "wall": (0.55, 0.22, 0.14),
+            "top_rail": (0.50, 0.20, 0.13),
+            "door_frame": (0.75, 0.33, 0.16),
+        }[spec.role]
+        box(f"/World/Container/{spec.name}", spec.size, spec.position, color)
 
     # The conveyor is farther away, laterally offset and counter-yawed.
     conveyor_root = stage.DefinePrim("/World/Conveyor", "Xform")
@@ -356,9 +378,13 @@ def build_scene(
         box(f"/World/Forklift/Body/{name}", spec.size, spec.local_position, spec.color)
     lift_root = stage.DefinePrim("/World/Forklift/Lift", "Xform")
     fork_tilt_root = stage.DefinePrim("/World/Forklift/Lift/ForkTilt", "Xform")
-    box("/World/Forklift/Lift/ForkTilt/Carrier", (0.18, 0.92, 0.40), (1.12, 0.0, 0.25), (0.25, 0.29, 0.34))
-    box("/World/Forklift/Lift/ForkTilt/ForkLeft", (1.35, 0.13, 0.10), (1.70, 0.32, 0.08), (0.13, 0.15, 0.18))
-    box("/World/Forklift/Lift/ForkTilt/ForkRight", (1.35, 0.13, 0.10), (1.70, -0.32, 0.08), (0.13, 0.15, 0.18))
+    for spec in forklift_lift_geometry_specs():
+        box(
+            f"/World/Forklift/Lift/ForkTilt/{spec.name}",
+            spec.size,
+            spec.position,
+            (0.25, 0.29, 0.34) if spec.role == "carrier" else (0.13, 0.15, 0.18),
+        )
     beacon = box("/World/Forklift/SafetyBeacon", (0.18, 0.18, 0.25), (-0.10, 0.0, 2.35), (0.10, 0.75, 0.30))
 
     # Active pallet/load is deliberately a separate root so its coupling is explicit.
@@ -373,8 +399,14 @@ def build_scene(
             part.position,
             part.color,
         )
-    for index, (x, y) in enumerate(((-0.28, -0.25), (-0.28, 0.25), (0.28, -0.25), (0.28, 0.25))):
-        box(f"/World/ActivePayload/Cargo/Box{index}", (0.50, 0.42, 0.55), (x, y, 0.38), (0.72, 0.49, 0.22))
+    for spec in active_payload_geometry_specs():
+        if spec.role == "cargo":
+            box(
+                f"/World/ActivePayload/Cargo/{spec.name}",
+                spec.size,
+                spec.position,
+                (0.72, 0.49, 0.22),
+            )
 
     payload_joint = UsdPhysics.FixedJoint.Define(stage, "/World/Constraints/PayloadAttachment")
     payload_joint.CreateBody0Rel().SetTargets([Sdf.Path("/World/Forklift")])
@@ -389,16 +421,26 @@ def build_scene(
         Gf.Vec3f(0.0, 0.0, layout.container.yaw_deg),
         UsdGeom.XformCommonAPI.RotationOrderXYZ,
     )
-    for row, (x, y) in enumerate(BACKGROUND_LOAD_LOCAL_POSITIONS):
-        box(f"/World/BackgroundLoads/Load{row}/Pallet", (1.0, 0.75, 0.12), (x, y, 0.12), (0.42, 0.24, 0.09))
-        box(f"/World/BackgroundLoads/Load{row}/Cargo", (0.80, 0.60, 0.75), (x, y, 0.55), (0.35, 0.55, 0.72))
+    for spec in background_load_geometry_specs():
+        load_index, part = spec.name.split("_", 1)
+        box(
+            f"/World/BackgroundLoads/{load_index}/{part}",
+            spec.size,
+            spec.position,
+            (0.42, 0.24, 0.09) if spec.role == "pallet" else (0.35, 0.55, 0.72),
+        )
 
     obstacle_root = stage.DefinePrim("/World/Obstacle", "Xform")
-    box("/World/Obstacle/FallenBoxA", (0.85, 0.70, 0.85), (0.0, 0.0, 0.43), (0.78, 0.16, 0.12))
-    box("/World/Obstacle/FallenBoxB", (0.65, 0.65, 0.65), (0.35, 0.30, 0.32), (0.92, 0.42, 0.08))
+    obstacle_collision = scenario == "intervention"
+    box("/World/Obstacle/FallenBoxA", (0.85, 0.70, 0.85), (0.0, 0.0, 0.43), (0.78, 0.16, 0.12), collision=obstacle_collision)
+    box("/World/Obstacle/FallenBoxB", (0.65, 0.65, 0.65), (0.35, 0.30, 0.32), (0.92, 0.42, 0.08), collision=obstacle_collision)
     obstacle_position = layout.container_payload_target
     UsdGeom.XformCommonAPI(obstacle_root).SetTranslate(
-        Gf.Vec3d(obstacle_position[0] - 0.70, obstacle_position[1], 0.0)
+        Gf.Vec3d(
+            obstacle_position[0] + INTERVENTION_OBSTACLE_X_OFFSET_M,
+            obstacle_position[1],
+            0.0,
+        )
     )
     imageable = UsdGeom.Imageable(obstacle_root)
     if scenario == "intervention":
@@ -415,7 +457,7 @@ def build_scene(
         bind_physics(f"/World/Forklift/Body/{wheel_name}", "OfficialRubber")
 
     static_collision_prims: list[str] = []
-    for spec in static_physics_contract():
+    for spec in static_physics_contract(scenario):
         root = stage.GetPrimAtPath(spec.prim_path)
         if not root.IsValid():
             raise RuntimeError(f"static physics root missing: {spec.prim_path}")
@@ -467,6 +509,7 @@ def apply_frame(handles: SceneHandles, frame: FrameState) -> None:
     lift_value = Gf.Vec3d(0.0, 0.0, frame.mast_height_m)
     tilt_value = Gf.Vec3f(0.0, frame.fork_tilt_deg, 0.0)
     payload_value = Gf.Vec3d(frame.payload_x_m, frame.payload_y_m, frame.payload_z_m)
+    payload_rotation_value = Gf.Vec3f(0.0, 0.0, frame.payload_yaw_deg)
     base_api = UsdGeom.XformCommonAPI(handles.forklift_root)
     lift_api = UsdGeom.XformCommonAPI(handles.lift_root)
     tilt_api = UsdGeom.XformCommonAPI(handles.fork_tilt_root)
@@ -482,6 +525,10 @@ def apply_frame(handles: SceneHandles, frame: FrameState) -> None:
         UsdGeom.XformCommonAPI.RotationOrderXYZ,
     )
     payload_api.SetTranslate(payload_value)
+    payload_api.SetRotate(
+        payload_rotation_value,
+        UsdGeom.XformCommonAPI.RotationOrderXYZ,
+    )
     sample_time = Usd.TimeCode(frame.sim_time_s)
     handles.forklift_root.GetAttribute("xformOp:translate").Set(base_value, sample_time)
     handles.forklift_root.GetAttribute("xformOp:rotateXYZ").Set(
@@ -490,6 +537,9 @@ def apply_frame(handles: SceneHandles, frame: FrameState) -> None:
     handles.lift_root.GetAttribute("xformOp:translate").Set(lift_value, sample_time)
     handles.fork_tilt_root.GetAttribute("xformOp:rotateXYZ").Set(tilt_value, sample_time)
     handles.payload_root.GetAttribute("xformOp:translate").Set(payload_value, sample_time)
+    handles.payload_root.GetAttribute("xformOp:rotateXYZ").Set(
+        payload_rotation_value, sample_time
+    )
     attachment_enabled = physical_attachment_for_frame(frame)
     joint_enabled = handles.payload_joint.GetJointEnabledAttr()
     joint_enabled.Set(attachment_enabled)
@@ -506,6 +556,7 @@ def observe_scene(handles: SceneHandles, *, base_speed_mps: float = 0.0) -> dict
     base = UsdGeom.Xformable(handles.forklift_root).ComputeLocalToWorldTransform(time_code).ExtractTranslation()
     lift = UsdGeom.Xformable(handles.lift_root).ComputeLocalToWorldTransform(time_code).ExtractTranslation()
     payload = UsdGeom.Xformable(handles.payload_root).ComputeLocalToWorldTransform(time_code).ExtractTranslation()
+    payload_rotation = handles.payload_root.GetAttribute("xformOp:rotateXYZ").Get(time_code)
     rotation = handles.fork_tilt_root.GetAttribute("xformOp:rotateXYZ").Get(time_code)
     base_rotation = handles.forklift_root.GetAttribute("xformOp:rotateXYZ").Get(time_code)
     visibility = UsdGeom.Imageable(handles.obstacle_root).ComputeVisibility(time_code)
@@ -519,4 +570,5 @@ def observe_scene(handles: SceneHandles, *, base_speed_mps: float = 0.0) -> dict
         obstacle_visible=visibility != UsdGeom.Tokens.invisible,
         base_speed_mps=base_speed_mps,
         physical_attachment_enabled=physical_attachment_enabled,
+        payload_yaw_deg=float(payload_rotation[2]),
     )
