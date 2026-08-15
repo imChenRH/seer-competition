@@ -1,7 +1,7 @@
 # Demo Visual and Physics V2 Design
 
-Date: 2026-08-16  
-Status: approved  
+Date: 2026-08-16
+Status: approved
 Decision: local refactor; retain the task engine, scenarios, audit contracts, and evidence pipeline
 
 ## Goal
@@ -95,4 +95,3 @@ All three Isaac scenarios must be rerendered. Existing videos and manifests beco
 - autonomous powered conveyor motion;
 - real perception or real robot control;
 - unlogged model reasoning or fabricated live planning.
-

@@ -149,4 +149,3 @@
 1. Review the complete diff against this design and the nine user requirements.
 2. Run fresh completion verification.
 3. Commit in coherent units, push `feature/demo-visual-physics-v2`, and report the branch and evidence paths.
-
