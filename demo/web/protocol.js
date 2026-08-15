@@ -72,15 +72,24 @@
 
   function projectEventTimes(events, fps) {
     validateEvents(events);
-    if (typeof fps !== "number" || !Number.isFinite(fps) || fps <= 0) {
+    const hasObservedFrames = events.some(function (event) {
+      const frame = event.evidence && event.evidence.observed_frame;
+      return Number.isInteger(frame) && frame >= 0;
+    });
+    if (hasObservedFrames && (typeof fps !== "number" || !Number.isFinite(fps) || fps <= 0)) {
       throw new Error("视频帧率必须是正数");
     }
     let previousTime = 0;
     return events.map(function (event) {
       const frame = event.evidence && event.evidence.observed_frame;
-      const observedTime = Number.isInteger(frame) && frame >= 0
-        ? frame / fps
-        : previousTime;
+      let observedTime = previousTime;
+      if (hasObservedFrames) {
+        observedTime = Number.isInteger(frame) && frame >= 0
+          ? frame / fps
+          : previousTime;
+      } else if (typeof event.sim_time_s === "number" && Number.isFinite(event.sim_time_s)) {
+        observedTime = event.sim_time_s;
+      }
       const displayTime = Math.max(previousTime, observedTime);
       previousTime = displayTime;
       return Object.freeze(Object.assign({}, event, {display_time_s: displayTime}));

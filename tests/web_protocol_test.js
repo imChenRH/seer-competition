@@ -78,6 +78,11 @@ assert(projected[4].display_time_s === 66, "terminal remains aligned to final vi
 assert(SeerProtocol.eventAtTime(projected, 10).fallback_id === "FB-F01", "playback uses projected clock");
 assert(SeerProtocol.dispatchPlan(projected)[0].simTimeS === 10, "dispatch plan uses projected clock");
 assert(valid[1].display_time_s === undefined, "clock projection does not mutate evidence");
+const dryProjected = SeerProtocol.projectEventTimes(valid, Number.NaN);
+assert(dryProjected[4].display_time_s === 62, "dry-run projection preserves simulation time");
+let badObservedFpsRejected = false;
+try { SeerProtocol.projectEventTimes(projected, 0); } catch (_) { badObservedFpsRejected = true; }
+assert(badObservedFpsRejected, "observed frames require a positive video frame rate");
 assert(SeerProtocol.scrollOptions(false).behavior === "smooth", "normal dispatch scrolls smoothly");
 assert(SeerProtocol.scrollOptions(true).behavior === "auto", "reduced motion disables smooth scroll");
 const dispatch = SeerProtocol.dispatchPlan(valid);

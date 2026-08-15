@@ -57,7 +57,7 @@ class WebProtocolTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("protocol assertions: 38", result.stdout)
+        self.assertIn("protocol assertions: 40", result.stdout)
 
 
 if __name__ == "__main__":
