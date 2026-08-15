@@ -6,10 +6,10 @@
 - `isaac-recovery-20260815-v2-r4/`：617 帧、77.125 秒视频、24 条事件，包含 `FB-F01`，终态 `COMPLETED`。
 - `isaac-intervention-20260815-v2-r4/`：289 帧、36.125 秒视频、18 条事件；两次 `FB-F02` 后执行 `FB-F07`，车辆退至箱外并停稳，终态 `HUMAN_REQUIRED`。
 - `MANIFEST.json`：由 `scripts/build_evidence_manifest.py` 重验 JSONL 与视频后生成，并对飞书回执和 Fast-WAM 独立材料记录文件大小与 SHA-256。
-- `FEISHU_LIVE_RECEIPT.json`：现场任务 `T-DEMO-20260813-001` 的脱敏操作员见证回执；它不是飞书签名或不可伪造的 API 导出。
-- `fastwam/`：Fast-WAM 单批加载/推理的独立验证；不能当作叉车控制证据。
+- `FEISHU_LIVE_RECEIPT.json`：现场任务 `T-DEMO-20260813-001` 的脱敏操作员见证回执；它不是飞书签名或不可伪造的 API 导出，只证明 2026-08-13 那次桥接只启动了一次 runner，**不是**上方三份 2026-08-15 正式录像的现场见证。
+- `fastwam/`：Fast-WAM 单批加载/推理的独立验证，作为辅助材料纳入顶层 manifest；不能当作叉车控制证据。
 
-每个正式目录同时包含原始 `simulation.mp4` 与 2560×1080 的 `presentation.mp4`。后者把 1280×720 仓库内部操作放在左半屏，右半屏按同一视频帧时钟渲染任务目标、大脑技能分发、小脑执行、Fallback、安全门和审计事件；右侧是结构化、可复算的决策摘要，不是隐藏思维过程。正式分屏使用显式 CJK 字体生成，渲染器在缺少中文字体时会失败关闭，不再生成方框字。
+每个正式目录同时包含原始 `simulation.mp4` 与 2560×1080 的 `presentation.mp4`。后者把 1280×720 仓库内部操作放在左半屏，右半屏按 `observed_frame / fps` 的视频帧时钟渲染任务目标（无观测帧的启动事件继承前一观测边界）、大脑技能分发、小脑执行、Fallback、安全门和审计事件；右侧是结构化、可复算的决策摘要，不是隐藏思维过程。正式分屏使用显式 CJK 字体生成，渲染器在缺少中文字体时会失败关闭，不再生成方框字。
 
 三场景均由 `2.5D_OBB_SAT_SWEEP_V2` 认证：normal、recovery、intervention 分别执行 859,140、960,798、547,824 次 Z 区间相交后的 SAT 候选检查，禁止碰撞与接触违规均为 0；normal/recovery 最小车身净距为 0.150441 m，intervention 为 0.256748 m。normal/recovery 各包含 206 个静态碰撞 Prim，intervention 因启用故障障碍物包含 208 个。
 

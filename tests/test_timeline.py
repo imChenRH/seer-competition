@@ -488,9 +488,9 @@ class IsaacTimelineTests(unittest.TestCase):
         specs = warehouse_asset_specs("/assets/warehouse")
 
         self.assertGreaterEqual(len(specs), 4)
-        self.assertTrue(all("/Props/materials/physics/" in str(spec.path) for spec in specs))
         self.assertTrue(all(spec.path.suffix in {".usd", ".usda"} for spec in specs))
-        self.assertTrue(all(str(spec.path).startswith("/assets/warehouse/") for spec in specs))
+        self.assertTrue(all(spec.path.parts[1:3] == ("assets", "warehouse") for spec in specs))
+        self.assertTrue(all(spec.path.parts[-3:-1] == ("materials", "physics") for spec in specs))
 
     def test_camera_strategy_uses_distinct_internal_operation_views(self):
         establishing = camera_pose_for_phase("enter_container")
@@ -618,6 +618,28 @@ class IsaacTimelineTests(unittest.TestCase):
         result = backend.execute_skill("FORK-OP-01", 1)
 
         self.assertFalse(result.success)
+
+    def test_isaac_backend_durations_follow_timeline_frame_clock(self):
+        timeline = build_timeline("normal", fps=8)
+        backend = IsaacTimelineBackend(
+            timeline,
+            {
+                ("skill", "FORK-NAV-01", 1): {
+                    "base_x_m": 1.0,
+                    "_frame": 80,
+                },
+                ("skill", "FORK-NAV-03", 1): {
+                    "base_x_m": 2.0,
+                    "_frame": 144,
+                },
+            },
+        )
+
+        first = backend.execute_skill("FORK-NAV-01", 1)
+        second = backend.execute_skill("FORK-NAV-03", 1)
+
+        self.assertEqual(first.duration_s, 10.0)
+        self.assertEqual(second.duration_s, 8.0)
 
     def test_later_internal_route_cannot_overwrite_first_business_skill_observation(self):
         capture = getattr(isaac_runner, "capture_action_observation", None)

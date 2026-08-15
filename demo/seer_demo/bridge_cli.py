@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict
-import fcntl
 import json
 import os
 from pathlib import Path
@@ -12,12 +11,26 @@ import re
 import sys
 import time
 
+try:
+    import fcntl
+except ImportError:  # Windows: use msvcrt byte-range locking below
+    fcntl = None
+if os.name == "nt":
+    import msvcrt
+else:
+    msvcrt = None
+
 from .bridge import SubprocessRunner, TaskBridge
 from .feishu import FeishuApiError, FeishuClient, FeishuSettings, load_env_file
 
 
 class BridgeInstanceLock:
-    """Hold one POSIX advisory lock for a bridge evidence workspace."""
+    """Hold one OS-level advisory lock for a bridge evidence workspace.
+
+    POSIX uses ``fcntl.flock``. Windows uses ``msvcrt.locking`` on the first
+    byte of the lock file, which provides the same fail-closed single-instance
+    guarantee for the bridge process.
+    """
 
     def __init__(self, path: Path | str):
         self.path = Path(path)
@@ -27,8 +40,16 @@ class BridgeInstanceLock:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         handle = self.path.open("a+", encoding="utf-8")
         try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as exc:
+            if msvcrt is not None:
+                handle.seek(0, os.SEEK_END)
+                if handle.tell() == 0:
+                    handle.write('\n')
+                    handle.flush()
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except (BlockingIOError, OSError) as exc:
             handle.close()
             raise RuntimeError(
                 f"another bridge instance is already active for {self.path.parent}"
@@ -38,9 +59,15 @@ class BridgeInstanceLock:
 
     def __exit__(self, exc_type, exc, traceback):
         if self._handle is not None:
-            fcntl.flock(self._handle.fileno(), fcntl.LOCK_UN)
-            self._handle.close()
-            self._handle = None
+            try:
+                if msvcrt is not None:
+                    self._handle.seek(0)
+                    msvcrt.locking(self._handle.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(self._handle.fileno(), fcntl.LOCK_UN)
+            finally:
+                self._handle.close()
+                self._handle = None
 
 
 def _positive_float(value: str) -> float:

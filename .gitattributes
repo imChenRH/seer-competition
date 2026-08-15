@@ -1,0 +1,20 @@
+.gitattributes text eol=lf
+# Keep text files, especially evidence files, byte-stable across platforms.
+# Manifest SHA-256 values were produced from LF blobs and must not change
+# because a Windows checkout rewrites line endings to CRLF.
+* text=auto
+
+*.py    text eol=lf
+*.sh    text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.jsonl text eol=lf
+*.usda  text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.txt   text eol=lf
+*.example text eol=lf
+*.log   text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf

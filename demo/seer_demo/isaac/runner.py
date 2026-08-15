@@ -18,7 +18,6 @@ from ..contracts import EventWriter, load_events, validate_scenario_events
 from ..engine import ActionResult, DemoEngine
 from ..scenarios import (
     SCENARIOS,
-    SKILL_DURATIONS_S,
     fallback_state_succeeded,
     skill_state_succeeded,
 )
@@ -53,11 +52,18 @@ def annotate_navigation_target_error(
 
 
 class IsaacTimelineBackend:
+    """Execute engine actions against the exact frame-time observations of one run.
+
+    Durations are derived from the timeline frame clock rather than from fixed
+    skill budgets, so event ``sim_time_s`` stays aligned with the rendered video.
+    """
+
     def __init__(self, timeline: Timeline, observations: Mapping[tuple[str, str, int], Mapping[str, object]]):
         self.timeline = timeline
         self.observations = observations
         self._state = timeline.frames[0].to_observed_state()
         self._observed_frame = timeline.frames[0].frame
+        self._last_observed_time_s = float(timeline.frames[0].sim_time_s)
 
     def snapshot(self):
         return dict(self._state)
@@ -70,12 +76,12 @@ class IsaacTimelineBackend:
         }
 
     def execute_skill(self, skill_id: str, attempt: int) -> ActionResult:
-        state, frame = self._observed("skill", skill_id, attempt)
+        state, frame, duration_s = self._observed("skill", skill_id, attempt)
         success = skill_state_succeeded(skill_id, state)
         confidence = 0.93 if success else max(0.20, 0.45 - attempt * 0.04)
         return ActionResult(
             success=success,
-            duration_s=SKILL_DURATIONS_S[skill_id],
+            duration_s=duration_s,
             state=state,
             evidence={
                 "backend": "isaac_sim",
@@ -87,12 +93,11 @@ class IsaacTimelineBackend:
         )
 
     def execute_fallback(self, fallback_id: str, attempt: int) -> ActionResult:
-        state, frame = self._observed("fallback", fallback_id, attempt)
-        durations = {"FB-F01": 8.0, "FB-F02": 2.0, "FB-F07": 4.0}
+        state, frame, duration_s = self._observed("fallback", fallback_id, attempt)
         success = fallback_state_succeeded(fallback_id, state)
         return ActionResult(
             success=success,
-            duration_s=durations[fallback_id],
+            duration_s=duration_s,
             state=state,
             evidence={"backend": "isaac_sim", "stage_observed": True, "observed_frame": frame},
             message={
@@ -103,13 +108,13 @@ class IsaacTimelineBackend:
         )
 
     def safety_stop(self) -> ActionResult:
-        state, frame = self._observed("safety", "FB-F07", 1)
+        state, frame, duration_s = self._observed("safety", "FB-F07", 1)
         return ActionResult(
             success=(
                 state.get("stopped") is True
                 and abs(float(state.get("base_speed_mps", 999.0))) <= 0.01
             ),
-            duration_s=1.0,
+            duration_s=duration_s,
             state=state,
             evidence={
                 "backend": "isaac_sim",
@@ -126,9 +131,14 @@ class IsaacTimelineBackend:
             raise RuntimeError(f"missing stage observation for {key}")
         record = dict(self.observations[key])
         frame = int(record.pop("_frame"))
+        if frame < 0 or frame >= len(self.timeline.frames):
+            raise RuntimeError(f"stage observation frame {frame} is outside the timeline")
+        frame_time_s = float(self.timeline.frames[frame].sim_time_s)
+        duration_s = max(0.0, round(frame_time_s - self._last_observed_time_s, 6))
+        self._last_observed_time_s = frame_time_s
         self._state = record
         self._observed_frame = frame
-        return dict(record), frame
+        return dict(record), frame, duration_s
 
 
 

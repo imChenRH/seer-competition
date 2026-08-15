@@ -9,6 +9,7 @@ from seer_demo.presentation import (
     build_ffmpeg_command,
     decision_snapshot,
     frame_time_s,
+    presentation_event_times,
 )
 
 
@@ -139,6 +140,34 @@ class PresentationMediaTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "fps"):
             frame_time_s(1, 0.0)
 
+    def test_presentation_clock_projects_observed_frames_like_the_video(self):
+        events = list(scenario_events("normal"))
+        times = presentation_event_times(events, 8.0)
+
+        self.assertEqual(times[0], 0.0)
+        self.assertEqual(times[-1], 66.0)
+        self.assertEqual(times, sorted(times))
+        for event, event_time in zip(events, times):
+            frame = event.evidence.get("observed_frame")
+            if isinstance(frame, int):
+                self.assertAlmostEqual(event_time, frame / 8.0)
+
+    def test_presentation_clock_keeps_unobserved_starts_at_previous_boundary(self):
+        events = list(scenario_events("recovery"))
+        times = presentation_event_times(events, 8.0)
+
+        self.assertEqual(times[0], 0.0)
+        self.assertEqual(times[1], 0.0)
+        fallback_started_index = next(
+            index for index, event in enumerate(events)
+            if event.event_type == "fallback_started"
+        )
+        self.assertEqual(
+            times[fallback_started_index],
+            times[fallback_started_index - 1],
+        )
+        self.assertEqual(times[-1], 77.0)
+
     def test_ffmpeg_command_preserves_clock_and_emits_2560_by_1080(self):
         command = build_ffmpeg_command(
             ffmpeg="/usr/bin/ffmpeg",
@@ -149,8 +178,9 @@ class PresentationMediaTests(unittest.TestCase):
         )
 
         rendered = " ".join(command)
+        overlay_arg = next(arg for arg in command if "frame-%06d" in arg)
         self.assertIn("source.mp4", command)
-        self.assertIn("frames/frame-%06d.png", command)
+        self.assertEqual(Path(overlay_arg), Path("frames/frame-%06d.png"))
         self.assertIn("presentation.mp4", command)
         self.assertIn("2560:1080", rendered)
         self.assertIn("8", command)

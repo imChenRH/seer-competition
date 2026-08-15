@@ -51,7 +51,7 @@
 
 **Files:**
 - Modify: `demo/README.md`
-- Modify: `demo/UPGRADE-REPORT-2026-08-13.md`
+- Modify: `demo/UPGRADE-REPORT-2026-08-15.md`
 
 - [x] 启动本地服务并检查首屏只有四按钮和对话窗，DOM 中视频为隐藏状态。
 - [x] 逐一选择四个模式，确认切换后仍隐藏证据且任务预填正确。

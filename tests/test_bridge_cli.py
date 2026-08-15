@@ -41,7 +41,7 @@ class BridgeCliTests(unittest.TestCase):
         self.assertEqual(
             build_runner_command(args),
             (
-                "/opt/isaac/python.sh",
+                str(Path("/opt/isaac/python.sh")),
                 "-m",
                 "seer_demo.isaac.runner",
                 "--fps",

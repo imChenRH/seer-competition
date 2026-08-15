@@ -13,8 +13,8 @@
 | 载荷叉取与放置 | DEMO_IMPLEMENTED | 两个叉孔与货叉对齐；只有相对几何满足且 `FixedJoint` 启用才报告挂接，放置后关节关闭 | normal/recovery JSONL 的 `physical_attachment_enabled`、USDA 时间采样与视频 |
 | 偏航与路径对齐 | VERIFIED | 叉车偏航在 Z 轴双向变化；路径、载荷、相机偏差和放置误差按设施局部坐标计算 | 三份 `scene.usda`、`summary.facility_layout`、`tests/test_timeline.py` |
 | 防穿模扫掠守卫 | DEMO_IMPLEMENTED | `2.5D_OBB_SAT_SWEEP_V2` 对车身、倾斜叉架、双货叉、12 部件载荷和集装箱支撑地板扫掠检查；三份 2026-08-15 正式运行禁碰数、接触违规数均为 0，最小车身净距不低于 0.150441 m；这不等于完整动力学或生产安全认证 | 正式 `summary.json` / `MANIFEST.json`、`demo/seer_demo/isaac/collision.py`、`tests/test_timeline.py` |
-| 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一视频帧时钟；右侧不是隐藏思维过程；缺少 CJK 字体时构建失败关闭 | `presentation.mp4`、`demo/seer_demo/presentation.py`、`tests/test_presentation.py` |
-| 飞书 → Isaac 闭环 | DEMO_IMPLEMENTED | 同主机/同证据目录的单实例桥接可认领、一次启动、以哈希收据恢复回放 | `tests/test_bridge.py`；经 manifest 哈希的操作员见证回执（不是飞书签名证明） |
+| 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一 `observed_frame / fps` 视频帧时钟；右侧不是隐藏思维过程；缺少 CJK 字体时构建失败关闭 | `presentation.mp4`、`demo/seer_demo/presentation.py`、`tests/test_presentation.py` |
+| 飞书 → Isaac 闭环 | DEMO_IMPLEMENTED | 同主机/同证据目录的单实例桥接可认领、一次启动、以哈希收据恢复回放；操作员见证回执对应 `T-DEMO-20260813-001`，不是三份 2026-08-15 正式录像的现场见证 | `tests/test_bridge.py`；经 manifest 哈希的操作员见证回执（不是飞书签名证明） |
 | Fast-WAM 能加载推理 | VERIFIED | 独立技术验证输出形状 `[1,7]`，首次单次约 0.86 s | 经顶层 manifest 哈希的脱敏验证日志 |
 | Fast-WAM 190 ms | PAPER_METRIC | 论文报告指标，未在本机复现 | 论文引用；不得写成 Demo 实测 |
 | Fast-WAM 控制叉车 | NOT_IMPLEMENTED | 当前不控制；需叉车数据、后训练和安全门控 | 无 |

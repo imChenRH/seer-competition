@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
@@ -59,6 +59,36 @@ def frame_time_s(frame_index: int, fps: float) -> float:
     if not isinstance(fps, (int, float)) or isinstance(fps, bool) or not math.isfinite(fps) or fps <= 0:
         raise ValueError("fps must be positive and finite")
     return frame_index / float(fps)
+
+
+def presentation_event_times(events: Sequence[Event], fps: float) -> list[float]:
+    """Return one display-clock time per event, aligned to the rendered video.
+
+    Evidence events carry a task-logic ``sim_time_s`` plus, for Isaac decision
+    events, the exact ``observed_frame``. The presentation must use the same
+    frame clock as the left-hand video, so observed events are projected at
+    ``observed_frame / fps``. Non-observed events (starts and fallback starts)
+    inherit the previous observed time, which keeps the event stream monotonic
+    and keeps each start at the boundary of the action it belongs to.
+    """
+    if not isinstance(fps, (int, float)) or isinstance(fps, bool) or not math.isfinite(fps) or fps <= 0:
+        raise ValueError("fps must be positive and finite")
+    times: list[float] = []
+    last_time = 0.0
+    for event in events:
+        frame = event.evidence.get("observed_frame")
+        if (
+            isinstance(frame, int)
+            and not isinstance(frame, bool)
+            and frame >= 0
+        ):
+            event_time = frame / float(fps)
+        else:
+            event_time = last_time
+        event_time = max(event_time, last_time)
+        times.append(round(event_time, 6))
+        last_time = event_time
+    return times
 
 
 def _events_at(events: Sequence[Event], sim_time_s: float) -> list[Event]:
@@ -404,10 +434,15 @@ def render_overlay_frames(
     if frame_count <= 0:
         raise ValueError("frame_count must be positive")
     output_dir.mkdir(parents=True, exist_ok=False)
+    event_times = presentation_event_times(events, fps)
+    clocked_events = [
+        replace(event, sim_time_s=event_times[index])
+        for index, event in enumerate(events)
+    ]
     for frame_index in range(frame_count):
         sim_time = frame_time_s(frame_index, fps)
         snapshot = decision_snapshot(
-            events,
+            clocked_events,
             sim_time,
             collision_summary=collision_summary,
         )
