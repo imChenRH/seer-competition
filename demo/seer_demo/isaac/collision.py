@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 
-from .layout import warehouse_layout_spec, world_from_local
+from .layout import (
+    BACKGROUND_LOAD_LOCAL_POSITIONS,
+    conveyor_geometry_specs,
+    warehouse_layout_spec,
+    world_from_local,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +47,8 @@ class CollisionHit:
     static_name: str
     sample_index: int
     pose: Pose2D
+    frame_index: int | None = None
+    phase: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -257,6 +264,16 @@ def warehouse_static_boxes(scenario: str) -> tuple[OrientedBox, ...]:
             0.78,
         ),
     ]
+    for spec in conveyor_geometry_specs():
+        boxes.append(
+            _world_box(
+                f"conveyor_{spec.name}",
+                origin=layout.conveyor.position,
+                yaw_deg=layout.conveyor.yaw_deg,
+                local_center=spec.position,
+                size=spec.size,
+            )
+        )
     for rack_y in (-7.2, 7.2):
         for rack_x in (-12.0, -6.0, 0.0, 6.0, 12.0):
             boxes.append(
@@ -269,7 +286,7 @@ def warehouse_static_boxes(scenario: str) -> tuple[OrientedBox, ...]:
                     4.8,
                 )
             )
-    for index, (local_x, local_y) in enumerate(((4.9, 0.82), (4.9, -0.82))):
+    for index, (local_x, local_y) in enumerate(BACKGROUND_LOAD_LOCAL_POSITIONS):
         boxes.append(
             _world_box(
                 f"background_load_{index}",
@@ -305,41 +322,127 @@ def warehouse_static_boxes(scenario: str) -> tuple[OrientedBox, ...]:
     return tuple(boxes)
 
 
+def _dynamic_boxes(previous, current, pose: Pose2D, amount: float) -> tuple[OrientedBox, ...]:
+    mast_height = previous.mast_height_m + (
+        current.mast_height_m - previous.mast_height_m
+    ) * amount
+    boxes = [
+        OrientedBox(
+            "forklift_body",
+            pose.position,
+            (2.2, 1.5),
+            pose.yaw_deg,
+            0.18,
+            2.50,
+        )
+    ]
+    for name, local_y in (("fork_left", 0.32), ("fork_right", -0.32)):
+        center = world_from_local(
+            (pose.x_m, pose.y_m, 0.0),
+            pose.yaw_deg,
+            (1.70, local_y, mast_height + 0.08),
+        )
+        boxes.append(
+            OrientedBox(
+                name,
+                center[:2],
+                (1.35, 0.13),
+                pose.yaw_deg,
+                center[2] - 0.05,
+                center[2] + 0.05,
+            )
+        )
+    payload_is_dynamic = (
+        previous.payload_attached
+        or current.payload_attached
+        or previous.payload_placed
+        or current.payload_placed
+    )
+    if payload_is_dynamic:
+        payload_x = previous.payload_x_m + (
+            current.payload_x_m - previous.payload_x_m
+        ) * amount
+        payload_y = previous.payload_y_m + (
+            current.payload_y_m - previous.payload_y_m
+        ) * amount
+        payload_z = previous.payload_z_m + (
+            current.payload_z_m - previous.payload_z_m
+        ) * amount
+        payload_yaw = (
+            pose.yaw_deg
+            if previous.payload_attached or current.payload_attached
+            else warehouse_layout_spec().conveyor.yaw_deg
+        )
+        boxes.append(
+            OrientedBox(
+                "active_payload",
+                (payload_x, payload_y),
+                (1.15, 1.28),
+                payload_yaw,
+                payload_z,
+                payload_z + 0.66,
+            )
+        )
+    return tuple(boxes)
+
+
+def _scan_transition(previous, current, scenario: str):
+    statics = warehouse_static_boxes(scenario)
+    poses = swept_poses(
+        Pose2D(previous.base_x_m, previous.base_y_m, previous.yaw_deg),
+        Pose2D(current.base_x_m, current.base_y_m, current.yaw_deg),
+    )
+    hits: list[CollisionHit] = []
+    minimum_body_clearance = math.inf
+    check_count = 0
+    denominator = max(1, len(poses) - 1)
+    for sample_index, pose in enumerate(poses):
+        for dynamic in _dynamic_boxes(
+            previous, current, pose, sample_index / denominator
+        ):
+            for static in statics:
+                is_exact_conveyor_part = static.name.startswith("conveyor_") and (
+                    static.name != "conveyor_keepout"
+                )
+                if dynamic.name == "forklift_body" and is_exact_conveyor_part:
+                    continue
+                if dynamic.name != "forklift_body" and static.name == "conveyor_keepout":
+                    continue
+                if dynamic.z_max <= static.z_min or static.z_max <= dynamic.z_min:
+                    continue
+                check_count += 1
+                if dynamic.name == "forklift_body":
+                    minimum_body_clearance = min(
+                        minimum_body_clearance,
+                        box_separation_xy(dynamic, static),
+                    )
+                margin = 0.05 if dynamic.name == "forklift_body" else 0.0
+                if boxes_overlap_3d(dynamic, static, margin_xy=margin):
+                    hits.append(
+                        CollisionHit(
+                            dynamic_name=dynamic.name,
+                            static_name=static.name,
+                            sample_index=sample_index,
+                            pose=pose,
+                            frame_index=current.frame,
+                            phase=current.phase,
+                        )
+                    )
+    return tuple(hits), check_count, minimum_body_clearance
+
+
 def certify_timeline(timeline) -> CollisionCertification:
     """Certify every frame transition, failing closed on any forbidden contact."""
-    statics = warehouse_static_boxes(timeline.scenario)
     hits: list[CollisionHit] = []
     minimum_clearance = math.inf
     check_count = 0
     for previous, current in zip(timeline.frames, timeline.frames[1:]):
-        poses = swept_poses(
-            Pose2D(previous.base_x_m, previous.base_y_m, previous.yaw_deg),
-            Pose2D(current.base_x_m, current.base_y_m, current.yaw_deg),
+        transition_hits, transition_checks, transition_clearance = _scan_transition(
+            previous, current, timeline.scenario
         )
-        for sample_index, pose in enumerate(poses):
-            body = OrientedBox(
-                "forklift_body",
-                pose.position,
-                (2.2, 1.5),
-                pose.yaw_deg,
-                0.18,
-                2.50,
-            )
-            for static in statics:
-                if body.z_max <= static.z_min or static.z_max <= body.z_min:
-                    continue
-                check_count += 1
-                clearance = box_separation_xy(body, static)
-                minimum_clearance = min(minimum_clearance, clearance)
-                if boxes_overlap_3d(body, static, margin_xy=0.05):
-                    hits.append(
-                        CollisionHit(
-                            dynamic_name=body.name,
-                            static_name=static.name,
-                            sample_index=sample_index,
-                            pose=pose,
-                        )
-                    )
+        hits.extend(transition_hits)
+        check_count += transition_checks
+        minimum_clearance = min(minimum_clearance, transition_clearance)
     if math.isinf(minimum_clearance):
         minimum_clearance = 0.0
     return CollisionCertification(
@@ -357,6 +460,7 @@ def assert_timeline_collision_safe(timeline) -> CollisionCertification:
         raise RuntimeError(
             "forbidden swept collision: "
             f"{first.dynamic_name} vs {first.static_name} at "
+            f"frame {first.frame_index} phase {first.phase} "
             f"({first.pose.x_m:.3f}, {first.pose.y_m:.3f}, {first.pose.yaw_deg:.2f})"
         )
     return certification
@@ -364,11 +468,7 @@ def assert_timeline_collision_safe(timeline) -> CollisionCertification:
 
 def assert_frame_transition_safe(previous, current, scenario: str) -> None:
     """Re-check the imminent kinematic transform before authoring it to USD."""
-    hits = find_forbidden_collisions(
-        Pose2D(previous.base_x_m, previous.base_y_m, previous.yaw_deg),
-        Pose2D(current.base_x_m, current.base_y_m, current.yaw_deg),
-        warehouse_static_boxes(scenario),
-    )
+    hits, _, _ = _scan_transition(previous, current, scenario)
     if hits:
         first = hits[0]
         raise RuntimeError(

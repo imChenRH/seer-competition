@@ -129,9 +129,12 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
             (local_x, local_y, 0.0),
         )
 
-    entry = container_point(*layout.container_entry_local[:2])
+    entry_local_x = (
+        0.10 if scenario == "intervention" else layout.container_entry_local[0]
+    )
+    entry = container_point(entry_local_x, 0.0)
     approach_local_x = (
-        1.25 if scenario == "intervention" else layout.container_alignment_local[0]
+        0.25 if scenario == "intervention" else layout.container_alignment_local[0]
     )
     aligned = container_point(approach_local_x, 0.0)
     pickup_y = 0.25 if scenario == "recovery" else 0.0

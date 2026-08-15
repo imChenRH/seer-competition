@@ -52,6 +52,35 @@ class IsaacTimelineTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "forbidden swept collision"):
             assert_timeline_collision_safe(forged)
 
+    def test_collision_certification_includes_forks_not_only_chassis(self):
+        timeline = build_timeline("normal", fps=8)
+        collision_index = next(
+            index for index, frame in enumerate(timeline.frames)
+            if frame.phase == "align_conveyor"
+        )
+        layout = warehouse_layout_spec()
+        forged_position = world_from_local(
+            layout.conveyor.position,
+            layout.conveyor.yaw_deg,
+            (-3.3, 0.66, 0.0),
+        )
+        forged_frames = list(timeline.frames)
+        forged_frames[collision_index] = replace(
+            forged_frames[collision_index],
+            base_x_m=forged_position[0],
+            base_y_m=forged_position[1],
+            yaw_deg=layout.conveyor.yaw_deg,
+            mast_height_m=0.11,
+        )
+        forged = replace(timeline, frames=tuple(forged_frames))
+
+        certification = certify_timeline(forged)
+
+        self.assertTrue(
+            any(hit.dynamic_name.startswith("fork_") for hit in certification.collisions),
+            certification.collisions[:5],
+        )
+
     def test_collision_certification_exports_formal_summary_fields(self):
         summary = certify_timeline(build_timeline("normal", fps=8)).to_summary()
 

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .layout import (
+    BACKGROUND_LOAD_LOCAL_POSITIONS,
     PAYLOAD_ATTACHMENT_Z_OFFSET_M,
     conveyor_geometry_specs,
     local_from_world,
@@ -388,7 +389,7 @@ def build_scene(
         Gf.Vec3f(0.0, 0.0, layout.container.yaw_deg),
         UsdGeom.XformCommonAPI.RotationOrderXYZ,
     )
-    for row, (x, y) in enumerate(((4.9, 0.82), (4.9, -0.82))):
+    for row, (x, y) in enumerate(BACKGROUND_LOAD_LOCAL_POSITIONS):
         box(f"/World/BackgroundLoads/Load{row}/Pallet", (1.0, 0.75, 0.12), (x, y, 0.12), (0.42, 0.24, 0.09))
         box(f"/World/BackgroundLoads/Load{row}/Cargo", (0.80, 0.60, 0.75), (x, y, 0.55), (0.35, 0.55, 0.72))
 
