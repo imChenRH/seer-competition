@@ -21,6 +21,29 @@ class SkillPresentation:
     controller: str
 
 
+@dataclass(frozen=True, slots=True)
+class PresentationTheme:
+    name: str
+    accent: str
+    card_fill: str
+    right_background: str
+    dispatch_font_size: int = 48
+    section_font_size: int = 28
+
+
+def presentation_theme(snapshot: Mapping[str, Any]) -> PresentationTheme:
+    """Return a visually distinct theme for the observable execution state."""
+    mode = snapshot["brain"]["mode"]
+    status = snapshot["status"]
+    if status == "COMPLETED":
+        return PresentationTheme("COMPLETED", "#43D17C", "#0C3525", "#071B15")
+    if mode in {"HUMAN_HANDOFF", "SAFETY_STOP"} or status == "HUMAN_REQUIRED":
+        return PresentationTheme("SAFETY", "#FF5D68", "#401820", "#200C11")
+    if mode == "RECOVERY" or status == "FALLBACK":
+        return PresentationTheme("RECOVERY", "#FFB547", "#3D2A10", "#211609")
+    return PresentationTheme("RUNNING", "#4AA8FF", "#102F50", "#081A2B")
+
+
 SKILL_PRESENTATION: Mapping[str, SkillPresentation] = {
     "FORK-NAV-01": SkillPresentation("进入目标作业通道", "仓内路径跟踪"),
     "FORK-NAV-03": SkillPresentation("低速精确接近栈板", "末端位姿微调"),
@@ -339,19 +362,25 @@ def render_overlay(
     amber = "#FFB547"
     red = "#FF5D68"
     mode = snapshot["brain"]["mode"]
-    accent = red if mode in {"HUMAN_HANDOFF", "SAFETY_STOP"} else amber if mode == "RECOVERY" else cyan
+    theme = presentation_theme(snapshot)
+    accent = theme.accent
 
     draw.rectangle((0, 0, 1280, 180), fill=navy)
     draw.rectangle((0, 900, 1280, 1080), fill=navy)
-    draw.rectangle((1280, 0, 2560, 1080), fill=navy)
+    draw.rectangle((1280, 0, 2560, 1080), fill=theme.right_background)
     draw.rectangle((1276, 0, 1284, 1080), fill=accent)
 
-    title_font = _load_font(42, bold=True, explicit=font_path)
-    h1 = _load_font(34, bold=True, explicit=font_path)
-    h2 = _load_font(25, bold=True, explicit=font_path)
-    body = _load_font(25, explicit=font_path)
-    small = _load_font(20, explicit=font_path)
-    mono = _load_font(22, explicit=font_path)
+    title_font = _load_font(44, bold=True, explicit=font_path)
+    h1 = _load_font(36, bold=True, explicit=font_path)
+    h2 = _load_font(theme.section_font_size, bold=True, explicit=font_path)
+    dispatch_font = _load_font(
+        theme.dispatch_font_size,
+        bold=True,
+        explicit=font_path,
+    )
+    body = _load_font(27, explicit=font_path)
+    small = _load_font(21, explicit=font_path)
+    mono = _load_font(23, explicit=font_path)
 
     draw.text((54, 34), "ISAAC SIM · 仓库内部作业", font=title_font, fill=white)
     draw.text((54, 106), f"SCENE  {snapshot['scenario'].upper()}  ·  RAW PHYSICS VIEW", font=small, fill=cyan)
@@ -363,15 +392,21 @@ def render_overlay(
 
     draw.text((1330, 32), "SEER-HVLA · BRAIN / CEREBELLUM", font=h1, fill=white)
     draw.text((1330, 86), "DECISION SUMMARY · 来自可审计事件", font=small, fill=cyan)
-    status_color = green if snapshot["status"] == "COMPLETED" else red if snapshot["status"] == "HUMAN_REQUIRED" else amber if snapshot["status"] == "FALLBACK" else cyan
+    status_color = theme.accent
     status_text = snapshot["status"]
     status_box = draw.textbbox((0, 0), status_text, font=h2)
     status_width = status_box[2] - status_box[0] + 44
     draw.rounded_rectangle((2510 - status_width, 32, 2510, 82), radius=14, fill=status_color)
     draw.text((2532 - status_width, 42), status_text, font=h2, fill=navy)
 
-    def card(box: tuple[int, int, int, int], label: str, color: str = cyan):
-        draw.rounded_rectangle(box, radius=18, fill=panel, outline="#24445E", width=2)
+    def card(
+        box: tuple[int, int, int, int],
+        label: str,
+        color: str = cyan,
+        *,
+        fill: str = panel,
+    ):
+        draw.rounded_rectangle(box, radius=18, fill=fill, outline="#355D79", width=2)
         draw.rectangle((box[0], box[1], box[0] + 8, box[3]), fill=color)
         draw.text((box[0] + 28, box[1] + 20), label, font=h2, fill=color)
 
@@ -379,10 +414,21 @@ def render_overlay(
     goal_lines = _fit_text(draw, str(snapshot["goal"]), body, 1120, max_lines=2)
     _draw_text_lines(draw, (1350, 184), goal_lines, body, white, 10)
 
-    card((1320, 310, 2520, 535), "BRAIN / 大脑 · 任务理解与技能分发", accent)
+    card(
+        (1320, 310, 2520, 535),
+        f"BRAIN / 大脑 · {theme.name} · 任务理解与技能分发",
+        accent,
+        fill=theme.card_fill,
+    )
     draw.text((1350, 366), f"MODE   {mode}", font=mono, fill=accent)
-    dispatch_lines = _fit_text(draw, str(snapshot["brain"]["dispatch"]), h1, 1120, max_lines=2)
-    _draw_text_lines(draw, (1350, 410), dispatch_lines, h1, white, 8)
+    dispatch_lines = _fit_text(
+        draw,
+        str(snapshot["brain"]["dispatch"]),
+        dispatch_font,
+        1120,
+        max_lines=2,
+    )
+    _draw_text_lines(draw, (1350, 410), dispatch_lines, dispatch_font, white, 8)
     intent = snapshot["brain"]["structured_intent"]
     draw.text((1350, 489), f"intent.skill={intent['skill_id'] or '—'}   fallback={intent['fallback_id'] or '—'}   attempt={intent['attempt'] or '—'}", font=small, fill=muted)
 

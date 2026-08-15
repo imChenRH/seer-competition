@@ -74,6 +74,25 @@ def _is_allowed_payload_stack_contact(left: OrientedBox, right: OrientedBox) -> 
     )
 
 
+def _is_allowed_conveyor_support_contact(
+    dynamic: OrientedBox, static: OrientedBox
+) -> bool:
+    """Allow only the pallet runner's lower face to touch a roller's top face."""
+    if not (
+        dynamic.name.startswith("active_payload_runner_")
+        and static.name.lower().startswith("conveyor_roller")
+    ):
+        return False
+    overlap_z = min(dynamic.z_max, static.z_max) - max(
+        dynamic.z_min, static.z_min
+    )
+    return (
+        dynamic.z_max > static.z_max
+        and dynamic.z_min >= static.z_max - 0.001
+        and -1e-9 <= overlap_z <= 0.001
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class Pose2D:
     x_m: float
@@ -338,7 +357,7 @@ def warehouse_static_boxes(scenario: str) -> tuple[OrientedBox, ...]:
         OrientedBox(
             "conveyor_keepout",
             layout.conveyor.position[:2],
-            (3.2, 1.35),
+            (3.4, 1.5),
             layout.conveyor.yaw_deg,
             0.0,
             0.78,
@@ -561,6 +580,8 @@ def _scan_transition(previous, current, scenario: str):
                     )
                 margin = 0.05 if dynamic.name == "forklift_body" else 0.0
                 if boxes_overlap_3d(dynamic, static, margin_xy=margin):
+                    if _is_allowed_conveyor_support_contact(dynamic, static):
+                        continue
                     hits.append(
                         CollisionHit(
                             dynamic_name=dynamic.name,

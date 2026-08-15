@@ -19,7 +19,9 @@ class WebProtocolTests(unittest.TestCase):
         self.assertIn('id="dispatch-button"', html)
         self.assertIn('id="evidence-content" hidden', html)
         self.assertNotIn('id="run-select"', html)
-        self.assertIn('class="feishu-sidebar"', html)
+        self.assertNotIn('class="feishu-sidebar"', html)
+        for glyph in (">飞<", ">聊<", ">任<", ">审<"):
+            self.assertNotIn(glyph, html)
         self.assertIn('class="feishu-conversation"', html)
         self.assertIn('id="active-instruction"', html)
         self.assertIn("机械臂模型、任务数据与后训练", html)
@@ -28,7 +30,12 @@ class WebProtocolTests(unittest.TestCase):
         self.assertGreaterEqual(source.count("if (generation !== renderGeneration) return;"), 2)
         self.assertIn("selectedScenario", source)
         self.assertIn("collapseDetails", source)
+        self.assertIn("scrollEvidenceIntoView", source)
+        self.assertIn("projectEventTimes", source)
         self.assertNotIn("select.addEventListener", source)
+
+        styles = (ROOT / "demo" / "web" / "styles.css").read_text(encoding="utf-8")
+        self.assertIn("minmax(0, 2.85fr) minmax(260px, 1fr)", styles)
 
     def test_console_prefers_declared_presentation_and_retains_raw_fallback(self):
         source = (ROOT / "demo" / "web" / "app.js").read_text(encoding="utf-8")
@@ -50,7 +57,7 @@ class WebProtocolTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("protocol assertions: 29", result.stdout)
+        self.assertIn("protocol assertions: 38", result.stdout)
 
 
 if __name__ == "__main__":

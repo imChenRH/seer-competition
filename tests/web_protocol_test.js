@@ -64,6 +64,22 @@ assert(SeerProtocol.chooseDefaultRun([runs[0]]).run_id === "intervention-latest"
 assert(SeerProtocol.eventAtTime(valid, 0).event_type === "task_started", "zero-time event");
 assert(SeerProtocol.eventAtTime(valid, 2.9).fallback_id === "FB-F01", "latest event at time");
 assert(SeerProtocol.eventAtTime(valid, -1) === null, "no event before timeline");
+const projected = SeerProtocol.projectEventTimes([
+  Object.assign({}, valid[0], {evidence: {observed_frame: 0}}),
+  Object.assign({}, valid[1], {evidence: {observed_frame: 80}}),
+  Object.assign({}, valid[2], {evidence: {}}),
+  Object.assign({}, valid[3], {evidence: {observed_frame: 160}}),
+  Object.assign({}, valid[4], {evidence: {observed_frame: 528}})
+], 8);
+assert(projected.length === 5, "clock projection preserves event count");
+assert(projected[1].display_time_s === 10, "observed frame projects to video time");
+assert(projected[2].display_time_s === 10, "unobserved start inherits prior boundary");
+assert(projected[4].display_time_s === 66, "terminal remains aligned to final video observation");
+assert(SeerProtocol.eventAtTime(projected, 10).fallback_id === "FB-F01", "playback uses projected clock");
+assert(SeerProtocol.dispatchPlan(projected)[0].simTimeS === 10, "dispatch plan uses projected clock");
+assert(valid[1].display_time_s === undefined, "clock projection does not mutate evidence");
+assert(SeerProtocol.scrollOptions(false).behavior === "smooth", "normal dispatch scrolls smoothly");
+assert(SeerProtocol.scrollOptions(true).behavior === "auto", "reduced motion disables smooth scroll");
 const dispatch = SeerProtocol.dispatchPlan(valid);
 assert(dispatch.length === 1, "dispatch plan uses started actions only");
 assert(dispatch[0].identifier === "FB-F01", "fallback dispatch identifier");

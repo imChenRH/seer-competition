@@ -72,6 +72,8 @@ class DryRunBackend:
                 payload_height_m=0.55,
                 payload_attached=False,
                 payload_placed=True,
+                payload_supported=True,
+                payload_settled=True,
             )
         return self._result(True, duration, evidence, f"{skill_id} 状态验证通过")
 

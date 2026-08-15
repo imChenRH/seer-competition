@@ -29,7 +29,12 @@ def main() -> int:
         import omni.replicator.core as rep
         from omni.replicator.core.functional import write_image
 
-        from seer_demo.isaac.scene import apply_frame, build_scene, camera_pose_for_phase
+        from seer_demo.isaac.scene import (
+            CAMERA_FOCAL_LENGTH_MM,
+            apply_frame,
+            build_scene,
+            camera_pose_for_frame,
+        )
         from seer_demo.isaac.timeline import build_timeline
 
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -42,13 +47,13 @@ def main() -> int:
         if frame is None:
             raise ValueError(f"phase not found: {args.phase}")
         apply_frame(handles, frame)
-        pose = camera_pose_for_phase(frame.phase)
+        pose = camera_pose_for_frame(frame)
         camera = rep.functional.create.camera(
             position=pose.position,
             look_at=pose.look_at,
             parent="/World",
             name="PreviewCamera",
-            focal_length=30.0,
+            focal_length=CAMERA_FOCAL_LENGTH_MM,
             clipping_range=(0.1, 1000.0),
         )
         render_product = rep.create.render_product(camera, resolution=(width, height))

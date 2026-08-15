@@ -50,7 +50,7 @@
       source: validation.source,
       terminalStatus: validation.terminalStatus,
       eventCount: events.length,
-      durationS: terminal.sim_time_s,
+      durationS: eventDisplayTime(terminal),
       completedSkills: events
         .filter(function (event) { return event.event_type === "skill_completed"; })
         .map(function (event) { return event.skill_id; }),
@@ -61,6 +61,30 @@
         return event.event_type === "safety_stop";
       }).length
     };
+  }
+
+  function eventDisplayTime(event) {
+    if (!event) return null;
+    return typeof event.display_time_s === "number"
+      ? event.display_time_s
+      : event.sim_time_s;
+  }
+
+  function projectEventTimes(events, fps) {
+    validateEvents(events);
+    if (typeof fps !== "number" || !Number.isFinite(fps) || fps <= 0) {
+      throw new Error("视频帧率必须是正数");
+    }
+    let previousTime = 0;
+    return events.map(function (event) {
+      const frame = event.evidence && event.evidence.observed_frame;
+      const observedTime = Number.isInteger(frame) && frame >= 0
+        ? frame / fps
+        : previousTime;
+      const displayTime = Math.max(previousTime, observedTime);
+      previousTime = displayTime;
+      return Object.freeze(Object.assign({}, event, {display_time_s: displayTime}));
+    });
   }
 
   function chooseDefaultRun(runs) {
@@ -76,7 +100,8 @@
     if (!Array.isArray(events) || typeof simTimeS !== "number") return null;
     let current = null;
     events.some(function (event) {
-      if (!event || typeof event.sim_time_s !== "number" || event.sim_time_s > simTimeS) {
+      const eventTime = eventDisplayTime(event);
+      if (!event || typeof eventTime !== "number" || eventTime > simTimeS) {
         return true;
       }
       current = event;
@@ -92,7 +117,7 @@
     }).map(function (event) {
       return Object.freeze({
         sequence: event.sequence,
-        simTimeS: event.sim_time_s,
+        simTimeS: eventDisplayTime(event),
         kind: event.event_type === "fallback_started" ? "fallback" : "skill",
         identifier: event.fallback_id || event.skill_id,
         layer: "cerebellum",
@@ -125,12 +150,22 @@
     return Object.freeze({accepted: requested.trim() === recorded.trim(), task: recorded.trim()});
   }
 
+  function scrollOptions(prefersReducedMotion) {
+    return Object.freeze({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "start"
+    });
+  }
+
   global.SeerProtocol = Object.freeze({
     chooseDefaultRun: chooseDefaultRun,
     dispatchPlan: dispatchPlan,
+    eventDisplayTime: eventDisplayTime,
     eventAtTime: eventAtTime,
     nextConsoleState: nextConsoleState,
+    projectEventTimes: projectEventTimes,
     reconcileTask: reconcileTask,
+    scrollOptions: scrollOptions,
     validateEvents: validateEvents,
     reduceEvents: reduceEvents
   });

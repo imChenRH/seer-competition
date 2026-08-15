@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from .layout import (
     WAREHOUSE_EXTENT_M,
     active_payload_geometry_specs,
     background_load_geometry_specs,
+    CylinderGeometrySpec,
     container_geometry_specs,
     conveyor_geometry_specs,
     forklift_lift_geometry_specs,
@@ -51,6 +53,11 @@ class CameraPose:
     look_at: tuple[float, float, float]
 
 
+CAMERA_FOCAL_LENGTH_MM = 24.0
+CAMERA_HORIZONTAL_APERTURE_MM = 36.0
+CAMERA_SAFE_MARGIN = 0.05
+
+
 @dataclass(frozen=True, slots=True)
 class PalletPartSpec:
     role: str
@@ -72,6 +79,11 @@ def pallet_part_specs() -> tuple[PalletPartSpec, ...]:
 def physical_attachment_for_frame(frame: FrameState) -> bool:
     """Return the authored FixedJoint state for one evidence frame."""
     return bool(frame.payload_attached)
+
+
+def payload_dynamic_for_frame(frame: FrameState) -> bool:
+    """Release the payload to physics only after conveyor placement begins."""
+    return bool(frame.payload_placed and not frame.payload_attached)
 
 
 def warehouse_rack_positions() -> tuple[tuple[float, float], ...]:
@@ -102,6 +114,177 @@ def camera_pose_for_phase(phase: str) -> CameraPose:
     if phase in {"safe_retreat", "safety_stop"}:
         return CameraPose((-9.5, -5.4, 6.2), (-0.8, 1.2, 0.9))
     return CameraPose((-16.5, -5.6, 6.2), (0.0, 1.3, 0.9))
+
+
+def _normalized(vector: tuple[float, float, float]) -> tuple[float, float, float]:
+    length = math.sqrt(sum(value * value for value in vector))
+    if length <= 1e-9:
+        raise ValueError("camera direction must be non-zero")
+    return tuple(value / length for value in vector)
+
+
+def _camera_direction_for_phase(phase: str) -> tuple[float, float, float]:
+    if phase in {
+        "precision_approach",
+        "offset_detected",
+        "pose_verified",
+        "pose_revalidated",
+        "occluded_view_1",
+        "occluded_view_2",
+        "occluded_view_3",
+        "view_adjust_1",
+        "view_adjust_2",
+        "insert_forks",
+        "lift_payload",
+        "tilt_stabilize",
+    }:
+        return _normalized((-8.0, -7.5, 5.2))
+    if phase in {"prealign_conveyor", "align_conveyor", "lower_payload", "place_payload"}:
+        return _normalized((-7.5, 7.0, 5.8))
+    if phase in {"safe_retreat", "safety_stop"}:
+        return _normalized((-9.0, -6.0, 5.5))
+    return _normalized((-9.5, -7.0, 6.2))
+
+
+def _bounds_corners(
+    minimum: tuple[float, float, float],
+    maximum: tuple[float, float, float],
+) -> tuple[tuple[float, float, float], ...]:
+    return tuple(
+        (x, y, z)
+        for x in (minimum[0], maximum[0])
+        for y in (minimum[1], maximum[1])
+        for z in (minimum[2], maximum[2])
+    )
+
+
+def subject_world_corners(frame: FrameState) -> tuple[tuple[float, float, float], ...]:
+    """Return a conservative rendered-subject envelope for camera fitting."""
+    yaw = math.radians(frame.yaw_deg)
+    cosine, sine = math.cos(yaw), math.sin(yaw)
+    points: list[tuple[float, float, float]] = []
+    for x, y, z in _bounds_corners((-1.10, -0.76, 0.0), (2.64, 0.76, 2.66)):
+        points.append(
+            (
+                frame.base_x_m + cosine * x - sine * y,
+                frame.base_y_m + sine * x + cosine * y,
+                frame.base_z_m + z,
+            )
+        )
+    if frame.payload_attached or frame.payload_placed:
+        payload_yaw = math.radians(frame.payload_yaw_deg)
+        payload_cosine, payload_sine = math.cos(payload_yaw), math.sin(payload_yaw)
+        for x, y, z in _bounds_corners((-0.58, -0.65, 0.0), (0.58, 0.65, 0.76)):
+            points.append(
+                (
+                    frame.payload_x_m + payload_cosine * x - payload_sine * y,
+                    frame.payload_y_m + payload_sine * x + payload_cosine * y,
+                    frame.payload_z_m + z,
+                )
+            )
+    return tuple(points)
+
+
+def _subject_center_and_radius(
+    frame: FrameState,
+) -> tuple[tuple[float, float, float], float]:
+    points = subject_world_corners(frame)
+    minimum = tuple(min(point[index] for point in points) for index in range(3))
+    maximum = tuple(max(point[index] for point in points) for index in range(3))
+    center = tuple((minimum[index] + maximum[index]) / 2.0 for index in range(3))
+    radius = max(math.dist(center, point) for point in points)
+    return center, radius
+
+
+def camera_pose_for_frame(frame: FrameState) -> CameraPose:
+    center, radius = _subject_center_and_radius(frame)
+    horizontal_half_angle = math.atan(
+        CAMERA_HORIZONTAL_APERTURE_MM / (2.0 * CAMERA_FOCAL_LENGTH_MM)
+    )
+    vertical_half_angle = math.atan(math.tan(horizontal_half_angle) / (16.0 / 9.0))
+    usable_half_angle = vertical_half_angle * (1.0 - 2.0 * CAMERA_SAFE_MARGIN)
+    fit_distance = radius / max(math.sin(usable_half_angle), 1e-6)
+    distance = max(15.0, fit_distance)
+    direction = _camera_direction_for_phase(frame.phase)
+    position = tuple(center[index] + direction[index] * distance for index in range(3))
+    return CameraPose(position, center)
+
+
+def camera_frame_margin(
+    frame: FrameState,
+    pose: CameraPose,
+    *,
+    aspect_ratio: float,
+) -> float:
+    """Project the subject envelope and return its smallest normalized edge gap."""
+    if aspect_ratio <= 0.0:
+        raise ValueError("aspect_ratio must be positive")
+    forward = _normalized(
+        tuple(pose.look_at[index] - pose.position[index] for index in range(3))
+    )
+    right = _normalized((forward[1], -forward[0], 0.0))
+    true_up = (
+        right[1] * forward[2],
+        -right[0] * forward[2],
+        right[0] * forward[1] - right[1] * forward[0],
+    )
+    tan_half_horizontal = CAMERA_HORIZONTAL_APERTURE_MM / (
+        2.0 * CAMERA_FOCAL_LENGTH_MM
+    )
+    tan_half_vertical = tan_half_horizontal / aspect_ratio
+    margins: list[float] = []
+    for point in subject_world_corners(frame):
+        delta = tuple(point[index] - pose.position[index] for index in range(3))
+        depth = sum(delta[index] * forward[index] for index in range(3))
+        if depth <= 0.0:
+            return -1.0
+        horizontal = sum(delta[index] * right[index] for index in range(3))
+        vertical = sum(delta[index] * true_up[index] for index in range(3))
+        screen_x = 0.5 + horizontal / (2.0 * depth * tan_half_horizontal)
+        screen_y = 0.5 - vertical / (2.0 * depth * tan_half_vertical)
+        margins.append(min(screen_x, 1.0 - screen_x, screen_y, 1.0 - screen_y))
+    return min(margins)
+
+
+def camera_poses_for_timeline(timeline) -> tuple[CameraPose, ...]:
+    """Smooth phase-angle changes while preserving per-frame subject framing."""
+    poses: list[CameraPose] = []
+    alpha = min(1.0, 1.0 / max(1.0, timeline.fps * 1.25))
+    previous_position: tuple[float, float, float] | None = None
+    for frame in timeline.frames:
+        desired = camera_pose_for_frame(frame)
+        if previous_position is None:
+            position = desired.position
+        else:
+            position = tuple(
+                previous_position[index]
+                + (desired.position[index] - previous_position[index]) * alpha
+                for index in range(3)
+            )
+            relative = tuple(
+                position[index] - desired.look_at[index] for index in range(3)
+            )
+            distance = math.sqrt(sum(value * value for value in relative))
+            if distance < 15.0:
+                direction = _normalized(relative)
+                position = tuple(
+                    desired.look_at[index] + direction[index] * 15.0
+                    for index in range(3)
+                )
+        pose = CameraPose(position, desired.look_at)
+        margin = camera_frame_margin(frame, pose, aspect_ratio=16.0 / 9.0)
+        while margin < CAMERA_SAFE_MARGIN:
+            relative = tuple(
+                pose.position[index] - pose.look_at[index] for index in range(3)
+            )
+            position = tuple(
+                pose.look_at[index] + relative[index] * 1.08 for index in range(3)
+            )
+            pose = CameraPose(position, pose.look_at)
+            margin = camera_frame_margin(frame, pose, aspect_ratio=16.0 / 9.0)
+        poses.append(pose)
+        previous_position = pose.position
+    return tuple(poses)
 
 
 def derive_kinematic_observation(
@@ -146,11 +329,20 @@ def derive_kinematic_observation(
         base_xyz,
     )
     placement = layout.conveyor_payload_target
+    placement_error = (
+        (payload_xyz[0] - placement[0]) ** 2
+        + (payload_xyz[1] - placement[1]) ** 2
+    ) ** 0.5
+    payload_support_error = abs(payload_xyz[2] - placement[2])
     payload_placed = (
         not payload_attached
-        and abs(payload_xyz[0] - placement[0]) <= 0.03
-        and abs(payload_xyz[1] - placement[1]) <= 0.03
-        and abs(payload_xyz[2] - placement[2]) <= 0.03
+        and placement_error <= 0.03
+        and payload_support_error <= 0.03
+    )
+    payload_supported = (
+        payload_placed
+        and placement_error <= 0.02
+        and payload_support_error <= 0.005
     )
     stopped = abs(float(base_speed_mps)) <= 0.01
     pallet_error = 0.0 if payload_attached else relative_payload[1]
@@ -174,6 +366,8 @@ def derive_kinematic_observation(
         "payload_attached": payload_attached,
         "physical_attachment_enabled": bool(physical_attachment_enabled),
         "payload_placed": payload_placed,
+        "payload_supported": payload_supported,
+        "payload_support_error_m": round(payload_support_error, 6),
         "pallet_lateral_error_m": round(pallet_error, 6),
         "camera_lateral_offset_m": round(base_in_container[1], 6),
         "precision_alignment_error_m": round(precision_alignment_error, 6),
@@ -197,11 +391,13 @@ class SceneHandles:
     lift_root: Any
     fork_tilt_root: Any
     payload_root: Any
+    payload_body: Any
     payload_joint: Any
     obstacle_root: Any
     beacon: Any
     referenced_assets: tuple[str, ...]
     static_collision_prims: tuple[str, ...]
+    payload_released: bool = False
 
 
 def build_scene(
@@ -256,6 +452,29 @@ def build_scene(
         if collision:
             UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
         return cube.GetPrim()
+
+    def cylinder(
+        path,
+        radius,
+        height,
+        position,
+        color,
+        *,
+        axis="y",
+        material_name=None,
+        collision=True,
+    ):
+        shape = UsdGeom.Cylinder.Define(stage, path)
+        shape.CreateRadiusAttr(float(radius))
+        shape.CreateHeightAttr(float(height))
+        shape.CreateAxisAttr(getattr(UsdGeom.Tokens, axis))
+        UsdGeom.XformCommonAPI(shape).SetTranslate(Gf.Vec3d(*position))
+        shape.CreateDisplayColorAttr([Gf.Vec3f(*color)])
+        if material_name is not None:
+            UsdShade.MaterialBindingAPI.Apply(shape.GetPrim()).Bind(materials[material_name])
+        if collision:
+            UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        return shape.GetPrim()
 
     # Expanded warehouse floor, aisle markings and shell.
     width, depth = WAREHOUSE_EXTENT_M
@@ -352,12 +571,25 @@ def build_scene(
         UsdGeom.XformCommonAPI.RotationOrderXYZ,
     )
     for spec in conveyor_geometry_specs():
-        box(
-            f"/World/Conveyor/{spec.name}",
-            spec.size,
-            spec.position,
-            (0.52, 0.58, 0.63),
-        )
+        path = f"/World/Conveyor/{spec.name}"
+        if isinstance(spec, CylinderGeometrySpec):
+            cylinder(
+                path,
+                spec.radius,
+                spec.height,
+                spec.position,
+                (0.45, 0.52, 0.58),
+                axis=spec.axis,
+                material_name="WarehouseSteel",
+            )
+        else:
+            box(
+                path,
+                spec.size,
+                spec.position,
+                (0.52, 0.58, 0.63),
+                material_name="WarehouseSteel",
+            )
     target_root = stage.DefinePrim("/World/Visuals/ConveyorTarget", "Xform")
     target_api = UsdGeom.XformCommonAPI(target_root)
     target_api.SetTranslate(Gf.Vec3d(*layout.conveyor.position))
@@ -381,7 +613,18 @@ def build_scene(
     UsdPhysics.ArticulationRootAPI.Apply(forklift_root)
     stage.DefinePrim("/World/Forklift/Body", "Xform")
     for name, spec in FORKLIFT_PARTS.items():
-        box(f"/World/Forklift/Body/{name}", spec.size, spec.local_position, spec.color)
+        path = f"/World/Forklift/Body/{name}"
+        if spec.primitive == "cylinder":
+            cylinder(
+                path,
+                spec.size[2] / 2.0,
+                spec.size[1],
+                spec.local_position,
+                spec.color,
+                axis=spec.axis,
+            )
+        else:
+            box(path, spec.size, spec.local_position, spec.color)
     lift_root = stage.DefinePrim("/World/Forklift/Lift", "Xform")
     fork_tilt_root = stage.DefinePrim("/World/Forklift/Lift/ForkTilt", "Xform")
     for spec in forklift_lift_geometry_specs():
@@ -471,7 +714,7 @@ def build_scene(
             path = str(prim.GetPath())
             if path != spec.prim_path and not path.startswith(spec.prim_path + "/"):
                 continue
-            if prim.GetTypeName() != "Cube":
+            if prim.GetTypeName() not in {"Cube", "Cylinder"}:
                 continue
             if not prim.HasAPI(UsdPhysics.CollisionAPI):
                 raise RuntimeError(f"static collision missing: {path}")
@@ -495,16 +738,17 @@ def build_scene(
     output.parent.mkdir(parents=True, exist_ok=True)
     stage.GetRootLayer().Export(str(output))
     return SceneHandles(
-        stage,
-        forklift_root,
-        lift_root,
-        fork_tilt_root,
-        payload_root,
-        payload_joint,
-        obstacle_root,
-        beacon,
-        tuple(referenced_assets),
-        tuple(sorted(set(static_collision_prims))),
+        stage=stage,
+        forklift_root=forklift_root,
+        lift_root=lift_root,
+        fork_tilt_root=fork_tilt_root,
+        payload_root=payload_root,
+        payload_body=payload_body,
+        payload_joint=payload_joint,
+        obstacle_root=obstacle_root,
+        beacon=beacon,
+        referenced_assets=tuple(referenced_assets),
+        static_collision_prims=tuple(sorted(set(static_collision_prims))),
     )
 
 
@@ -530,11 +774,13 @@ def apply_frame(handles: SceneHandles, frame: FrameState) -> None:
         tilt_value,
         UsdGeom.XformCommonAPI.RotationOrderXYZ,
     )
-    payload_api.SetTranslate(payload_value)
-    payload_api.SetRotate(
-        payload_rotation_value,
-        UsdGeom.XformCommonAPI.RotationOrderXYZ,
-    )
+    write_payload_transform = not handles.payload_released
+    if write_payload_transform:
+        payload_api.SetTranslate(payload_value)
+        payload_api.SetRotate(
+            payload_rotation_value,
+            UsdGeom.XformCommonAPI.RotationOrderXYZ,
+        )
     sample_time = Usd.TimeCode(frame.sim_time_s)
     handles.forklift_root.GetAttribute("xformOp:translate").Set(base_value, sample_time)
     handles.forklift_root.GetAttribute("xformOp:rotateXYZ").Set(
@@ -542,14 +788,25 @@ def apply_frame(handles: SceneHandles, frame: FrameState) -> None:
     )
     handles.lift_root.GetAttribute("xformOp:translate").Set(lift_value, sample_time)
     handles.fork_tilt_root.GetAttribute("xformOp:rotateXYZ").Set(tilt_value, sample_time)
-    handles.payload_root.GetAttribute("xformOp:translate").Set(payload_value, sample_time)
-    handles.payload_root.GetAttribute("xformOp:rotateXYZ").Set(
-        payload_rotation_value, sample_time
-    )
+    if write_payload_transform:
+        handles.payload_root.GetAttribute("xformOp:translate").Set(
+            payload_value, sample_time
+        )
+        handles.payload_root.GetAttribute("xformOp:rotateXYZ").Set(
+            payload_rotation_value, sample_time
+        )
     attachment_enabled = physical_attachment_for_frame(frame)
     joint_enabled = handles.payload_joint.GetJointEnabledAttr()
     joint_enabled.Set(attachment_enabled)
     joint_enabled.Set(attachment_enabled, sample_time)
+    kinematic_enabled = handles.payload_body.GetKinematicEnabledAttr()
+    if payload_dynamic_for_frame(frame) and not handles.payload_released:
+        kinematic_enabled.Set(False)
+        kinematic_enabled.Set(False, sample_time)
+        handles.payload_released = True
+    elif not handles.payload_released:
+        kinematic_enabled.Set(True)
+        kinematic_enabled.Set(True, sample_time)
     obstacle = UsdGeom.Imageable(handles.obstacle_root)
     obstacle.MakeVisible() if frame.obstacle_visible else obstacle.MakeInvisible()
     UsdGeom.Imageable(handles.beacon).GetPrim().GetAttribute("primvars:displayColor")

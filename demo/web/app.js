@@ -99,7 +99,7 @@
       name.append(id, label);
       const time = document.createElement("span");
       time.className = "skill-time";
-      time.textContent = event.sim_time_s.toFixed(1) + "s";
+      time.textContent = SeerProtocol.eventDisplayTime(event).toFixed(1) + "s";
       item.append(number, name, time);
       list.append(item);
     });
@@ -175,6 +175,12 @@
     });
   }
 
+  function scrollEvidenceIntoView(target) {
+    const reducedMotion = typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView(SeerProtocol.scrollOptions(reducedMotion));
+  }
+
   async function renderRun(runId, expectedScenario) {
     const generation = ++renderGeneration;
     const pair = await Promise.all([fetchJson("/api/runs/" + encodeURIComponent(runId)), loadEvents(runId)]);
@@ -182,9 +188,10 @@
     if (consoleState.selectedScenario !== expectedScenario) return;
     const summary = pair[0];
     const events = pair[1];
-    const reduced = SeerProtocol.reduceEvents(events);
+    const projectedEvents = SeerProtocol.projectEventTimes(events, Number(summary.fps));
+    const reduced = SeerProtocol.reduceEvents(projectedEvents);
     activeRunId = runId;
-    activeEvents = events;
+    activeEvents = projectedEvents;
     evidenceContent.hidden = false;
     fastwamContent.hidden = true;
     dispatchDetails.hidden = false;
@@ -196,10 +203,10 @@
     setText("source-pill", reduced.source);
     setText("event-count", reduced.eventCount + " events");
     setText("run-meta", reduced.runId + " · " + reduced.scenario + " · " + (summary.controller || "evidence replay"));
-    renderSkills(events);
-    renderFallbacks(events);
-    renderLog(events);
-    renderDispatchPlan(events);
+    renderSkills(projectedEvents);
+    renderFallbacks(projectedEvents);
+    renderLog(projectedEvents);
+    renderDispatchPlan(projectedEvents);
     updatePlaybackState(0);
     const preferredMedia = summary.has_presentation ? summary.presentation_file : (summary.has_video ? summary.video_file : null);
     if (preferredMedia) {
@@ -212,7 +219,7 @@
       video.hidden = true;
       noVideo.hidden = false;
     }
-    return events;
+    return projectedEvents;
   }
 
   function runForScenario(scenario) {
@@ -254,6 +261,7 @@
       const fastwamDecision = SeerProtocol.reconcileTask(fastwamInput.value, taskPresets.fastwam);
       fastwamInput.value = fastwamDecision.task;
       await showFastWam(scenario, fastwamDecision);
+      scrollEvidenceIntoView(fastwamContent);
       return;
     }
     const run = runForScenario(scenario);
@@ -273,6 +281,7 @@
     }
     video.currentTime = 0;
     updatePlaybackState(0);
+    scrollEvidenceIntoView(evidenceContent);
     if (!video.hidden) video.play().catch(function () { /* browser may require another gesture */ });
   }
 

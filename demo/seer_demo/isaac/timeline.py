@@ -22,6 +22,8 @@ class PartSpec:
     size: tuple[float, float, float]
     local_position: tuple[float, float, float]
     color: tuple[float, float, float]
+    primitive: str = "box"
+    axis: str = "z"
 
 
 FORKLIFT_PARTS: Mapping[str, PartSpec] = {
@@ -31,10 +33,10 @@ FORKLIFT_PARTS: Mapping[str, PartSpec] = {
     "mast_left": PartSpec((0.13, 0.13, 2.50), (1.05, 0.42, 1.40), (0.16, 0.18, 0.21)),
     "mast_right": PartSpec((0.13, 0.13, 2.50), (1.05, -0.42, 1.40), (0.16, 0.18, 0.21)),
     "overhead_guard": PartSpec((1.05, 1.05, 0.10), (-0.10, 0.0, 2.05), (0.12, 0.14, 0.17)),
-    "wheel_fl": PartSpec((0.42, 0.24, 0.42), (0.72, 0.63, 0.42), (0.04, 0.04, 0.05)),
-    "wheel_fr": PartSpec((0.42, 0.24, 0.42), (0.72, -0.63, 0.42), (0.04, 0.04, 0.05)),
-    "wheel_rl": PartSpec((0.48, 0.24, 0.48), (-0.72, 0.63, 0.44), (0.04, 0.04, 0.05)),
-    "wheel_rr": PartSpec((0.48, 0.24, 0.48), (-0.72, -0.63, 0.44), (0.04, 0.04, 0.05)),
+    "wheel_fl": PartSpec((0.42, 0.24, 0.42), (0.72, 0.63, 0.21), (0.04, 0.04, 0.05), "cylinder", "y"),
+    "wheel_fr": PartSpec((0.42, 0.24, 0.42), (0.72, -0.63, 0.21), (0.04, 0.04, 0.05), "cylinder", "y"),
+    "wheel_rl": PartSpec((0.48, 0.24, 0.48), (-0.72, 0.63, 0.24), (0.04, 0.04, 0.05), "cylinder", "y"),
+    "wheel_rr": PartSpec((0.48, 0.24, 0.48), (-0.72, -0.63, 0.24), (0.04, 0.04, 0.05), "cylinder", "y"),
 }
 
 
@@ -59,6 +61,8 @@ class FrameState:
     payload_yaw_deg: float
     payload_attached: bool
     payload_placed: bool
+    payload_supported: bool
+    payload_settled: bool
     pallet_lateral_error_m: float
     obstacle_visible: bool
     stopped: bool
@@ -78,6 +82,8 @@ class FrameState:
             "payload_yaw_deg": self.payload_yaw_deg,
             "payload_attached": self.payload_attached,
             "payload_placed": self.payload_placed,
+            "payload_supported": self.payload_supported,
+            "payload_settled": self.payload_settled,
             "pallet_lateral_error_m": self.pallet_lateral_error_m,
             "obstacle_visible": self.obstacle_visible,
             "stopped": self.stopped,
@@ -101,6 +107,8 @@ class _Pose:
     fork_tilt_deg: float = 0.0
     payload_attached: bool = False
     payload_placed: bool = False
+    payload_supported: bool = False
+    payload_settled: bool = False
     pallet_lateral_error_m: float = 0.0
     stopped: bool = False
 
@@ -119,7 +127,8 @@ class _Segment:
     fork_tilt_deg: float | None = None
     pallet_lateral_error_m: float | None = None
     attach_at_end: bool = False
-    release_at_end: bool = False
+    release_at_fraction: float | None = None
+    settled_at_fraction: float | None = None
     stop_at_end: bool = False
 
 
@@ -273,14 +282,19 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
             yaw_deg=layout.conveyor.yaw_deg,
         ),
         _Segment(
-            "place_payload",
-            5,
-            skill_id="FORK-OP-04",
+            "lower_payload",
+            4,
             mast_height_m=(
                 layout.conveyor_payload_target[2] - PAYLOAD_ATTACHMENT_Z_OFFSET_M
             ),
             fork_tilt_deg=0.0,
-            release_at_end=True,
+        ),
+        _Segment(
+            "place_payload",
+            1.25,
+            skill_id="FORK-OP-04",
+            release_at_fraction=0.0,
+            settled_at_fraction=0.8,
         ),
     )
     return common_start + perception + common_finish
@@ -310,6 +324,8 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
     def append_frame(current: _Pose, segment: _Segment, amount: float, final_outcome: str = "RUNNING"):
         attached = current.payload_attached
         placed = current.payload_placed
+        supported = current.payload_supported
+        settled = current.payload_settled
         base_x = round(current.base_x_m, 6)
         base_y = round(current.base_y_m, 6)
         mast_height = round(current.mast_height_m, 6)
@@ -352,6 +368,8 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
                 payload_yaw_deg=round(payload_yaw, 6),
                 payload_attached=attached,
                 payload_placed=placed,
+                payload_supported=supported,
+                payload_settled=settled,
                 pallet_lateral_error_m=round(current.pallet_lateral_error_m, 6),
                 obstacle_visible=obstacle_visible,
                 stopped=current.stopped,
@@ -396,8 +414,20 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
             )
             if step == steps and segment.attach_at_end:
                 current = replace(current, payload_attached=True)
-            if step == steps and segment.release_at_end:
-                current = replace(current, payload_attached=False, payload_placed=True)
+            if (
+                segment.release_at_fraction is not None
+                and amount >= segment.release_at_fraction
+            ):
+                current = replace(
+                    current,
+                    payload_attached=False,
+                    payload_placed=True,
+                    payload_supported=True,
+                    payload_settled=(
+                        segment.settled_at_fraction is not None
+                        and amount >= segment.settled_at_fraction
+                    ),
+                )
             if step == steps and segment.stop_at_end:
                 current = replace(current, stopped=True)
             is_final = segment_index == len(segments) - 1 and step == steps

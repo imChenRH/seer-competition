@@ -110,6 +110,25 @@ class DecisionSnapshotTests(unittest.TestCase):
 
 
 class PresentationMediaTests(unittest.TestCase):
+    def test_state_theme_changes_the_brain_card_and_primary_typography(self):
+        theme_for = getattr(presentation_module, "presentation_theme", None)
+        self.assertIsNotNone(theme_for)
+        snapshots = (
+            decision_snapshot(scenario_events("normal"), 26.0),
+            decision_snapshot(scenario_events("recovery"), 24.0),
+            decision_snapshot(scenario_events("intervention"), 36.0),
+            decision_snapshot(
+                scenario_events("normal"),
+                scenario_events("normal")[-1].sim_time_s,
+            ),
+        )
+        themes = [theme_for(snapshot) for snapshot in snapshots]
+
+        self.assertEqual(len({theme.card_fill for theme in themes}), 4)
+        self.assertEqual(len({theme.accent for theme in themes}), 4)
+        self.assertTrue(all(theme.dispatch_font_size >= 46 for theme in themes))
+        self.assertTrue(all(theme.section_font_size >= 28 for theme in themes))
+
     def test_renderer_fails_closed_without_a_cjk_font(self):
         select_font = getattr(presentation_module, "_select_cjk_font", None)
         self.assertIsNotNone(

@@ -51,6 +51,32 @@ def annotate_navigation_target_error(
     )
 
 
+def annotate_payload_settle_state(
+    observed: dict[str, object],
+    previous_payload: tuple[float, float, float] | None,
+    delta_time_s: float | None,
+) -> None:
+    """Project measured payload motion into the release-settle evidence."""
+    try:
+        current = (
+            float(observed["payload_x_m"]),
+            float(observed["payload_y_m"]),
+            float(observed["payload_z_m"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        observed["payload_speed_mps"] = None
+        observed["payload_settled"] = False
+        return
+    if previous_payload is None or delta_time_s is None or delta_time_s <= 0.0:
+        speed_mps = 0.0
+    else:
+        speed_mps = math.dist(previous_payload, current) / delta_time_s
+    observed["payload_speed_mps"] = round(speed_mps, 6)
+    observed["payload_settled"] = bool(
+        observed.get("payload_supported") is True and speed_mps <= 0.02
+    )
+
+
 class IsaacTimelineBackend:
     """Execute engine actions against the exact frame-time observations of one run.
 
@@ -215,11 +241,12 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
         from omni.replicator.core.functional import write_image
 
         from .scene import (
+            CAMERA_FOCAL_LENGTH_MM,
             PHYSICS_SCHEMA_APIS,
             WAREHOUSE_EXTENT_M,
             apply_frame,
             build_scene,
-            camera_pose_for_phase,
+            camera_poses_for_timeline,
             observe_scene,
         )
         from .layout import static_physics_contract, warehouse_layout_spec
@@ -239,13 +266,14 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
         for _ in range(60):
             app.update()
 
-        initial_camera = camera_pose_for_phase(timeline.frames[0].phase)
+        camera_poses = camera_poses_for_timeline(timeline)
+        initial_camera = camera_poses[0]
         camera = rep.functional.create.camera(
             position=initial_camera.position,
             look_at=initial_camera.look_at,
             parent="/World",
             name="DemoCamera",
-            focal_length=30.0,
+            focal_length=CAMERA_FOCAL_LENGTH_MM,
             clipping_range=(0.1, 1000.0),
         )
         render_product = rep.create.render_product(camera, resolution=(width, height), name="DemoRender")
@@ -253,6 +281,7 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
         rgb.attach(render_product)
         observations: dict[tuple[str, str, int], dict[str, object]] = {}
         previous_base: tuple[float, float] | None = None
+        previous_payload: tuple[float, float, float] | None = None
         previous_time: float | None = None
         previous_camera_pose = None
         for index, frame in enumerate(timeline.frames):
@@ -261,7 +290,7 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
                     timeline.frames[index - 1], frame, timeline.scenario
                 )
             apply_frame(handles, frame)
-            camera_pose = camera_pose_for_phase(frame.phase)
+            camera_pose = camera_poses[index]
             if camera_pose != previous_camera_pose:
                 rep.functional.modify.pose(
                     camera,
@@ -287,6 +316,16 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
                 )
             observed["base_speed_mps"] = round(base_speed_mps, 6)
             observed["stopped"] = base_speed_mps <= 0.01
+            delta_time = (
+                frame.sim_time_s - previous_time
+                if previous_time is not None
+                else None
+            )
+            annotate_payload_settle_state(
+                observed,
+                previous_payload,
+                delta_time,
+            )
             observed["safe_retreat_complete"] = (
                 float(observed["base_x_m"]) <= -0.9
                 and observed["payload_attached"] is False
@@ -294,6 +333,11 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
             previous_base = (
                 float(observed["base_x_m"]),
                 float(observed["base_y_m"]),
+            )
+            previous_payload = (
+                float(observed["payload_x_m"]),
+                float(observed["payload_y_m"]),
+                float(observed["payload_z_m"]),
             )
             previous_time = frame.sim_time_s
             next_frame = timeline.frames[index + 1] if index + 1 < len(timeline.frames) else None
@@ -351,7 +395,7 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
                     asdict(item) for item in static_physics_contract(args.scenario)
                 ],
                 "static_collision_prim_count": len(handles.static_collision_prims),
-                "camera_strategy": "phase_based_internal_operation_views_v1",
+                "camera_strategy": "subject_fit_smoothed_internal_views_v2",
             }
         )
         (output_dir / "summary.json").write_text(

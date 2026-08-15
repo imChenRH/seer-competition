@@ -84,6 +84,15 @@ class DemoCliTests(unittest.TestCase):
         self.assertIn("ISAAC_WAREHOUSE_ASSET_ROOT", source)
         self.assertIn("--warehouse-asset-root", source)
 
+    def test_scene_preview_uses_the_same_subject_aware_camera_as_formal_runs(self):
+        source = (ROOT / "scripts" / "render_isaac_scene_preview.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("camera_pose_for_frame", source)
+        self.assertIn("CAMERA_FOCAL_LENGTH_MM", source)
+        self.assertNotIn("camera_pose_for_phase", source)
+
     def test_check_command_bypasses_proxies_for_loopback_tests(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             fake_python = Path(temp_dir) / "python3"

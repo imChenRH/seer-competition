@@ -122,7 +122,12 @@ def skill_state_succeeded(skill_id: str, state: Mapping[str, object]) -> bool:
             )
         )
     if skill_id == "FORK-OP-04":
-        return state.get("payload_attached") is False and state.get("payload_placed") is True
+        return (
+            state.get("payload_attached") is False
+            and state.get("payload_placed") is True
+            and state.get("payload_supported") is True
+            and state.get("payload_settled") is True
+        )
     return False
 
 
