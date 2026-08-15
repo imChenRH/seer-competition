@@ -67,7 +67,12 @@ def main() -> int:
         if frame_dir.exists():
             shutil.rmtree(frame_dir)
         overlay_pattern = render_overlay_frames(
-            events, frame_dir, fps=fps, frame_count=frame_count, font_path=args.font
+            events,
+            frame_dir,
+            fps=fps,
+            frame_count=frame_count,
+            font_path=args.font,
+            collision_summary=summary,
         )
         temporary = None
     else:
@@ -78,6 +83,7 @@ def main() -> int:
             fps=fps,
             frame_count=frame_count,
             font_path=args.font,
+            collision_summary=summary,
         )
 
     try:

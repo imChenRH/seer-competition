@@ -22,6 +22,7 @@ from ..scenarios import (
     skill_state_succeeded,
 )
 from .timeline import Timeline, build_timeline
+from .collision import assert_frame_transition_safe, assert_timeline_collision_safe
 
 
 class IsaacTimelineBackend:
@@ -191,6 +192,7 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
         frames_dir = output_dir / "frames"
         frames_dir.mkdir(parents=True, exist_ok=True)
         timeline = build_timeline(args.scenario, fps=args.fps)
+        collision_certification = assert_timeline_collision_safe(timeline)
         handles = build_scene(
             output_dir / "scene.usda",
             args.scenario,
@@ -217,6 +219,10 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
         previous_time: float | None = None
         previous_camera_pose = None
         for index, frame in enumerate(timeline.frames):
+            if index > 0:
+                assert_frame_transition_safe(
+                    timeline.frames[index - 1], frame, timeline.scenario
+                )
             apply_frame(handles, frame)
             camera_pose = camera_pose_for_phase(frame.phase)
             if camera_pose != previous_camera_pose:
@@ -277,6 +283,7 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
             load_events(events_path), expected_scenario=args.scenario
         )
         summary = asdict(validation)
+        summary.update(collision_certification.to_summary())
         summary.update(
             {
                 "generated_at": datetime.now(timezone.utc).isoformat(),

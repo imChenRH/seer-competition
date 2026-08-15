@@ -130,10 +130,23 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
         )
 
     entry = container_point(*layout.container_entry_local[:2])
-    aligned = container_point(*layout.container_alignment_local[:2])
+    approach_local_x = (
+        1.25 if scenario == "intervention" else layout.container_alignment_local[0]
+    )
+    aligned = container_point(approach_local_x, 0.0)
     pickup_y = 0.25 if scenario == "recovery" else 0.0
     insert = container_point(2.25, pickup_y)
     exit_pose = container_point(*layout.container_exit_local[:2])
+    conveyor_detour = world_from_local(
+        layout.conveyor.position,
+        layout.conveyor.yaw_deg,
+        (-5.0, 2.5, 0.0),
+    )
+    conveyor_prealign = world_from_local(
+        layout.conveyor.position,
+        layout.conveyor.yaw_deg,
+        (-5.0, 0.0, 0.0),
+    )
     conveyor_pose = layout.conveyor_alignment_target
     common_start = (
         _Segment(
@@ -161,8 +174,8 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
                 2,
                 fallback_id="FB-F02",
                 attempt=1,
-                base_x_m=container_point(2.2, 0.15)[0],
-                base_y_m=container_point(2.2, 0.15)[1],
+                base_x_m=container_point(approach_local_x, 0.15)[0],
+                base_y_m=container_point(approach_local_x, 0.15)[1],
             ),
             _Segment("occluded_view_2", 3, skill_id="FORK-PER-01", attempt=2),
             _Segment(
@@ -170,8 +183,8 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
                 2,
                 fallback_id="FB-F02",
                 attempt=2,
-                base_x_m=container_point(2.2, -0.15)[0],
-                base_y_m=container_point(2.2, -0.15)[1],
+                base_x_m=container_point(approach_local_x, -0.15)[0],
+                base_y_m=container_point(approach_local_x, -0.15)[1],
             ),
             _Segment("occluded_view_3", 3, skill_id="FORK-PER-01", attempt=3),
             _Segment(
@@ -226,8 +239,24 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
             yaw_deg=layout.container.yaw_deg,
         ),
         _Segment(
+            "route_conveyor",
+            6,
+            skill_id="FORK-NAV-01",
+            base_x_m=conveyor_detour[0],
+            base_y_m=conveyor_detour[1],
+            yaw_deg=layout.container.yaw_deg,
+        ),
+        _Segment(
+            "prealign_conveyor",
+            6,
+            skill_id="FORK-NAV-03",
+            base_x_m=conveyor_prealign[0],
+            base_y_m=conveyor_prealign[1],
+            yaw_deg=layout.conveyor.yaw_deg,
+        ),
+        _Segment(
             "align_conveyor",
-            10,
+            7,
             skill_id="FORK-OP-05",
             base_x_m=conveyor_pose[0],
             base_y_m=conveyor_pose[1],
@@ -363,4 +392,13 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
             append_frame(current, segment, amount, outcome)
         pose = current
         elapsed += segment.duration_s
-    return Timeline(scenario=scenario, fps=fps, duration_s=elapsed, frames=tuple(frames))
+    timeline = Timeline(
+        scenario=scenario,
+        fps=fps,
+        duration_s=elapsed,
+        frames=tuple(frames),
+    )
+    from .collision import assert_timeline_collision_safe
+
+    assert_timeline_collision_safe(timeline)
+    return timeline

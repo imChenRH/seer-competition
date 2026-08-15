@@ -9,6 +9,16 @@ from seer_demo.engine import DemoEngine
 from seer_demo.manifest import build_manifest, sha256_file
 
 
+COLLISION_CERTIFICATION = {
+    "collision_guard": "2.5D_OBB_SAT_SWEEP_V1",
+    "collision_check_count": 100,
+    "minimum_body_clearance_m": 0.15,
+    "maximum_allowed_contact_error_m": 0.01,
+    "forbidden_collision_count": 0,
+    "collision_certified": True,
+}
+
+
 class ObservedIsaacBackend(DryRunBackend):
     def execute_skill(self, skill_id, attempt):
         result = super().execute_skill(skill_id, attempt)
@@ -35,6 +45,7 @@ class EvidenceManifestTests(unittest.TestCase):
                 DemoEngine(ObservedIsaacBackend("normal"), writer).run("normal")
             validation = validate_events(load_events(events))
             summary = {
+                **COLLISION_CERTIFICATION,
                 "run_id": validation.run_id,
                 "scenario": validation.scenario,
                 "source": validation.source,
@@ -76,6 +87,21 @@ class EvidenceManifestTests(unittest.TestCase):
                 sha256_file(events),
             )
 
+            summary["collision_certified"] = False
+            (run / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "collision certification"):
+                build_manifest(
+                    root,
+                    require_auxiliary=False,
+                    video_probe=lambda _: {
+                        "width": 1280,
+                        "height": 720,
+                        "fps": 8.0,
+                        "frame_count": 409,
+                        "duration_s": 51.125,
+                    },
+                )
+
     def test_manifest_hashes_declared_auxiliary_evidence(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -88,6 +114,7 @@ class EvidenceManifestTests(unittest.TestCase):
             (run / "summary.json").write_text(
                 json.dumps(
                     {
+                        **COLLISION_CERTIFICATION,
                         "run_id": validation.run_id,
                         "scenario": validation.scenario,
                         "source": validation.source,
@@ -153,6 +180,7 @@ class EvidenceManifestTests(unittest.TestCase):
                 DemoEngine(ObservedIsaacBackend("normal"), writer).run("normal")
             validation = validate_events(load_events(events))
             summary = {
+                **COLLISION_CERTIFICATION,
                 "run_id": validation.run_id,
                 "scenario": validation.scenario,
                 "source": validation.source,
@@ -202,6 +230,7 @@ class EvidenceManifestTests(unittest.TestCase):
             (run / "summary.json").write_text(
                 json.dumps(
                     {
+                        **COLLISION_CERTIFICATION,
                         "run_id": validation.run_id,
                         "scenario": validation.scenario,
                         "source": validation.source,
@@ -301,6 +330,7 @@ class EvidenceManifestTests(unittest.TestCase):
             (run / "summary.json").write_text(
                 json.dumps(
                     {
+                        **COLLISION_CERTIFICATION,
                         "run_id": validation.run_id,
                         "scenario": validation.scenario,
                         "source": validation.source,

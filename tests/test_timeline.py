@@ -1,11 +1,14 @@
 import unittest
 import math
+from dataclasses import replace
 
 from seer_demo.isaac.runner import IsaacTimelineBackend
 from seer_demo.isaac.collision import (
     OrientedBox,
     Pose2D,
     boxes_overlap_3d,
+    assert_timeline_collision_safe,
+    certify_timeline,
     find_forbidden_collisions,
     swept_poses,
 )
@@ -31,6 +34,57 @@ from seer_demo.isaac.timeline import FORKLIFT_PARTS, build_timeline
 
 
 class IsaacTimelineTests(unittest.TestCase):
+    def test_collision_certification_rejects_a_forged_colliding_timeline(self):
+        timeline = build_timeline("normal", fps=8)
+        collision_index = next(
+            index for index, frame in enumerate(timeline.frames)
+            if frame.phase == "route_conveyor"
+        )
+        forged_frames = list(timeline.frames)
+        forged_frames[collision_index] = replace(
+            forged_frames[collision_index],
+            base_x_m=-6.0,
+            base_y_m=-4.2,
+            yaw_deg=-6.0,
+        )
+        forged = replace(timeline, frames=tuple(forged_frames))
+
+        with self.assertRaisesRegex(RuntimeError, "forbidden swept collision"):
+            assert_timeline_collision_safe(forged)
+
+    def test_collision_certification_exports_formal_summary_fields(self):
+        summary = certify_timeline(build_timeline("normal", fps=8)).to_summary()
+
+        self.assertEqual(summary["collision_guard"], "2.5D_OBB_SAT_SWEEP_V1")
+        self.assertTrue(summary["collision_certified"])
+        self.assertEqual(summary["forbidden_collision_count"], 0)
+        self.assertGreater(summary["collision_check_count"], 0)
+        self.assertGreaterEqual(summary["minimum_body_clearance_m"], 0.05)
+        self.assertEqual(summary["maximum_allowed_contact_error_m"], 0.01)
+
+    def test_all_scenarios_have_zero_forbidden_swept_collisions(self):
+        for scenario in ("normal", "recovery", "intervention"):
+            certification = certify_timeline(build_timeline(scenario, fps=8))
+
+            self.assertEqual(
+                certification.forbidden_collision_count,
+                0,
+                (scenario, certification.collisions[:3]),
+            )
+            self.assertGreaterEqual(certification.minimum_body_clearance_m, 0.05)
+            self.assertGreater(certification.collision_check_count, 0)
+
+    def test_conveyor_approach_aligns_yaw_before_advancing_straight(self):
+        for scenario in ("normal", "recovery"):
+            frames = build_timeline(scenario, fps=8).frames
+            prealign = [frame for frame in frames if frame.phase == "prealign_conveyor"]
+            final_approach = [frame for frame in frames if frame.phase == "align_conveyor"]
+
+            self.assertTrue(prealign)
+            self.assertTrue(final_approach)
+            self.assertAlmostEqual(prealign[-1].yaw_deg, -6.0, places=6)
+            self.assertEqual({frame.yaw_deg for frame in final_approach}, {-6.0})
+
     def test_payload_support_heights_are_derived_without_penetration(self):
         layout = warehouse_layout_spec()
 

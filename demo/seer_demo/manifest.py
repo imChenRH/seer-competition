@@ -82,6 +82,21 @@ def _assert_summary(summary: Mapping[str, object], validation) -> None:
         actual = getattr(validation, key)
         if summary.get(key) != actual:
             raise ValueError(f"summary {key} disagrees with validated events")
+    if validation.source == "isaac_sim":
+        valid_collision_certification = (
+            summary.get("collision_guard") == "2.5D_OBB_SAT_SWEEP_V1"
+            and summary.get("collision_certified") is True
+            and type(summary.get("collision_check_count")) is int
+            and int(summary["collision_check_count"]) > 0
+            and type(summary.get("forbidden_collision_count")) is int
+            and int(summary["forbidden_collision_count"]) == 0
+            and isinstance(summary.get("minimum_body_clearance_m"), (int, float))
+            and not isinstance(summary.get("minimum_body_clearance_m"), bool)
+            and float(summary["minimum_body_clearance_m"]) >= 0.05
+            and summary.get("maximum_allowed_contact_error_m") == 0.01
+        )
+        if not valid_collision_certification:
+            raise ValueError("Isaac summary lacks valid collision certification")
 
 
 def _assert_video(summary: Mapping[str, object], video: Mapping[str, object]) -> None:
@@ -157,6 +172,11 @@ def build_manifest(
             "duration_s": validation.duration_s,
             "isaac_version": summary.get("isaac_version"),
             "controller": summary.get("controller"),
+            "collision_guard": summary.get("collision_guard"),
+            "collision_check_count": summary.get("collision_check_count"),
+            "minimum_body_clearance_m": summary.get("minimum_body_clearance_m"),
+            "forbidden_collision_count": summary.get("forbidden_collision_count"),
+            "collision_certified": summary.get("collision_certified"),
             "video_probe": video,
             "files": files,
         }

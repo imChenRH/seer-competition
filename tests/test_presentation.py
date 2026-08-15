@@ -41,6 +41,23 @@ class DecisionSnapshotTests(unittest.TestCase):
         self.assertNotIn("chain_of_thought", snapshot)
         self.assertNotIn("thought_process", snapshot)
 
+    def test_snapshot_projects_formal_collision_certification(self):
+        snapshot = decision_snapshot(
+            scenario_events("normal"),
+            26.0,
+            collision_summary={
+                "collision_guard": "2.5D_OBB_SAT_SWEEP_V1",
+                "collision_certified": True,
+                "forbidden_collision_count": 0,
+                "minimum_body_clearance_m": 0.15,
+            },
+        )
+
+        self.assertEqual(snapshot["safety"]["collision_guard"], "2.5D_OBB_SAT_SWEEP_V1")
+        self.assertTrue(snapshot["safety"]["collision_certified"])
+        self.assertEqual(snapshot["safety"]["forbidden_collision_count"], 0)
+        self.assertEqual(snapshot["safety"]["minimum_body_clearance_m"], 0.15)
+
     def test_recovery_snapshot_shows_failed_perception_and_fallback_dispatch(self):
         snapshot = decision_snapshot(scenario_events("recovery"), 24.0)
 

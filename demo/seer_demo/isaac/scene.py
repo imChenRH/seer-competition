@@ -90,7 +90,7 @@ def camera_pose_for_phase(phase: str) -> CameraPose:
         return CameraPose((-3.8, -4.8, 5.4), (3.1, 1.7, 0.8))
     if phase in {"insert_forks", "lift_payload", "tilt_stabilize"}:
         return CameraPose((-2.8, -4.8, 4.0), (3.1, 1.7, 0.85))
-    if phase in {"align_conveyor", "place_payload"}:
+    if phase in {"prealign_conveyor", "align_conveyor", "place_payload"}:
         return CameraPose((-14.0, 0.5, 6.8), (-6.8, -4.1, 0.75))
     if phase in {"safe_retreat", "safety_stop"}:
         return CameraPose((-9.5, -5.4, 6.2), (-0.8, 1.2, 0.9))

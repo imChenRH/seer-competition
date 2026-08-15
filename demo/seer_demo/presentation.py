@@ -78,7 +78,12 @@ def _state_value(state: Mapping[str, Any], name: str, default: Any = None) -> An
     return value
 
 
-def decision_snapshot(events: Iterable[Event], sim_time_s: float) -> dict[str, Any]:
+def decision_snapshot(
+    events: Iterable[Event],
+    sim_time_s: float,
+    *,
+    collision_summary: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Project the event stream into display state without inventing hidden reasoning."""
 
     materialized = list(events)
@@ -129,6 +134,7 @@ def decision_snapshot(events: Iterable[Event], sim_time_s: float) -> dict[str, A
         }
         for event in visible[-3:]
     ]
+    collision = collision_summary or {}
     return {
         "run_id": latest.run_id,
         "scenario": latest.scenario,
@@ -162,6 +168,10 @@ def decision_snapshot(events: Iterable[Event], sim_time_s: float) -> dict[str, A
             "gate": gate,
             "obstacle_visible": bool(state.get("obstacle_visible", False)),
             "stopped": bool(state.get("stopped", False)),
+            "collision_guard": collision.get("collision_guard"),
+            "collision_certified": collision.get("collision_certified"),
+            "forbidden_collision_count": collision.get("forbidden_collision_count"),
+            "minimum_body_clearance_m": collision.get("minimum_body_clearance_m"),
         },
         "audit": {
             "latest_sequence": latest.sequence,
@@ -356,6 +366,12 @@ def render_overlay(
     draw.text((1975, 624), safety["gate"], font=title_font, fill=safety_color)
     draw.text((1975, 692), f"obstacle  {'YES' if safety['obstacle_visible'] else 'NO'}", font=mono, fill=muted)
     draw.text((1975, 732), f"stopped   {'YES' if safety['stopped'] else 'NO'}", font=mono, fill=muted)
+    geometry_state = (
+        "CERTIFIED" if safety.get("collision_certified") is True else "UNRECORDED"
+    )
+    clearance = safety.get("minimum_body_clearance_m")
+    clearance_text = f" · min {clearance:.3f}m" if isinstance(clearance, (int, float)) else ""
+    draw.text((1975, 772), f"geometry  {geometry_state}{clearance_text}", font=small, fill=muted)
 
     card((1320, 835, 2520, 1045), "AUDIT / 最近审计事件", cyan)
     y = 890
@@ -375,13 +391,18 @@ def render_overlay_frames(
     fps: float,
     frame_count: int,
     font_path: Path | None = None,
+    collision_summary: Mapping[str, Any] | None = None,
 ) -> Path:
     if frame_count <= 0:
         raise ValueError("frame_count must be positive")
     output_dir.mkdir(parents=True, exist_ok=False)
     for frame_index in range(frame_count):
         sim_time = frame_time_s(frame_index, fps)
-        snapshot = decision_snapshot(events, sim_time)
+        snapshot = decision_snapshot(
+            events,
+            sim_time,
+            collision_summary=collision_summary,
+        )
         image = render_overlay(
             snapshot,
             frame_index=frame_index,
