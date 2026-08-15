@@ -54,7 +54,7 @@ class CylinderGeometrySpec:
         raise ValueError(f"unsupported cylinder axis: {self.axis}")
 
 
-CONTAINER_FLOOR_TOP_M = 0.12
+CONTAINER_FLOOR_TOP_M = 0.0
 CONVEYOR_SUPPORT_TOP_M = 0.78
 CONVEYOR_LENGTH_M = 3.4
 CONVEYOR_WIDTH_M = 1.5
@@ -62,7 +62,7 @@ PAYLOAD_SUPPORT_CLEARANCE_M = 0.005
 CONVEYOR_PAYLOAD_CLEARANCE_M = 0.0
 PAYLOAD_ATTACHMENT_Z_OFFSET_M = 0.015
 PAYLOAD_ATTACHMENT_X_OFFSET_M = 2.20
-INSERTION_MAST_HEIGHT_M = 0.11
+INSERTION_MAST_HEIGHT_M = -0.01
 YELLOW_LANE_YAW_DEG = 0.0
 CONTAINER_LENGTH_M = 7.5
 CONTAINER_WIDTH_M = 3.4
@@ -318,7 +318,7 @@ def container_geometry_specs() -> tuple[BoxGeometrySpec, ...]:
             "Floor",
             "support_floor",
             (CONTAINER_LENGTH_M, CONTAINER_WIDTH_M, 0.12),
-            (half_length, 0.0, 0.06),
+            (half_length, 0.0, CONTAINER_FLOOR_TOP_M - 0.06),
         ),
         BoxGeometrySpec(
             "Back",

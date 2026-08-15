@@ -180,6 +180,51 @@ class IsaacTimelineTests(unittest.TestCase):
             }.issubset(names)
         )
 
+    def test_container_floor_support_face_is_flush_with_ground_plane(self):
+        floor = next(
+            spec for spec in container_geometry_specs() if spec.name == "Floor"
+        )
+
+        self.assertAlmostEqual(
+            floor.position[2] + floor.size[2] / 2.0,
+            0.0,
+            places=6,
+        )
+
+    def test_collision_guard_models_wheels_and_rejects_floor_penetration(self):
+        timeline = build_timeline("normal", fps=8)
+        inside_index = next(
+            index
+            for index, frame in enumerate(timeline.frames)
+            if frame.phase == "precision_approach"
+        )
+        inside = timeline.frames[inside_index]
+        dynamic_names = {
+            box.name
+            for box in dynamic_boxes_for_transition(inside, inside)[0]
+        }
+        self.assertTrue(
+            {"wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr"}.issubset(
+                dynamic_names
+            )
+        )
+
+        forged_frames = list(timeline.frames)
+        forged_frames[inside_index] = replace(inside, base_z_m=-0.01)
+        certification = certify_timeline(
+            replace(timeline, frames=tuple(forged_frames))
+        )
+
+        self.assertTrue(
+            any(
+                hit.dynamic_name.startswith("wheel_")
+                and hit.static_name == "container_floor"
+                for hit in certification.collisions
+            ),
+            certification.collisions[:8],
+        )
+        self.assertFalse(certification.to_summary()["collision_certified"])
+
     def test_collision_certification_rejects_a_forged_colliding_timeline(self):
         timeline = build_timeline("normal", fps=8)
         collision_index = next(
@@ -230,7 +275,7 @@ class IsaacTimelineTests(unittest.TestCase):
     def test_collision_certification_exports_formal_summary_fields(self):
         summary = certify_timeline(build_timeline("normal", fps=8)).to_summary()
 
-        self.assertEqual(summary["collision_guard"], "2.5D_OBB_SAT_SWEEP_V2")
+        self.assertEqual(summary["collision_guard"], "2.5D_OBB_SAT_SWEEP_V3")
         self.assertTrue(summary["collision_certified"])
         self.assertEqual(summary["forbidden_collision_count"], 0)
         self.assertGreater(summary["collision_check_count"], 0)
@@ -351,7 +396,7 @@ class IsaacTimelineTests(unittest.TestCase):
     def test_payload_support_heights_are_derived_without_penetration(self):
         layout = warehouse_layout_spec()
 
-        self.assertAlmostEqual(layout.container_payload_target[2], 0.125, places=6)
+        self.assertAlmostEqual(layout.container_payload_target[2], 0.005, places=6)
         self.assertAlmostEqual(layout.conveyor_payload_target[2], 0.780, places=6)
 
     def test_attachment_does_not_teleport_payload_vertically(self):

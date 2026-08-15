@@ -4,7 +4,7 @@
 
 这是一个**证据驱动的企业交流 Demo**：Aily/飞书负责生成和认领任务，单进程桥接只启动一次 Isaac runner；Isaac Sim 6.0.1 使用确定性运动目标与显式 `UsdPhysics.FixedJoint` 载荷挂接；每一步把实际观测写入连续 JSONL；网页从 JSONL 与录像还原大脑—小脑分发过程。界面参考随附的 [`agentos对话模版.png`](agentos对话模版.png)：初始只呈现四种模式与 AgentOS 对话，发送指令后才展开运行证据。
 
-> 2026-08-15 防穿模升级已完成正式重渲染：`2.5D_OBB_SAT_SWEEP_V2` 覆盖车身、叉架/双货叉、12 部件活动载荷与支撑地板；三场景真实 Isaac 录像、USDA、JSONL、分屏片和 manifest 已在 Mac 复验，禁止碰撞与接触违规均为 0。该结论只适用于随附三次演示运行，不外推为生产安全认证。
+> 2026-08-16 V4 已完成正式重渲染：四个圆柱车轮贴地，集装箱地板顶面与世界地面齐平，集装箱扩大到 7.5×3.4×3.5 m，传送带使用 11 根横向圆柱滚筒，设施与黄线平行；24 mm 主体拟合机位避开货架和顶梁。三场景真实 Isaac 录像、USDA、JSONL、分屏片和 manifest 已在 Mac 复验，禁止碰撞与接触违规均为 0。该结论只适用于随附三次演示运行，不外推为生产安全认证。
 
 当前工程采用“局部重构”路线。业务场景、九技能、Fallback、飞书表、AutoDL/Isaac 环境与 Fast-WAM 独立验证继续保留；旧执行器、旧桥接与硬编码网页不再作为正式证据。严格审计见 [`AUDIT.md`](AUDIT.md)，对外声明边界见 [`CLAIMS.md`](CLAIMS.md)。
 
@@ -16,8 +16,8 @@
 - 所有结果均来自同一事件契约；序号连续、仿真时间单调，且最后只有一个终态事件。
 - 分屏右栏按 `observed_frame / fps` 的视频帧时钟投影事件；无观测帧的启动事件继承前一观测边界，因此右侧摘要不会在左侧视频完成动作前提前显示完成。
 - 桥接层在同一主机、同一证据目录内持有进程排他锁，再对任务进行乐观认领；未通过整批事件校验时不会写成成功。
-- 三份正式场景把叉车 Z 轴偏航、设施局部坐标路径和载荷相对位置写入同一时间线；地面、外壳、货架、集装箱、月台、传送带、背景载荷七类常驻设施具有碰撞，故障障碍物仅在 intervention 可见且启用碰撞，normal/recovery 不保留隐形碰撞体。
-- 新时间线在生成、Isaac 每帧写入、分屏合成和 Manifest 四个边界失败关闭；车身/载荷平移和升降步长不大于 0.025 m，车身/载荷偏航和货叉倾角步长不大于 0.5°。载荷按 5 根 deck、3 根 runner 和 4 个 cargo 独立检查，只有货叉—deck 支撑面与 cargo—deck 支撑面精确接触被允许。当前本地结果：normal 859140 次、recovery 960798 次、intervention 547824 次候选对检查，三者禁碰数和接触违规数均为 0；最大挂接/支撑误差不超过 0.000001 m，水平放置误差为 0。
+- 三份正式场景把叉车 Z 轴偏航、设施局部坐标路径和载荷相对位置写入同一时间线；集装箱与传送带均和地面黄线平行。地面、外壳、货架、集装箱、月台、传送带、背景载荷七类常驻设施具有碰撞，故障障碍物仅在 intervention 可见且启用碰撞，normal/recovery 不保留隐形碰撞体。
+- 新时间线在生成、Isaac 每帧写入、分屏合成和 Manifest 四个边界失败关闭；车身/四轮/载荷平移和升降步长不大于 0.025 m，车身/载荷偏航和货叉倾角步长不大于 0.5°。载荷按 5 根 deck、3 根 runner 和 4 个 cargo 独立检查，只有方向正确、误差受限的支撑接触被允许。V4 正式结果：normal 1128953 次、recovery 1248809 次、intervention 651784 次候选对检查，三者禁碰数和接触违规数均为 0；水平放置误差为 0。
 
 它**不能**证明生产级动力学、安全、感知、ROS 2、仙工 SRC-5000 实机控制，也不能证明 Fast-WAM 已控制叉车。当前控制方式是“确定性运动目标 + 显式物理挂接”的可重复演示降级，不是标定力控；异常由场景条件注入。
 
@@ -64,7 +64,7 @@ presentation.mp4 左侧仿真、右侧大脑/小脑与审计摘要的同步展�
 python3 -m venv .venv-presentation
 .venv-presentation/bin/pip install -r demo/requirements-presentation.txt
 .venv-presentation/bin/python scripts/build_split_presentation.py \
-  demo/evidence/isaac-normal-20260815-v2-r4
+  demo/evidence/isaac-normal-20260816-v4-r1
 ```
 
 脚本会验证原始片与演示片的帧率、帧数、时长和 2560×1080 分辨率，再更新对应 `summary.json`；不会把左右两侧使用不同时间轴的视频写成正式证据。渲染中文需要 macOS 的 PingFang/STHeiti、Linux 的 Noto Sans CJK，或通过 `--font /path/to/cjk-font` 显式指定；缺少 CJK 字体时脚本失败关闭，不生成方框字视频。
@@ -99,7 +99,7 @@ Aily/飞书待执行任务
 
 ## 验证
 
-当前 `run_demo.sh check` 在 macOS/Linux 上为 142 项全通过；Windows 上除 1 项依赖 macOS JavaScriptCore 的协议断言跳过外同样通过。
+当前 `run_demo.sh check` 在 macOS/Linux 上包含 159 项 Python 测试；Windows 上仅跳过依赖 macOS JavaScriptCore 的协议执行测试。独立 JavaScript 协议脚本包含 40 项断言。
 
 ```bash
 ./scripts/run_demo.sh check

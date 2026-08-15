@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "runs": [
     {
-      "run_id": "isaac-intervention-20260815-v2-r4",
+      "run_id": "isaac-intervention-20260816-v4-r1",
       "scenario": "intervention",
       "source": "isaac_sim",
       "terminal_status": "HUMAN_REQUIRED",
@@ -10,9 +10,9 @@
       "duration_s": 36.0,
       "isaac_version": "6.0.1",
       "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
-      "collision_guard": "2.5D_OBB_SAT_SWEEP_V2",
-      "collision_check_count": 547824,
-      "minimum_body_clearance_m": 0.256748,
+      "collision_guard": "2.5D_OBB_SAT_SWEEP_V3",
+      "collision_check_count": 651784,
+      "minimum_body_clearance_m": 0.387376,
       "maximum_contact_error_m": 0.0,
       "maximum_horizontal_placement_error_m": 0.0,
       "contact_violation_count": 0,
@@ -27,24 +27,24 @@
       },
       "files": {
         "events.jsonl": {
-          "size_bytes": 16383,
-          "sha256": "49ab76fea457c0e6f664238d2cba23fd4836b11c85e7838080cd467ed3153b6c"
+          "size_bytes": 17863,
+          "sha256": "8275d22b437917a303171f021aad914756202a444ba7802ab44b9e150c6c7e77"
         },
         "summary.json": {
-          "size_bytes": 4465,
-          "sha256": "911118a41ff200d5bded8d2407e44be0a7274cf532e0586bac1948fe41812423"
+          "size_bytes": 4436,
+          "sha256": "6ae58f5d97470122fca74dce8782b5867d260472d8d2f8d1627a02b4e7ae09a6"
         },
         "scene.usda": {
-          "size_bytes": 228458,
-          "sha256": "b985995b6ec8acfd6ea92eb4ddf3842250c27ae7583b37774ac5136618dc041f"
+          "size_bytes": 251201,
+          "sha256": "7b9c344eb98a5106f7742af717c6ea54347469960b3d984750336c8f33c72bbe"
         },
         "simulation.mp4": {
-          "size_bytes": 2979811,
-          "sha256": "ac1130edd79ecd09a48c29e579e784069f857c1f347f2629d868c0e5c2d656e7"
+          "size_bytes": 5561785,
+          "sha256": "72ff0662532a13bd3df874170bfac8faaac2478e3d5e1acd7f3f6d5c54ced7ca"
         },
         "presentation.mp4": {
-          "size_bytes": 4418926,
-          "sha256": "f6933131972130ab9c537768ad9e40eafc0080aa93cfba4c4457ae8de0704cd2"
+          "size_bytes": 7304654,
+          "sha256": "14a5020ad447a4f7783cf76c2bb31be192ab3668022d92b08774a3f82c036f0f"
         }
       },
       "presentation_probe": {
@@ -56,18 +56,18 @@
       }
     },
     {
-      "run_id": "isaac-normal-20260815-v2-r4",
+      "run_id": "isaac-normal-20260816-v4-r1",
       "scenario": "normal",
       "source": "isaac_sim",
       "terminal_status": "COMPLETED",
       "event_count": 20,
-      "duration_s": 51.0,
+      "duration_s": 66.25,
       "isaac_version": "6.0.1",
       "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
-      "collision_guard": "2.5D_OBB_SAT_SWEEP_V2",
-      "collision_check_count": 859140,
-      "minimum_body_clearance_m": 0.150441,
-      "maximum_contact_error_m": 1e-06,
+      "collision_guard": "2.5D_OBB_SAT_SWEEP_V3",
+      "collision_check_count": 1128953,
+      "minimum_body_clearance_m": 0.213986,
+      "maximum_contact_error_m": 0.0,
       "maximum_horizontal_placement_error_m": 0.0,
       "contact_violation_count": 0,
       "forbidden_collision_count": 0,
@@ -76,52 +76,52 @@
         "width": 1280,
         "height": 720,
         "fps": 8.0,
-        "frame_count": 529,
-        "duration_s": 66.125
+        "frame_count": 531,
+        "duration_s": 66.375
       },
       "files": {
         "events.jsonl": {
-          "size_bytes": 17758,
-          "sha256": "3ec7dc80010043520d7565c9eec2f4fb47ab1e360e090a30b2e560e1504bcc6f"
+          "size_bytes": 19410,
+          "sha256": "00504486c40d0d9f99b5472a82f6369fb6ada8eb6d3b671dbae363ad5e65ed9c"
         },
         "summary.json": {
-          "size_bytes": 4306,
-          "sha256": "4951c6f2308edf29a9bac1ceea4843a47c0a40fab183b96a6b81c52052bec1de"
+          "size_bytes": 4277,
+          "sha256": "e9acabe483e13f81a2a3ca70c541f3c6926a91cede818a1668abc9563cc2ce4b"
         },
         "scene.usda": {
-          "size_bytes": 291254,
-          "sha256": "9d3cbe429a8c6420dd2710e59f83748d90c2004aa5978fbcf8bdb0f387a955c5"
+          "size_bytes": 318971,
+          "sha256": "877c7e6a8d4b586383cea8fb9b4b67bc93c66c56283f70cef96ffb3421c3397d"
         },
         "simulation.mp4": {
-          "size_bytes": 6104179,
-          "sha256": "e1b16f4a741834b464e2c667cf429c5648bf05f891d40a33bd9a9fbde38a0d3b"
+          "size_bytes": 12464916,
+          "sha256": "90d85d71f712076f4d7e7a3c9d0d580e37aa7ef380b754201a1602eccb0dfe42"
         },
         "presentation.mp4": {
-          "size_bytes": 8693228,
-          "sha256": "620d27dac528ef741b7de1724afd5a9daa0594b9c6714df12a9c6bec8390bd31"
+          "size_bytes": 15731599,
+          "sha256": "a75758c98e4234e0cc77bea287492d625a5f25a470691b9813feb3f6b802a962"
         }
       },
       "presentation_probe": {
         "width": 2560,
         "height": 1080,
         "fps": 8.0,
-        "frame_count": 529,
-        "duration_s": 66.125
+        "frame_count": 531,
+        "duration_s": 66.375
       }
     },
     {
-      "run_id": "isaac-recovery-20260815-v2-r4",
+      "run_id": "isaac-recovery-20260816-v4-r1",
       "scenario": "recovery",
       "source": "isaac_sim",
       "terminal_status": "COMPLETED",
       "event_count": 24,
-      "duration_s": 62.0,
+      "duration_s": 77.25,
       "isaac_version": "6.0.1",
       "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
-      "collision_guard": "2.5D_OBB_SAT_SWEEP_V2",
-      "collision_check_count": 960798,
-      "minimum_body_clearance_m": 0.150441,
-      "maximum_contact_error_m": 1e-06,
+      "collision_guard": "2.5D_OBB_SAT_SWEEP_V3",
+      "collision_check_count": 1248809,
+      "minimum_body_clearance_m": 0.213986,
+      "maximum_contact_error_m": 0.0,
       "maximum_horizontal_placement_error_m": 0.0,
       "contact_violation_count": 0,
       "forbidden_collision_count": 0,
@@ -130,37 +130,37 @@
         "width": 1280,
         "height": 720,
         "fps": 8.0,
-        "frame_count": 617,
-        "duration_s": 77.125
+        "frame_count": 619,
+        "duration_s": 77.375
       },
       "files": {
         "events.jsonl": {
-          "size_bytes": 21508,
-          "sha256": "92f1e54d0c3fe03a786537da7a4593f1b2e0cafdefaf2d73a412773ff621c262"
+          "size_bytes": 23554,
+          "sha256": "bf92289a2d484634eb78749e444a970b7341460fdafdf451121629798724fca8"
         },
         "summary.json": {
-          "size_bytes": 4310,
-          "sha256": "0caa88001fb8401834c72879f525a08f163bdfab0fd1d6488629ad903dd03812"
+          "size_bytes": 4281,
+          "sha256": "060d7f34abc3c6115a4b2a0c3e9b0d3a451c2ea0ffb66a6f5392d4d15ed9e89c"
         },
         "scene.usda": {
-          "size_bytes": 313488,
-          "sha256": "e18026dbe8b8df751230a52c331850bc0b17d0cf9cad97509f757a77349d544a"
+          "size_bytes": 347999,
+          "sha256": "68ac805b8bb02374ccd116f162878fb31f5db1e3b5e4d0d1c1b0d598d065abe2"
         },
         "simulation.mp4": {
-          "size_bytes": 7060573,
-          "sha256": "b2280d02de89bc6258d24d2da3dd9e45226faa7af0a3e70cdcbd618c9fc7b5c2"
+          "size_bytes": 14180682,
+          "sha256": "123f225637f0f695e22a8b3d50ce7f031e5c48ef52cc0d002d6eee7a4e9a83cb"
         },
         "presentation.mp4": {
-          "size_bytes": 9845965,
-          "sha256": "04cd5c7f701c122557ff4f45568f3d3c53fba7742203942d01575e365f2c8d5d"
+          "size_bytes": 17815403,
+          "sha256": "7a5fcee3e4a1eba8d02ad1dc1d749359ae633fd31e43be7c95ace0f998c9e057"
         }
       },
       "presentation_probe": {
         "width": 2560,
         "height": 1080,
         "fps": 8.0,
-        "frame_count": 617,
-        "duration_s": 77.125
+        "frame_count": 619,
+        "duration_s": 77.375
       }
     }
   ],
@@ -178,7 +178,7 @@
       "sha256": "33ed304c4f286afb2f78096a847697464d90cc050d29113ff3757953d4a79434"
     }
   },
-  "generated_at": "2026-08-15T14:56:55.958060+00:00",
+  "generated_at": "2026-08-15T19:56:24.386904+00:00",
   "environment": {
     "simulator": "Isaac Sim 6.0.1",
     "recording_host": "AutoDL Linux / NVIDIA RTX 4090",

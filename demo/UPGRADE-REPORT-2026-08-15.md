@@ -2,6 +2,8 @@
 
 日期：2026-08-15
 
+> 历史报告：其中的 V2 场景参数与证据目录已由 2026-08-16 V3 取代。当前事实源为 [`README.md`](README.md)、[`项目总结与交付说明.md`](项目总结与交付说明.md) 与 [`evidence/README.md`](evidence/README.md)。
+
 依据：《给 Codex 的 SEER–HVLA Demo 升级提示词》与仓库补充规格。
 
 ## 总体结论

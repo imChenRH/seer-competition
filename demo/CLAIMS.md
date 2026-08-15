@@ -8,12 +8,12 @@
 | Fallback 自动恢复 | VERIFIED | recovery 场景首次偏移失败，执行 FB-F01 后第二次通过 | recovery JSONL 与视频 |
 | 安全停车和人工介入 | VERIFIED | intervention 场景三次遮挡失败，FB-F07 退回并停稳 | intervention JSONL 与视频 |
 | Isaac Sim 执行 | DEMO_IMPLEMENTED | Isaac Sim 6.0.1 中以确定性运动目标驱动的可重复数字孪生 | `demo/seer_demo/isaac/`、scene/video/summary |
-| USD 物理语义 | VERIFIED | 正式 USDA 写入 PhysicsScene、CollisionAPI、RigidBodyAPI、MassAPI、ArticulationRootAPI 与 FixedJoint；因基座采用运动学目标，ArticulationRoot 不作为有效动力学闭环证据 | `scene.usda`、`summary.physics_contract`、正式运行告警 |
-| 静态设施碰撞 | VERIFIED | 七类常驻设施具有静态碰撞；故障障碍物仅在 intervention 启用，normal/recovery 不保留隐形碰撞体。正式 normal/recovery 各验证 206 个静态碰撞 Prim，intervention 为 208 个 | 正式 `summary.static_physics_contract`、`summary.static_collision_prim_count`、`tests/test_timeline.py` |
-| 载荷叉取与放置 | DEMO_IMPLEMENTED | 两个叉孔与货叉对齐；只有相对几何满足且 `FixedJoint` 启用才报告挂接，放置后关节关闭 | normal/recovery JSONL 的 `physical_attachment_enabled`、USDA 时间采样与视频 |
-| 偏航与路径对齐 | VERIFIED | 叉车偏航在 Z 轴双向变化；路径、载荷、相机偏差和放置误差按设施局部坐标计算 | 三份 `scene.usda`、`summary.facility_layout`、`tests/test_timeline.py` |
-| 防穿模扫掠守卫 | DEMO_IMPLEMENTED | `2.5D_OBB_SAT_SWEEP_V2` 对车身、倾斜叉架、双货叉、12 部件载荷和集装箱支撑地板扫掠检查；三份 2026-08-15 正式运行禁碰数、接触违规数均为 0，最小车身净距不低于 0.150441 m；这不等于完整动力学或生产安全认证 | 正式 `summary.json` / `MANIFEST.json`、`demo/seer_demo/isaac/collision.py`、`tests/test_timeline.py` |
-| 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一 `observed_frame / fps` 视频帧时钟；右侧不是隐藏思维过程；缺少 CJK 字体时构建失败关闭 | `presentation.mp4`、`demo/seer_demo/presentation.py`、`tests/test_presentation.py` |
+| USD 物理语义 | VERIFIED | 正式 USDA 写入 PhysicsScene、CollisionAPI、RigidBodyAPI、MassAPI 与 FixedJoint；关节局部锚点与车体/载荷变换一致，载荷释放后从 PhysX 世界变换观测 | `scene.usda`、`summary.physics_contract`、正式运行日志 |
+| 静态设施碰撞 | VERIFIED | 七类常驻设施具有静态碰撞；故障障碍物仅在 intervention 启用，normal/recovery 不保留隐形碰撞体。V4 normal/recovery 各验证 193 个静态碰撞 Prim，intervention 为 195 个 | 正式 `summary.static_physics_contract`、`summary.static_collision_prim_count`、`tests/test_timeline.py` |
+| 载荷叉取与放置 | DEMO_IMPLEMENTED | 两个叉孔与货叉对齐；只有相对几何满足且 `FixedJoint` 启用才报告挂接；放置时降低、释放并等待受支撑载荷停稳 | normal/recovery JSONL 的 `physical_attachment_enabled`、`payload_supported`、`payload_settled`，USDA 与视频 |
+| 场景比例与路径对齐 | VERIFIED | 车轮落地；集装箱为 7.5×3.4×3.5 m；11 根横向圆柱滚筒组成传送带；集装箱和传送带均与地面黄线平行 | 三份 `scene.usda`、`summary.facility_layout`、`tests/test_timeline.py`、正式视频 |
+| 防穿模扫掠守卫 | DEMO_IMPLEMENTED | `2.5D_OBB_SAT_SWEEP_V3` 对车身、四轮、倾斜叉架、双货叉、12 部件载荷、齐平集装箱地板和圆柱滚筒包络做扫掠检查；三份 2026-08-16 V4 正式运行禁碰数、接触违规数均为 0，最小车身净距不低于 0.213986 m；这不等于完整动力学或生产安全认证 | 正式 `summary.json` / `MANIFEST.json`、`demo/seer_demo/isaac/collision.py`、`tests/test_timeline.py` |
+| 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一 `observed_frame / fps` 视频帧时钟；运行/恢复/完成/人工接管用蓝/琥珀/绿/红主题；右侧不是隐藏思维过程 | `presentation.mp4`、`demo/seer_demo/presentation.py`、`tests/test_presentation.py` |
 | 飞书 → Isaac 闭环 | DEMO_IMPLEMENTED | 同主机/同证据目录的单实例桥接可认领、一次启动、以哈希收据恢复回放；操作员见证回执对应 `T-DEMO-20260813-001`，不是三份 2026-08-15 正式录像的现场见证 | `tests/test_bridge.py`；经 manifest 哈希的操作员见证回执（不是飞书签名证明） |
 | Fast-WAM 能加载推理 | VERIFIED | 独立技术验证输出形状 `[1,7]`，首次单次约 0.86 s | 经顶层 manifest 哈希的脱敏验证日志 |
 | Fast-WAM 190 ms | PAPER_METRIC | 论文报告指标，未在本机复现 | 论文引用；不得写成 Demo 实测 |

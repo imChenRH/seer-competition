@@ -18,7 +18,7 @@ EVIDENCE = ROOT / "demo" / "evidence"
 
 
 def scenario_events(name: str):
-    return load_events(EVIDENCE / f"isaac-{name}-20260815-v2-r4" / "events.jsonl")
+    return load_events(EVIDENCE / f"isaac-{name}-20260816-v4-r1" / "events.jsonl")
 
 
 class DecisionSnapshotTests(unittest.TestCase):
@@ -49,7 +49,7 @@ class DecisionSnapshotTests(unittest.TestCase):
             scenario_events("normal"),
             26.0,
             collision_summary={
-                "collision_guard": "2.5D_OBB_SAT_SWEEP_V2",
+                "collision_guard": "2.5D_OBB_SAT_SWEEP_V3",
                 "collision_check_semantics": "z-overlapping SAT candidate pairs after explicit allowed-contact filtering",
                 "collision_certified": True,
                 "forbidden_collision_count": 0,
@@ -63,7 +63,7 @@ class DecisionSnapshotTests(unittest.TestCase):
             },
         )
 
-        self.assertEqual(snapshot["safety"]["collision_guard"], "2.5D_OBB_SAT_SWEEP_V2")
+        self.assertEqual(snapshot["safety"]["collision_guard"], "2.5D_OBB_SAT_SWEEP_V3")
         self.assertTrue(snapshot["safety"]["collision_certified"])
         self.assertEqual(snapshot["safety"]["forbidden_collision_count"], 0)
         self.assertEqual(snapshot["safety"]["minimum_body_clearance_m"], 0.15)
@@ -164,7 +164,10 @@ class PresentationMediaTests(unittest.TestCase):
         times = presentation_event_times(events, 8.0)
 
         self.assertEqual(times[0], 0.0)
-        self.assertEqual(times[-1], 66.0)
+        self.assertEqual(
+            times[-1],
+            events[-1].evidence["observed_frame"] / 8.0,
+        )
         self.assertEqual(times, sorted(times))
         for event, event_time in zip(events, times):
             frame = event.evidence.get("observed_frame")
@@ -185,7 +188,10 @@ class PresentationMediaTests(unittest.TestCase):
             times[fallback_started_index],
             times[fallback_started_index - 1],
         )
-        self.assertEqual(times[-1], 77.0)
+        self.assertEqual(
+            times[-1],
+            events[-1].evidence["observed_frame"] / 8.0,
+        )
 
     def test_ffmpeg_command_preserves_clock_and_emits_2560_by_1080(self):
         command = build_ffmpeg_command(

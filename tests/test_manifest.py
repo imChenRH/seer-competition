@@ -10,7 +10,7 @@ from seer_demo.manifest import build_manifest, sha256_file
 
 
 COLLISION_CERTIFICATION = {
-    "collision_guard": "2.5D_OBB_SAT_SWEEP_V2",
+    "collision_guard": "2.5D_OBB_SAT_SWEEP_V3",
     "collision_check_count": 100,
     "collision_check_semantics": "z-overlapping SAT candidate pairs after explicit allowed-contact filtering",
     "minimum_body_clearance_m": 0.15,

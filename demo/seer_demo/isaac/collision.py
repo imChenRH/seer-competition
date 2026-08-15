@@ -35,7 +35,7 @@ ALLOWED_DYNAMIC_CONTACT_PAIRS = frozenset(
         frozenset(("fork_carrier", "fork_right")),
     }
 )
-COLLISION_GUARD_VERSION = "2.5D_OBB_SAT_SWEEP_V2"
+COLLISION_GUARD_VERSION = "2.5D_OBB_SAT_SWEEP_V3"
 
 
 def _is_allowed_fork_deck_contact(left: OrientedBox, right: OrientedBox) -> bool:
@@ -90,6 +90,41 @@ def _is_allowed_conveyor_support_contact(
         dynamic.z_max > static.z_max
         and dynamic.z_min >= static.z_max - 0.001
         and -1e-9 <= overlap_z <= 0.001
+    )
+
+
+def _is_allowed_wheel_support_contact(
+    dynamic: OrientedBox, static: OrientedBox
+) -> bool:
+    """Allow a wheel's lower tangent to touch only the flush container floor."""
+    if not (
+        dynamic.name.startswith("wheel_")
+        and static.name == "container_floor"
+    ):
+        return False
+    overlap_z = min(dynamic.z_max, static.z_max) - max(
+        dynamic.z_min, static.z_min
+    )
+    return (
+        dynamic.z_max > static.z_max
+        and dynamic.z_min >= static.z_max - 0.001
+        and -1e-9 <= overlap_z <= 0.001
+    )
+
+
+def _is_allowed_vehicle_assembly_contact(
+    left: OrientedBox, right: OrientedBox
+) -> bool:
+    """Ignore only wheel contacts inside the forklift's own rigid assembly."""
+    vehicle_names = {"forklift_body", "fork_carrier", "fork_left", "fork_right"}
+    left_is_wheel = left.name.startswith("wheel_")
+    right_is_wheel = right.name.startswith("wheel_")
+    return (
+        left_is_wheel
+        and (right_is_wheel or right.name in vehicle_names)
+    ) or (
+        right_is_wheel
+        and (left_is_wheel or left.name in vehicle_names)
     )
 
 
@@ -424,6 +459,11 @@ def warehouse_static_boxes(scenario: str) -> tuple[OrientedBox, ...]:
 
 
 def _dynamic_boxes(previous, current, pose: Pose2D, amount: float) -> tuple[OrientedBox, ...]:
+    # Imported lazily because timeline imports this module only after defining
+    # the shared rendered forklift geometry.
+    from .timeline import FORKLIFT_PARTS
+
+    base_z = previous.base_z_m + (current.base_z_m - previous.base_z_m) * amount
     mast_height = previous.mast_height_m + (
         current.mast_height_m - previous.mast_height_m
     ) * amount
@@ -436,10 +476,27 @@ def _dynamic_boxes(previous, current, pose: Pose2D, amount: float) -> tuple[Orie
             pose.position,
             (2.2, 1.5),
             pose.yaw_deg,
-            0.18,
-            2.50,
+            base_z + 0.18,
+            base_z + 2.50,
         )
     ]
+    for name in ("wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr"):
+        spec = FORKLIFT_PARTS[name]
+        center = world_from_local(
+            (pose.x_m, pose.y_m, base_z),
+            pose.yaw_deg,
+            spec.local_position,
+        )
+        boxes.append(
+            OrientedBox(
+                name,
+                center[:2],
+                spec.size[:2],
+                pose.yaw_deg,
+                center[2] - spec.size[2] / 2.0,
+                center[2] + spec.size[2] / 2.0,
+            )
+        )
     pitch = math.radians(fork_tilt_deg)
     cosine, sine = math.cos(pitch), math.sin(pitch)
     for spec in forklift_lift_geometry_specs():
@@ -451,7 +508,7 @@ def _dynamic_boxes(previous, current, pose: Pose2D, amount: float) -> tuple[Orie
             abs(spec.size[0] * sine) + abs(spec.size[2] * cosine)
         ) / 2.0
         center = world_from_local(
-            (pose.x_m, pose.y_m, 0.0),
+            (pose.x_m, pose.y_m, base_z),
             pose.yaw_deg,
             (pitched_x, local_y, mast_height + pitched_z),
         )
@@ -522,6 +579,7 @@ def _transition_sample_count(previous, current) -> int:
         base_count,
         math.ceil(payload_distance / 0.025),
         math.ceil(abs(payload_delta_yaw) / 0.5),
+        math.ceil(abs(current.base_z_m - previous.base_z_m) / 0.025),
         math.ceil(abs(current.mast_height_m - previous.mast_height_m) / 0.025),
         math.ceil(abs(current.fork_tilt_deg - previous.fork_tilt_deg) / 0.5),
     )
@@ -580,7 +638,10 @@ def _scan_transition(previous, current, scenario: str):
                     )
                 margin = 0.05 if dynamic.name == "forklift_body" else 0.0
                 if boxes_overlap_3d(dynamic, static, margin_xy=margin):
-                    if _is_allowed_conveyor_support_contact(dynamic, static):
+                    if (
+                        _is_allowed_conveyor_support_contact(dynamic, static)
+                        or _is_allowed_wheel_support_contact(dynamic, static)
+                    ):
                         continue
                     hits.append(
                         CollisionHit(
@@ -596,6 +657,7 @@ def _scan_transition(previous, current, scenario: str):
             pair = frozenset((left.name, right.name))
             if (
                 pair in ALLOWED_DYNAMIC_CONTACT_PAIRS
+                or _is_allowed_vehicle_assembly_contact(left, right)
                 or _is_allowed_fork_deck_contact(left, right)
                 or _is_allowed_payload_stack_contact(left, right)
             ):
