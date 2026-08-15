@@ -1,7 +1,9 @@
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from unittest.mock import patch
 
+from seer_demo import presentation as presentation_module
 from seer_demo.contracts import load_events
 from seer_demo.presentation import (
     build_ffmpeg_command,
@@ -15,7 +17,7 @@ EVIDENCE = ROOT / "demo" / "evidence"
 
 
 def scenario_events(name: str):
-    return load_events(EVIDENCE / f"isaac-{name}-20260813" / "events.jsonl")
+    return load_events(EVIDENCE / f"isaac-{name}-20260815-v2-r4" / "events.jsonl")
 
 
 class DecisionSnapshotTests(unittest.TestCase):
@@ -107,6 +109,20 @@ class DecisionSnapshotTests(unittest.TestCase):
 
 
 class PresentationMediaTests(unittest.TestCase):
+    def test_renderer_fails_closed_without_a_cjk_font(self):
+        select_font = getattr(presentation_module, "_select_cjk_font", None)
+        self.assertIsNotNone(
+            select_font,
+            "presentation rendering must select a CJK font explicitly",
+        )
+        with patch.object(presentation_module, "_font_candidates", return_value=[]):
+            with self.assertRaisesRegex(RuntimeError, "CJK"):
+                select_font()
+
+        self.assertFalse(
+            any("DejaVu" in str(path) for path in presentation_module._font_candidates())
+        )
+
     def test_split_builder_binds_summary_to_events_and_source_video(self):
         source = (ROOT / "scripts" / "build_split_presentation.py").read_text(
             encoding="utf-8"

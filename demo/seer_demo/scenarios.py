@@ -82,9 +82,18 @@ def skill_state_succeeded(skill_id: str, state: Mapping[str, object]) -> bool:
             return None
 
     if skill_id == "FORK-NAV-01":
+        target_error = number("navigation_target_error_m")
+        if target_error is not None:
+            return target_error <= 0.01
         base_x = number("base_x_m")
         return base_x is not None and base_x >= 0.45
     if skill_id == "FORK-NAV-03":
+        target_error = number("navigation_target_error_m")
+        if target_error is not None:
+            return target_error <= 0.01
+        alignment_error = number("precision_alignment_error_m")
+        if alignment_error is not None:
+            return alignment_error <= 0.01
         base_x = number("base_x_m")
         return base_x is not None and base_x >= 1.9
     if skill_id == "FORK-PER-01":

@@ -12,6 +12,8 @@ command_name=${1:-}
 case "$command_name" in
   check)
     cd "$repo_root"
+    export NO_PROXY="127.0.0.1,localhost${NO_PROXY:+,$NO_PROXY}"
+    export no_proxy="127.0.0.1,localhost${no_proxy:+,$no_proxy}"
     python3 -m unittest discover -s tests -v
     python3 -m compileall -q demo/seer_demo tests
     bash -n scripts/run_demo.sh scripts/run_isaac_demo.sh

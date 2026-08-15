@@ -16,7 +16,7 @@
 
 | 任务 | 结果 | 交付证据 | 降级或边界 |
 |---|---|---|---|
-| 1. 仿真物理化 | 演示级完成 | PhysicsScene、CollisionAPI、RigidBodyAPI、MassAPI、ArticulationRootAPI、FixedJoint；四种 SimReady 物理材质；八类静态设施/186 个碰撞 Prim；双叉孔托盘 | ArticulationRoot 位于运动学刚体上，不构成有效动力学闭环；载荷位姿仍按确定性目标写入 |
+| 1. 仿真物理化 | 演示级完成 | PhysicsScene、CollisionAPI、RigidBodyAPI、MassAPI、ArticulationRootAPI、FixedJoint；四种 SimReady 物理材质；normal/recovery 各 206 个静态碰撞 Prim，intervention 208 个；双叉孔托盘 | ArticulationRoot 位于运动学刚体上，不构成有效动力学闭环；载荷位姿仍按确定性目标写入 |
 | 2. 任务与场景升级 | 完成 | 44×28 m 仓库、10 组货架、阶段化内部机位、剖视集装箱、错位月台/传送带与全流程录像；叉车双向偏航 | 叉车为可替换占位几何；异常仍为确定性注入 |
 | 3. 规控程序升级 | 按允许降级完成 | 三场景共用控制时间线；观测从 Stage 变换、visibility 与 FixedJoint 状态反推；原事件契约和终态不变 | 未完成轮子 drive、门架 drive、货叉 PID 与企业参数标定 |
 | 4. 网页展示升级 | 完成 | 参考飞书 AgentOS 对话界面重构：初始只显示四个模式与对话；发送后才展开任务分发和证据；三段 2560×1080 分屏视频、Fast-WAM 独立证据页 | Fast-WAM 机械臂页只展示接入路径；模型、任务数据与后训练待人类提供 |
@@ -36,8 +36,8 @@
 
 | 场景 | 原始片 | 分屏片 | 事件 | 终态 |
 |---|---|---|---:|---|
-| normal | 1280×720，457 帧，8 fps | 2560×1080，457 帧，8 fps | 20 | `COMPLETED` |
-| recovery | 1280×720，545 帧，8 fps | 2560×1080，545 帧，8 fps | 24 | `COMPLETED` |
+| normal | 1280×720，529 帧，8 fps | 2560×1080，529 帧，8 fps | 20 | `COMPLETED` |
+| recovery | 1280×720，617 帧，8 fps | 2560×1080，617 帧，8 fps | 24 | `COMPLETED` |
 | intervention | 1280×720，289 帧，8 fps | 2560×1080，289 帧，8 fps | 18 | `HUMAN_REQUIRED` |
 
 所有正式文件、视频探测结果与 SHA-256 记录在 `demo/evidence/MANIFEST.json`。

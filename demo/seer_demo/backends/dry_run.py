@@ -44,9 +44,18 @@ class DryRunBackend:
                 return self._result(False, duration, {**evidence, "confidence": confidence}, "遮挡导致置信度不足")
             self._state["perception_confidence"] = 0.93
         elif skill_id == "FORK-NAV-01":
-            self._state.update(base_x_m=1.1, base_speed_mps=0.0)
+            self._state.update(
+                base_x_m=1.1,
+                base_speed_mps=0.0,
+                navigation_target_error_m=0.0,
+            )
         elif skill_id == "FORK-NAV-03":
-            self._state.update(base_x_m=2.0, base_y_m=0.0)
+            self._state.update(
+                base_x_m=2.0,
+                base_y_m=0.0,
+                precision_alignment_error_m=0.0,
+                navigation_target_error_m=0.0,
+            )
         elif skill_id == "FORK-OP-01":
             self._state.update(payload_attached=True, fork_contact=True)
         elif skill_id == "FORK-OP-02":

@@ -6,6 +6,7 @@ import argparse
 from dataclasses import asdict
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -21,8 +22,34 @@ from ..scenarios import (
     fallback_state_succeeded,
     skill_state_succeeded,
 )
-from .timeline import Timeline, build_timeline
+from .timeline import FrameState, Timeline, build_timeline
 from .collision import assert_frame_transition_safe, assert_timeline_collision_safe
+
+
+def capture_action_observation(
+    observations: dict[tuple[str, str, int], dict[str, object]],
+    key: tuple[str, str, int],
+    observed: Mapping[str, object],
+) -> None:
+    """Bind one engine action to its first terminal timeline observation."""
+    observations.setdefault(key, dict(observed))
+
+
+def annotate_navigation_target_error(
+    observed: dict[str, object], target_frame: FrameState
+) -> None:
+    """Record measured planar error against this scenario phase's terminal target."""
+    try:
+        base_x = float(observed["base_x_m"])
+        base_y = float(observed["base_y_m"])
+    except (KeyError, TypeError, ValueError):
+        return
+    if not math.isfinite(base_x) or not math.isfinite(base_y):
+        return
+    observed["navigation_target_error_m"] = round(
+        math.hypot(base_x - target_frame.base_x_m, base_y - target_frame.base_y_m),
+        6,
+    )
 
 
 class IsaacTimelineBackend:
@@ -262,6 +289,8 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
             next_frame = timeline.frames[index + 1] if index + 1 < len(timeline.frames) else None
             if next_frame is None or next_frame.phase != frame.phase:
                 observed["_frame"] = frame.frame
+                if frame.skill_id in {"FORK-NAV-01", "FORK-NAV-02", "FORK-NAV-03"}:
+                    annotate_navigation_target_error(observed, frame)
                 if frame.phase == "safety_stop":
                     key = ("safety", "FB-F07", 1)
                 elif frame.skill_id:
@@ -270,7 +299,7 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
                     key = ("fallback", frame.fallback_id, frame.attempt)
                 else:
                     continue
-                observations[key] = observed
+                capture_action_observation(observations, key, observed)
 
         handles.stage.GetRootLayer().Export(str(output_dir / "scene.usda"))
 

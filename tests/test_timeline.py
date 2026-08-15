@@ -2,6 +2,7 @@ import unittest
 import math
 from dataclasses import replace
 
+from seer_demo.isaac import runner as isaac_runner
 from seer_demo.isaac.runner import IsaacTimelineBackend
 from seer_demo.isaac.collision import (
     OrientedBox,
@@ -36,6 +37,7 @@ from seer_demo.isaac.scene import (
     warehouse_rack_positions,
 )
 from seer_demo.isaac.timeline import FORKLIFT_PARTS, build_timeline
+from seer_demo.scenarios import skill_state_succeeded
 
 
 class IsaacTimelineTests(unittest.TestCase):
@@ -617,6 +619,29 @@ class IsaacTimelineTests(unittest.TestCase):
 
         self.assertFalse(result.success)
 
+    def test_later_internal_route_cannot_overwrite_first_business_skill_observation(self):
+        capture = getattr(isaac_runner, "capture_action_observation", None)
+        self.assertIsNotNone(capture, "runner must expose the action-observation contract")
+        observations = {}
+        key = ("skill", "FORK-NAV-01", 1)
+        capture(
+            observations,
+            key,
+            {"base_x_m": 4.3, "_frame": 80},
+        )
+        capture(
+            observations,
+            key,
+            {"base_x_m": -10.7, "_frame": 384},
+        )
+        backend = IsaacTimelineBackend(build_timeline("normal", fps=2), observations)
+
+        result = backend.execute_skill("FORK-NAV-01", 1)
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.evidence["observed_frame"], 80)
+        self.assertEqual(result.state["base_x_m"], 4.3)
+
     def test_fork_tilt_skill_requires_observed_tilt_angle(self):
         timeline = build_timeline("normal", fps=2)
         backend = IsaacTimelineBackend(
@@ -658,6 +683,77 @@ class IsaacTimelineTests(unittest.TestCase):
         self.assertEqual(state["fork_tilt_deg"], 4.0)
         self.assertEqual(state["yaw_deg"], 30.0)
         self.assertTrue(state["stopped"])
+
+    def test_precision_alignment_uses_measured_local_target_error_not_world_x(self):
+        aligned = {
+            "base_x_m": 1.341728,
+            "precision_alignment_error_m": 0.0,
+        }
+        outside_tolerance = {
+            "base_x_m": 2.0,
+            "precision_alignment_error_m": 0.011,
+        }
+
+        self.assertTrue(skill_state_succeeded("FORK-NAV-03", aligned))
+        self.assertFalse(skill_state_succeeded("FORK-NAV-03", outside_tolerance))
+
+    def test_intervention_navigation_uses_its_scenario_specific_safe_target(self):
+        annotate = getattr(isaac_runner, "annotate_navigation_target_error", None)
+        self.assertIsNotNone(
+            annotate,
+            "runner must compare observed navigation poses with each timeline target",
+        )
+        timeline = build_timeline("intervention", fps=2)
+        cases = (
+            (
+                "FORK-NAV-01",
+                next(
+                    frame
+                    for frame in reversed(timeline.frames)
+                    if frame.phase == "enter_container"
+                ),
+            ),
+            (
+                "FORK-NAV-03",
+                next(
+                    frame
+                    for frame in reversed(timeline.frames)
+                    if frame.phase == "precision_approach"
+                ),
+            ),
+        )
+
+        for skill_id, target_frame in cases:
+            with self.subTest(skill_id=skill_id):
+                observed = target_frame.to_observed_state()
+                annotate(observed, target_frame)
+                self.assertAlmostEqual(observed["navigation_target_error_m"], 0.0)
+                self.assertTrue(skill_state_succeeded(skill_id, observed))
+
+                outside_tolerance = dict(observed)
+                outside_tolerance["navigation_target_error_m"] = 0.011
+                self.assertFalse(skill_state_succeeded(skill_id, outside_tolerance))
+
+    def test_observation_reports_precision_alignment_error_in_container_frame(self):
+        layout = warehouse_layout_spec()
+        target = world_from_local(
+            layout.container.position,
+            layout.container.yaw_deg,
+            layout.container_alignment_local,
+        )
+        state = derive_kinematic_observation(
+            base=target,
+            lift=(target[0], target[1], 0.11),
+            payload=layout.container_payload_target,
+            yaw_deg=layout.container.yaw_deg,
+            payload_yaw_deg=layout.container.yaw_deg,
+            fork_tilt_deg=0.0,
+            obstacle_visible=False,
+            base_speed_mps=0.0,
+            physical_attachment_enabled=False,
+        )
+
+        self.assertAlmostEqual(state.get("precision_alignment_error_m", -1.0), 0.0)
 
         retreat = derive_kinematic_observation(
             base=(-1.0, 0.0, 0.0),

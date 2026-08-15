@@ -1,0 +1,159 @@
+{
+  "run_id": "isaac-normal-20260815-v2-r4",
+  "scenario": "normal",
+  "source": "isaac_sim",
+  "event_count": 20,
+  "terminal_status": "COMPLETED",
+  "duration_s": 51.0,
+  "collision_guard": "2.5D_OBB_SAT_SWEEP_V2",
+  "collision_check_count": 859140,
+  "collision_check_semantics": "z-overlapping SAT candidate pairs after explicit allowed-contact filtering",
+  "minimum_body_clearance_m": 0.150441,
+  "maximum_allowed_contact_error_m": 0.01,
+  "maximum_contact_error_m": 1e-06,
+  "maximum_allowed_horizontal_placement_error_m": 0.02,
+  "maximum_horizontal_placement_error_m": 0.0,
+  "forbidden_collision_count": 0,
+  "contact_violation_count": 0,
+  "collision_certified": true,
+  "generated_at": "2026-08-15T13:46:34.077915+00:00",
+  "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
+  "control_mode": "kinematic_targets_with_explicit_physics_attachment_v2",
+  "physics_contract": [
+    "PhysicsScene",
+    "CollisionAPI",
+    "RigidBodyAPI",
+    "MassAPI",
+    "ArticulationRootAPI",
+    "FixedJoint"
+  ],
+  "physics_attachment": "UsdPhysics.FixedJoint",
+  "physics_downgrade_reason": "The demonstration authors deterministic kinematic targets for reproducibility; pickup truth additionally requires an explicit enabled FixedJoint plus measured geometry. It is not a calibrated force-control or production dynamics claim.",
+  "isaac_version": "6.0.1",
+  "frame_count": 529,
+  "fps": 8,
+  "resolution": "1280x720",
+  "events_file": "events.jsonl",
+  "video_file": "simulation.mp4",
+  "scene_file": "scene.usda",
+  "warehouse_extent_m": [
+    44.0,
+    28.0
+  ],
+  "warehouse_asset_root": "/root/autodl-tmp/simready_warehouse",
+  "warehouse_asset_count": 4,
+  "warehouse_assets": [
+    "/root/autodl-tmp/simready_warehouse/Props/materials/physics/physics_concrete.usda",
+    "/root/autodl-tmp/simready_warehouse/Props/materials/physics/physics_metal.usda",
+    "/root/autodl-tmp/simready_warehouse/Props/materials/physics/physics_cardboard.usda",
+    "/root/autodl-tmp/simready_warehouse/Props/materials/physics/physics_rubber.usda"
+  ],
+  "facility_layout": {
+    "container": {
+      "position": [
+        0.5,
+        1.4,
+        0.0
+      ],
+      "yaw_deg": 8.0
+    },
+    "loading_dock": {
+      "position": [
+        2.0,
+        4.1,
+        0.0
+      ],
+      "yaw_deg": 0.0
+    },
+    "conveyor": {
+      "position": [
+        -6.0,
+        -4.2,
+        0.0
+      ],
+      "yaw_deg": -6.0
+    },
+    "container_payload_local": [
+      3.85,
+      0.0,
+      0.125
+    ],
+    "container_entry_local": [
+      0.5,
+      0.0,
+      0.0
+    ],
+    "container_alignment_local": [
+      0.85,
+      0.0,
+      0.0
+    ],
+    "container_exit_local": [
+      -1.5,
+      0.0,
+      0.0
+    ],
+    "conveyor_payload_local": [
+      -1.7,
+      0.0,
+      0.785
+    ],
+    "conveyor_alignment_local": [
+      -3.52,
+      0.0,
+      0.0
+    ]
+  },
+  "static_physics_contract": [
+    {
+      "name": "ground",
+      "prim_path": "/World/Ground",
+      "collision_enabled": true,
+      "rigid_body_kind": "static"
+    },
+    {
+      "name": "warehouse_shell",
+      "prim_path": "/World/Warehouse",
+      "collision_enabled": true,
+      "rigid_body_kind": "static"
+    },
+    {
+      "name": "racks",
+      "prim_path": "/World/Warehouse/Racks",
+      "collision_enabled": true,
+      "rigid_body_kind": "static"
+    },
+    {
+      "name": "container",
+      "prim_path": "/World/Container",
+      "collision_enabled": true,
+      "rigid_body_kind": "static"
+    },
+    {
+      "name": "loading_dock",
+      "prim_path": "/World/LoadingDock",
+      "collision_enabled": true,
+      "rigid_body_kind": "static"
+    },
+    {
+      "name": "conveyor",
+      "prim_path": "/World/Conveyor",
+      "collision_enabled": true,
+      "rigid_body_kind": "static"
+    },
+    {
+      "name": "background_loads",
+      "prim_path": "/World/BackgroundLoads",
+      "collision_enabled": true,
+      "rigid_body_kind": "static"
+    }
+  ],
+  "static_collision_prim_count": 206,
+  "camera_strategy": "phase_based_internal_operation_views_v1",
+  "presentation_file": "presentation.mp4",
+  "presentation_resolution": "2560x1080",
+  "presentation_fps": 8.0,
+  "presentation_frame_count": 529,
+  "presentation_duration_s": 66.125,
+  "presentation_contract": "auditable_event_projection_v1"
+}

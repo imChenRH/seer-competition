@@ -236,18 +236,23 @@ def _font_candidates(explicit: Path | None = None) -> list[Path]:
         Path("/System/Library/Fonts/PingFang.ttc"),
         Path("/System/Library/Fonts/STHeiti Light.ttc"),
         Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
-        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
     ]
     return [value for value in values if value is not None and value.exists()]
+
+
+def _select_cjk_font(explicit: Path | None = None) -> Path:
+    candidates = _font_candidates(explicit)
+    if not candidates:
+        raise RuntimeError(
+            "a CJK-capable font is required; pass scripts/build_split_presentation.py --font"
+        )
+    return candidates[0]
 
 
 def _load_font(size: int, *, bold: bool = False, explicit: Path | None = None):
     from PIL import ImageFont
 
-    candidates = _font_candidates(explicit)
-    if not candidates:
-        return ImageFont.load_default(size=size)
-    return ImageFont.truetype(str(candidates[0]), size=size, index=0)
+    return ImageFont.truetype(str(_select_cjk_font(explicit)), size=size, index=0)
 
 
 def _fit_text(draw: Any, text: str, font: Any, width: int, max_lines: int = 2) -> list[str]:

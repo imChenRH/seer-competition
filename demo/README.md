@@ -4,7 +4,7 @@
 
 这是一个**证据驱动的企业交流 Demo**：Aily/飞书负责生成和认领任务，单进程桥接只启动一次 Isaac runner；Isaac Sim 6.0.1 使用确定性运动目标与显式 `UsdPhysics.FixedJoint` 载荷挂接；每一步把实际观测写入连续 JSONL；网页从 JSONL 与录像还原大脑—小脑分发过程。界面参考随附的 [`agentos对话模版.png`](agentos对话模版.png)：初始只呈现四种模式与 AgentOS 对话，发送指令后才展开运行证据。
 
-> 2026-08-15 防穿模升级状态：代码侧已经加入 `2.5D_OBB_SAT_SWEEP_V2` 扫掠认证，覆盖车身、叉架/双货叉、12 部件活动载荷与支撑地板，传送带改为开放叉道，三场景本地认证均为零禁碰；仓库内现有 `20260813` 录像早于该守卫，尚未重渲染，不得把旧录像表述为“已通过防穿模认证”。
+> 2026-08-15 防穿模升级已完成正式重渲染：`2.5D_OBB_SAT_SWEEP_V2` 覆盖车身、叉架/双货叉、12 部件活动载荷与支撑地板；三场景真实 Isaac 录像、USDA、JSONL、分屏片和 manifest 已在 Mac 复验，禁止碰撞与接触违规均为 0。该结论只适用于随附三次演示运行，不外推为生产安全认证。
 
 当前工程采用“局部重构”路线。业务场景、九技能、Fallback、飞书表、AutoDL/Isaac 环境与 Fast-WAM 独立验证继续保留；旧执行器、旧桥接与硬编码网页不再作为正式证据。严格审计见 [`AUDIT.md`](AUDIT.md)，对外声明边界见 [`CLAIMS.md`](CLAIMS.md)。
 
@@ -63,10 +63,10 @@ presentation.mp4 左侧仿真、右侧大脑/小脑与审计摘要的同步展�
 python3 -m venv .venv-presentation
 .venv-presentation/bin/pip install -r demo/requirements-presentation.txt
 .venv-presentation/bin/python scripts/build_split_presentation.py \
-  demo/evidence/isaac-normal-20260813
+  demo/evidence/isaac-normal-20260815-v2-r4
 ```
 
-脚本会验证原始片与演示片的帧率、帧数、时长和 2560×1080 分辨率，再更新对应 `summary.json`；不会把左右两侧使用不同时间轴的视频写成正式证据。
+脚本会验证原始片与演示片的帧率、帧数、时长和 2560×1080 分辨率，再更新对应 `summary.json`；不会把左右两侧使用不同时间轴的视频写成正式证据。渲染中文需要 macOS 的 PingFang/STHeiti、Linux 的 Noto Sans CJK，或通过 `--font /path/to/cjk-font` 显式指定；缺少 CJK 字体时脚本失败关闭，不生成方框字视频。
 
 ## 飞书桥接
 

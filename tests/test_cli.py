@@ -84,6 +84,50 @@ class DemoCliTests(unittest.TestCase):
         self.assertIn("ISAAC_WAREHOUSE_ASSET_ROOT", source)
         self.assertIn("--warehouse-asset-root", source)
 
+    def test_check_command_bypasses_proxies_for_loopback_tests(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fake_python = Path(temp_dir) / "python3"
+            fake_python.write_text(
+                """#!/usr/bin/env bash
+case ",${NO_PROXY:-}," in
+  *,127.0.0.1,*) ;;
+  *) exit 91 ;;
+esac
+case ",${NO_PROXY:-}," in
+  *,localhost,*) ;;
+  *) exit 92 ;;
+esac
+case ",${no_proxy:-}," in
+  *,127.0.0.1,*) ;;
+  *) exit 93 ;;
+esac
+case ",${no_proxy:-}," in
+  *,localhost,*) ;;
+  *) exit 94 ;;
+esac
+""",
+                encoding="utf-8",
+            )
+            fake_python.chmod(0o755)
+            env = os.environ.copy()
+            env["PATH"] = f"{temp_dir}:{env['PATH']}"
+            env["HTTP_PROXY"] = "http://proxy.invalid:8080"
+            env["HTTPS_PROXY"] = "http://proxy.invalid:8080"
+            env["NO_PROXY"] = ""
+            env["no_proxy"] = ""
+
+            result = subprocess.run(
+                ["bash", "scripts/run_demo.sh", "check"],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=15,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

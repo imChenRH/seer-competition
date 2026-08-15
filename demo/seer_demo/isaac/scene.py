@@ -154,6 +154,11 @@ def derive_kinematic_observation(
     )
     stopped = abs(float(base_speed_mps)) <= 0.01
     pallet_error = 0.0 if payload_attached else relative_payload[1]
+    alignment_target = layout.container_alignment_local
+    precision_alignment_error = (
+        (base_in_container[0] - alignment_target[0]) ** 2
+        + (base_in_container[1] - alignment_target[1]) ** 2
+    ) ** 0.5
     return {
         "base_x_m": round(base_xyz[0], 6),
         "base_y_m": round(base_xyz[1], 6),
@@ -171,6 +176,7 @@ def derive_kinematic_observation(
         "payload_placed": payload_placed,
         "pallet_lateral_error_m": round(pallet_error, 6),
         "camera_lateral_offset_m": round(base_in_container[1], 6),
+        "precision_alignment_error_m": round(precision_alignment_error, 6),
         "obstacle_visible": bool(obstacle_visible),
         "stopped": stopped,
         "safe_retreat_complete": (
