@@ -30,7 +30,7 @@
 - Produces: `OrientedBox`, `Pose2D`, `boxes_overlap_3d()`, `swept_poses()`, `find_forbidden_collisions()`.
 - Consumes: only `math` and dataclasses.
 
-- [ ] **Step 1: Write failing tests for the known conveyor clip and safe separated boxes**
+- [x] **Step 1: Write failing tests for the known conveyor clip and safe separated boxes**
 
 ```python
 def test_swept_guard_detects_the_old_diagonal_conveyor_clip(self):
@@ -49,13 +49,13 @@ def test_obb_guard_respects_xy_and_z_separation(self):
     self.assertFalse(boxes_overlap_3d(left_box, right_box))
 ```
 
-- [ ] **Step 2: Run the focused tests and confirm import/API failure**
+- [x] **Step 2: Run the focused tests and confirm import/API failure**
 
 Run: `PYTHONPATH=demo python3 -m unittest tests.test_timeline.IsaacTimelineTests.test_swept_guard_detects_the_old_diagonal_conveyor_clip -v`
 
 Expected: fail because `seer_demo.isaac.collision` does not exist.
 
-- [ ] **Step 3: Implement SAT, Z intervals, shortest-yaw interpolation, and deterministic collision reports**
+- [x] **Step 3: Implement SAT, Z intervals, shortest-yaw interpolation, and deterministic collision reports**
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -82,7 +82,7 @@ def boxes_overlap_3d(left: OrientedBox, right: OrientedBox, *, margin_xy=0.0):
     return True
 ```
 
-- [ ] **Step 4: Run focused tests and the complete timeline test module**
+- [x] **Step 4: Run focused tests and the complete timeline test module**
 
 Run: `PYTHONPATH=demo python3 -m unittest tests.test_timeline -v`
 
@@ -100,7 +100,7 @@ Expected: all tests pass.
 - Produces: `container_payload_target`, `conveyor_payload_target`, `payload_attachment_z_offset_m`, and `conveyor_geometry_specs()` derived from one geometry contract.
 - Consumes: `pallet_part_specs()` dimensions and fork geometry.
 
-- [ ] **Step 1: Write failing tests for the 0.23 m penetration, payload continuity, and open fork channels**
+- [x] **Step 1: Write failing tests for the 0.23 m penetration, payload continuity, and open fork channels**
 
 ```python
 def test_payload_bottom_rests_five_mm_above_conveyor_support(self):
@@ -115,17 +115,17 @@ def test_conveyor_support_lanes_leave_both_fork_channels_open(self):
             self.assertTrue(lane_max <= pocket_min or pocket_max <= lane_min)
 ```
 
-- [ ] **Step 2: Run the three tests and verify failures show the old 0.55 m target/solid base behavior**
+- [x] **Step 2: Run the three tests and verify failures show the old 0.55 m target/solid base behavior**
 
 Run: `PYTHONPATH=demo python3 -m unittest tests.test_timeline -v`
 
-- [ ] **Step 3: Derive floor, fork, pallet, and roller heights and replace the solid conveyor base**
+- [x] **Step 3: Derive floor, fork, pallet, and roller heights and replace the solid conveyor base**
 
 Use literals fixed by the spec: floor top `0.12`, insertion pallet root `0.125`, roller top `0.78`, released pallet root `0.785`, attached root offset `0.015`.
 
-- [ ] **Step 4: Move the green target to `/World/Visuals/ConveyorTarget` with collision disabled**
+- [x] **Step 4: Move the green target to `/World/Visuals/ConveyorTarget` with collision disabled**
 
-- [ ] **Step 5: Run timeline and scene-contract tests**
+- [x] **Step 5: Run timeline and scene-contract tests**
 
 Run: `PYTHONPATH=demo python3 -m unittest tests.test_timeline -v`
 
@@ -142,7 +142,7 @@ Expected: all tests pass with no vertical jump or support penetration.
 - Produces: `certify_timeline(timeline) -> CollisionCertification` and collision-safe `prealign_conveyor` phase.
 - Consumes: `warehouse_layout_spec()` and Task 1 collision primitives.
 
-- [ ] **Step 1: Write failing whole-timeline tests for all three scenarios**
+- [x] **Step 1: Write failing whole-timeline tests for all three scenarios**
 
 ```python
 def test_all_scenarios_have_zero_forbidden_swept_collisions(self):
@@ -152,15 +152,15 @@ def test_all_scenarios_have_zero_forbidden_swept_collisions(self):
         self.assertGreaterEqual(result.minimum_body_clearance_m, 0.05)
 ```
 
-- [ ] **Step 2: Verify normal/recovery fail at the conveyor and intervention fails at the visible obstacle**
+- [x] **Step 2: Verify normal/recovery fail at the conveyor and intervention fails at the visible obstacle**
 
-- [ ] **Step 3: Add a pre-alignment waypoint, perform yaw alignment outside the keepout, and approach straight**
+- [x] **Step 3: Add a pre-alignment waypoint, perform yaw alignment outside the keepout, and approach straight**
 
 The final approach must keep `yaw_deg == -6.0` and move only along conveyor-local X.
 
-- [ ] **Step 4: Shorten intervention precision approach so the vehicle stops before the obstacle while retaining the existing perception/Fallback event sequence**
+- [x] **Step 4: Shorten intervention precision approach so the vehicle stops before the obstacle while retaining the existing perception/Fallback event sequence**
 
-- [ ] **Step 5: Certify every generated timeline before returning it**
+- [x] **Step 5: Certify every generated timeline before returning it**
 
 Run: `PYTHONPATH=demo python3 -m unittest tests.test_timeline -v`
 
@@ -179,15 +179,15 @@ Expected: zero forbidden collisions in every scenario.
 - Produces summary keys `collision_guard`, `collision_check_count`, `minimum_body_clearance_m`, `maximum_allowed_contact_error_m`, `forbidden_collision_count`.
 - Consumes `certify_timeline()` and per-frame guard functions.
 
-- [ ] **Step 1: Write failing tests that reject a forged colliding timeline and require collision fields in presentation snapshots**
+- [x] **Step 1: Write failing tests that reject a forged colliding timeline and require collision fields in presentation snapshots**
 
-- [ ] **Step 2: Verify RED against the current runner/presentation behavior**
+- [x] **Step 2: Verify RED against the current runner/presentation behavior**
 
-- [ ] **Step 3: Run certification before scene creation and re-check each frame before `apply_frame()`**
+- [x] **Step 3: Run certification before scene creation and re-check each frame before `apply_frame()`**
 
-- [ ] **Step 4: Add certification fields to summary and the right-side safety panel without claiming full dynamics**
+- [x] **Step 4: Add certification fields to summary and the right-side safety panel without claiming full dynamics**
 
-- [ ] **Step 5: Run timeline, presentation, contracts, and engine tests**
+- [x] **Step 5: Run timeline, presentation, contracts, and engine tests**
 
 Run: `PYTHONPATH=demo python3 -m unittest tests.test_timeline tests.test_presentation tests.test_contracts tests.test_engine -v`
 
@@ -209,7 +209,7 @@ Run: `PYTHONPATH=demo python3 -m unittest tests.test_timeline tests.test_present
 - Consumes the completed collision-safe renderer.
 - Produces the public, hash-verified three-scenario evidence set.
 
-- [ ] **Step 1: Run all non-network tests with warnings as errors and JavaScript protocol tests**
+- [x] **Step 1: Run all non-network tests with warnings as errors and JavaScript protocol tests**
 
 - [ ] **Step 2: Render normal, recovery, and intervention in Isaac Sim 6.0.1 using new run directories**
 
