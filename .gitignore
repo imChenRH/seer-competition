@@ -17,4 +17,4 @@ vision_health_check.html
 demo/evidence/local/
 
 # 本地展示服务器日志
-seer_demo_server.*.log
+seer_demo_server*.log
