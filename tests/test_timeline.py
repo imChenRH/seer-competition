@@ -1,5 +1,6 @@
 import unittest
 import math
+import inspect
 from dataclasses import replace
 
 from seer_demo.isaac import runner as isaac_runner
@@ -46,6 +47,26 @@ from seer_demo.scenarios import skill_state_succeeded
 
 
 class IsaacTimelineTests(unittest.TestCase):
+    def test_observation_reads_dynamic_payload_yaw_from_world_rotation(self):
+        yaw_from_quaternion = getattr(
+            isaac_scene, "yaw_degrees_from_quaternion_components", None
+        )
+        self.assertIsNotNone(yaw_from_quaternion)
+        half_turn = math.radians(90.0) / 2.0
+
+        self.assertAlmostEqual(
+            yaw_from_quaternion(
+                math.cos(half_turn),
+                (0.0, 0.0, math.sin(half_turn)),
+            ),
+            90.0,
+            places=6,
+        )
+        self.assertNotIn(
+            "payload_rotation[2]",
+            inspect.getsource(isaac_scene.observe_scene),
+        )
+
     def test_payload_pose_matches_vehicle_and_facility_yaw(self):
         timeline = build_timeline("normal", fps=8)
         attached = next(frame for frame in timeline.frames if frame.payload_attached)

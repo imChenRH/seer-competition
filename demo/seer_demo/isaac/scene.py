@@ -93,6 +93,19 @@ def attachment_joint_pose_for_frame(
     return local_position, local_yaw
 
 
+def yaw_degrees_from_quaternion_components(
+    real: float,
+    imaginary: tuple[float, float, float],
+) -> float:
+    """Extract normalized Z yaw without depending on a specific USD xform op."""
+    x_value, y_value, z_value = (float(value) for value in imaginary)
+    real_value = float(real)
+    numerator = 2.0 * (real_value * z_value + x_value * y_value)
+    denominator = 1.0 - 2.0 * (y_value * y_value + z_value * z_value)
+    yaw = math.degrees(math.atan2(numerator, denominator))
+    return (yaw + 180.0) % 360.0 - 180.0
+
+
 def payload_dynamic_for_frame(frame: FrameState) -> bool:
     """Release the payload to physics only after conveyor placement begins."""
     return bool(frame.payload_placed and not frame.payload_attached)
@@ -883,8 +896,15 @@ def observe_scene(handles: SceneHandles, *, base_speed_mps: float = 0.0) -> dict
     time_code = Usd.TimeCode.Default()
     base = UsdGeom.Xformable(handles.forklift_root).ComputeLocalToWorldTransform(time_code).ExtractTranslation()
     lift = UsdGeom.Xformable(handles.lift_root).ComputeLocalToWorldTransform(time_code).ExtractTranslation()
-    payload = UsdGeom.Xformable(handles.payload_root).ComputeLocalToWorldTransform(time_code).ExtractTranslation()
-    payload_rotation = handles.payload_root.GetAttribute("xformOp:rotateXYZ").Get(time_code)
+    payload_transform = UsdGeom.Xformable(
+        handles.payload_root
+    ).ComputeLocalToWorldTransform(time_code)
+    payload = payload_transform.ExtractTranslation()
+    payload_rotation = payload_transform.ExtractRotationQuat()
+    payload_yaw_deg = yaw_degrees_from_quaternion_components(
+        payload_rotation.GetReal(),
+        tuple(payload_rotation.GetImaginary()),
+    )
     rotation = handles.fork_tilt_root.GetAttribute("xformOp:rotateXYZ").Get(time_code)
     base_rotation = handles.forklift_root.GetAttribute("xformOp:rotateXYZ").Get(time_code)
     visibility = UsdGeom.Imageable(handles.obstacle_root).ComputeVisibility(time_code)
@@ -898,5 +918,5 @@ def observe_scene(handles: SceneHandles, *, base_speed_mps: float = 0.0) -> dict
         obstacle_visible=visibility != UsdGeom.Tokens.invisible,
         base_speed_mps=base_speed_mps,
         physical_attachment_enabled=physical_attachment_enabled,
-        payload_yaw_deg=float(payload_rotation[2]),
+        payload_yaw_deg=payload_yaw_deg,
     )
