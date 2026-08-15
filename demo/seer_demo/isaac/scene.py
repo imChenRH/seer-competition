@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from .layout import (
+    PAYLOAD_ATTACHMENT_Z_OFFSET_M,
+    conveyor_geometry_specs,
     local_from_world,
     static_physics_contract,
     warehouse_layout_spec,
@@ -123,7 +125,7 @@ def derive_kinematic_observation(
     geometry_attached = (
         abs(relative_payload[0] - 1.6) <= 0.03
         and abs(relative_payload[1]) <= 0.03
-        and abs(relative_payload[2] - 0.25) <= 0.03
+        and abs(relative_payload[2] - PAYLOAD_ATTACHMENT_Z_OFFSET_M) <= 0.03
     )
     payload_attached = geometry_attached and bool(physical_attachment_enabled)
     layout = warehouse_layout_spec()
@@ -320,15 +322,27 @@ def build_scene(
         Gf.Vec3f(0.0, 0.0, layout.conveyor.yaw_deg),
         UsdGeom.XformCommonAPI.RotationOrderXYZ,
     )
-    box("/World/Conveyor/Base", (3.2, 1.35, 0.62), (0.0, 0.0, 0.31), (0.12, 0.25, 0.38))
-    for index in range(9):
+    for spec in conveyor_geometry_specs():
         box(
-            f"/World/Conveyor/Roller{index}",
-            (0.16, 1.15, 0.16),
-            (-1.25 + index * 0.31, 0.0, 0.70),
+            f"/World/Conveyor/{spec.name}",
+            spec.size,
+            spec.position,
             (0.52, 0.58, 0.63),
         )
-    box("/World/Conveyor/Target", (0.95, 1.15, 0.025), (-1.25, 0.0, 0.80), (0.10, 0.65, 0.42))
+    target_root = stage.DefinePrim("/World/Visuals/ConveyorTarget", "Xform")
+    target_api = UsdGeom.XformCommonAPI(target_root)
+    target_api.SetTranslate(Gf.Vec3d(*layout.conveyor.position))
+    target_api.SetRotate(
+        Gf.Vec3f(0.0, 0.0, layout.conveyor.yaw_deg),
+        UsdGeom.XformCommonAPI.RotationOrderXYZ,
+    )
+    box(
+        "/World/Visuals/ConveyorTarget/Pad",
+        (0.95, 1.15, 0.012),
+        layout.conveyor_payload_local,
+        (0.10, 0.65, 0.42),
+        collision=False,
+    )
 
     # Forklift is one root with local child geometry. Lift is the only moving child group.
     forklift_root = stage.DefinePrim("/World/Forklift", "Xform")

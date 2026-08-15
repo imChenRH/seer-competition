@@ -10,6 +10,7 @@ from seer_demo.isaac.collision import (
     swept_poses,
 )
 from seer_demo.isaac.layout import (
+    conveyor_geometry_specs,
     local_from_world,
     static_physics_contract,
     warehouse_layout_spec,
@@ -30,6 +31,39 @@ from seer_demo.isaac.timeline import FORKLIFT_PARTS, build_timeline
 
 
 class IsaacTimelineTests(unittest.TestCase):
+    def test_payload_support_heights_are_derived_without_penetration(self):
+        layout = warehouse_layout_spec()
+
+        self.assertAlmostEqual(layout.container_payload_target[2], 0.125, places=6)
+        self.assertAlmostEqual(layout.conveyor_payload_target[2], 0.785, places=6)
+
+    def test_attachment_does_not_teleport_payload_vertically(self):
+        frames = build_timeline("normal", fps=8).frames
+        attached_index = next(
+            index for index, frame in enumerate(frames) if frame.payload_attached
+        )
+        before = frames[attached_index - 1]
+        after = frames[attached_index]
+
+        self.assertFalse(before.payload_attached)
+        self.assertLessEqual(abs(after.payload_z_m - before.payload_z_m), 0.02)
+
+    def test_conveyor_support_lanes_leave_both_fork_channels_open(self):
+        support_lanes = {
+            (
+                round(spec.position[1] - spec.size[1] / 2.0, 6),
+                round(spec.position[1] + spec.size[1] / 2.0, 6),
+            )
+            for spec in conveyor_geometry_specs()
+            if spec.role == "support_roller"
+        }
+        fork_channels = ((-0.385, -0.255), (0.255, 0.385))
+
+        self.assertEqual(len(support_lanes), 3)
+        for lane_min, lane_max in support_lanes:
+            for channel_min, channel_max in fork_channels:
+                self.assertTrue(lane_max <= channel_min or channel_max <= lane_min)
+
     def test_swept_guard_detects_the_old_diagonal_conveyor_clip(self):
         start = Pose2D(-0.985402, 1.191240, 8.0)
         end = Pose2D(-9.281922, -3.855056, -6.0)
@@ -304,7 +338,7 @@ class IsaacTimelineTests(unittest.TestCase):
         state = derive_kinematic_observation(
             base=(2.2, 0.25, 0.0),
             lift=(2.2, 0.25, 1.05),
-            payload=(3.585641, 1.05, 1.30),
+            payload=(3.585641, 1.05, 1.065),
             yaw_deg=30.0,
             fork_tilt_deg=4.0,
             obstacle_visible=False,

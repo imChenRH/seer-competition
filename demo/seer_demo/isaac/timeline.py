@@ -7,7 +7,12 @@ import math
 from typing import Mapping
 
 from ..scenarios import get_scenario
-from .layout import warehouse_layout_spec, world_from_local
+from .layout import (
+    INSERTION_MAST_HEIGHT_M,
+    PAYLOAD_ATTACHMENT_Z_OFFSET_M,
+    warehouse_layout_spec,
+    world_from_local,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,7 +93,7 @@ class _Pose:
     base_x_m: float = -8.0
     base_y_m: float = -1.0
     yaw_deg: float = 0.0
-    mast_height_m: float = 0.22
+    mast_height_m: float = INSERTION_MAST_HEIGHT_M
     fork_tilt_deg: float = 0.0
     payload_attached: bool = False
     payload_placed: bool = False
@@ -232,7 +237,9 @@ def _segments(scenario: str) -> tuple[_Segment, ...]:
             "place_payload",
             5,
             skill_id="FORK-OP-04",
-            mast_height_m=0.35,
+            mast_height_m=(
+                layout.conveyor_payload_target[2] - PAYLOAD_ATTACHMENT_Z_OFFSET_M
+            ),
             fork_tilt_deg=0.0,
             release_at_end=True,
         ),
@@ -272,7 +279,7 @@ def build_timeline(scenario: str, fps: int = 8) -> Timeline:
                 current.yaw_deg,
                 (1.6, 0.0, 0.0),
             )
-            payload_z = mast_height + 0.25
+            payload_z = mast_height + PAYLOAD_ATTACHMENT_Z_OFFSET_M
         elif placed:
             payload_x, payload_y, payload_z = layout.conveyor_payload_target
         else:

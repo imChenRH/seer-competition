@@ -21,6 +21,21 @@ class StaticPhysicsSpec:
 
 
 @dataclass(frozen=True, slots=True)
+class BoxGeometrySpec:
+    name: str
+    role: str
+    size: tuple[float, float, float]
+    position: tuple[float, float, float]
+
+
+CONTAINER_FLOOR_TOP_M = 0.12
+CONVEYOR_SUPPORT_TOP_M = 0.78
+PAYLOAD_SUPPORT_CLEARANCE_M = 0.005
+PAYLOAD_ATTACHMENT_Z_OFFSET_M = 0.015
+INSERTION_MAST_HEIGHT_M = 0.11
+
+
+@dataclass(frozen=True, slots=True)
 class WarehouseLayoutSpec:
     container: FacilityPose
     loading_dock: FacilityPose
@@ -99,13 +114,50 @@ def warehouse_layout_spec() -> WarehouseLayoutSpec:
         container=FacilityPose((0.5, 1.4, 0.0), 8.0),
         loading_dock=FacilityPose((2.0, 4.1, 0.0), 0.0),
         conveyor=FacilityPose((-6.0, -4.2, 0.0), -6.0),
-        container_payload_local=(3.85, 0.0, 0.32),
+        container_payload_local=(
+            3.85,
+            0.0,
+            CONTAINER_FLOOR_TOP_M + PAYLOAD_SUPPORT_CLEARANCE_M,
+        ),
         container_entry_local=(0.5, 0.0, 0.0),
         container_alignment_local=(2.2, 0.0, 0.0),
         container_exit_local=(-1.5, 0.0, 0.0),
-        conveyor_payload_local=(-1.7, 0.0, 0.55),
+        conveyor_payload_local=(
+            -1.7,
+            0.0,
+            CONVEYOR_SUPPORT_TOP_M + PAYLOAD_SUPPORT_CLEARANCE_M,
+        ),
         conveyor_alignment_local=(-3.3, 0.0, 0.0),
     )
+
+
+def conveyor_geometry_specs() -> tuple[BoxGeometrySpec, ...]:
+    """Return a fork-accessible conveyor with three pallet support lanes."""
+    parts: list[BoxGeometrySpec] = [
+        BoxGeometrySpec("SideRailLeft", "side_rail", (3.2, 0.10, 0.36), (0.0, -0.66, 0.30)),
+        BoxGeometrySpec("SideRailRight", "side_rail", (3.2, 0.10, 0.36), (0.0, 0.66, 0.30)),
+    ]
+    for x_index, x_position in enumerate(-1.25 + index * 0.31 for index in range(9)):
+        for lane_index, y_position in enumerate((-0.58, 0.0, 0.58)):
+            parts.append(
+                BoxGeometrySpec(
+                    f"Roller{x_index:02d}_{lane_index}",
+                    "support_roller",
+                    (0.16, 0.12, 0.16),
+                    (x_position, y_position, 0.70),
+                )
+            )
+    for x_index, x_position in enumerate((-1.35, 1.35)):
+        for y_index, y_position in enumerate((-0.66, 0.66)):
+            parts.append(
+                BoxGeometrySpec(
+                    f"Leg{x_index}_{y_index}",
+                    "support_leg",
+                    (0.12, 0.12, 0.60),
+                    (x_position, y_position, 0.30),
+                )
+            )
+    return tuple(parts)
 
 
 def static_physics_contract() -> tuple[StaticPhysicsSpec, ...]:
