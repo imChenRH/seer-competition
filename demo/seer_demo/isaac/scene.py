@@ -32,7 +32,6 @@ PHYSICS_SCHEMA_APIS = (
     "CollisionAPI",
     "RigidBodyAPI",
     "MassAPI",
-    "ArticulationRootAPI",
     "FixedJoint",
 )
 FORK_POCKET_CENTERS_Y = (-0.32, 0.32)
@@ -81,6 +80,19 @@ def physical_attachment_for_frame(frame: FrameState) -> bool:
     return bool(frame.payload_attached)
 
 
+def attachment_joint_pose_for_frame(
+    frame: FrameState,
+) -> tuple[tuple[float, float, float], float]:
+    """Return the coincident joint anchor expressed in the forklift frame."""
+    local_position = local_from_world(
+        (frame.base_x_m, frame.base_y_m, frame.base_z_m),
+        frame.yaw_deg,
+        (frame.payload_x_m, frame.payload_y_m, frame.payload_z_m),
+    )
+    local_yaw = (frame.payload_yaw_deg - frame.yaw_deg + 180.0) % 360.0 - 180.0
+    return local_position, local_yaw
+
+
 def payload_dynamic_for_frame(frame: FrameState) -> bool:
     """Release the payload to physics only after conveyor placement begins."""
     return bool(frame.payload_placed and not frame.payload_attached)
@@ -106,14 +118,14 @@ def warehouse_asset_specs(asset_root: Path | str) -> tuple[WarehouseAssetSpec, .
 
 def camera_pose_for_phase(phase: str) -> CameraPose:
     if phase in {"precision_approach", "offset_detected", "pose_verified", "pose_revalidated", "occluded_view_1", "occluded_view_2", "occluded_view_3", "view_adjust_1", "view_adjust_2"}:
-        return CameraPose((-3.8, -4.8, 5.4), (3.1, 1.7, 0.8))
+        return CameraPose((-3.8, -4.8, 4.6), (3.1, 1.7, 0.8))
     if phase in {"insert_forks", "lift_payload", "tilt_stabilize"}:
         return CameraPose((-2.8, -4.8, 4.0), (3.1, 1.7, 0.85))
     if phase in {"prealign_conveyor", "align_conveyor", "place_payload"}:
-        return CameraPose((-14.0, 0.5, 6.8), (-6.8, -4.1, 0.75))
+        return CameraPose((-14.0, 0.5, 5.4), (-6.8, -4.1, 0.75))
     if phase in {"safe_retreat", "safety_stop"}:
-        return CameraPose((-9.5, -5.4, 6.2), (-0.8, 1.2, 0.9))
-    return CameraPose((-16.5, -5.6, 6.2), (0.0, 1.3, 0.9))
+        return CameraPose((-9.5, -5.4, 5.2), (-0.8, 1.2, 0.9))
+    return CameraPose((-16.5, -5.6, 5.4), (0.0, 1.3, 0.9))
 
 
 def _normalized(vector: tuple[float, float, float]) -> tuple[float, float, float]:
@@ -138,12 +150,47 @@ def _camera_direction_for_phase(phase: str) -> tuple[float, float, float]:
         "lift_payload",
         "tilt_stabilize",
     }:
-        return _normalized((-8.0, -7.5, 5.2))
-    if phase in {"prealign_conveyor", "align_conveyor", "lower_payload", "place_payload"}:
-        return _normalized((-7.5, 7.0, 5.8))
+        return _normalized((-12.0, -3.0, 2.2))
+    if phase in {
+        "route_conveyor",
+        "prealign_conveyor",
+        "align_conveyor",
+        "lower_payload",
+        "place_payload",
+    }:
+        return _normalized((-12.0, 5.0, 2.5))
     if phase in {"safe_retreat", "safety_stop"}:
-        return _normalized((-9.0, -6.0, 5.5))
-    return _normalized((-9.5, -7.0, 6.2))
+        return _normalized((-12.0, -3.0, 2.6))
+    return _normalized((-12.0, 0.0, 2.7))
+
+
+def _camera_lane_y_for_phase(phase: str) -> float:
+    if phase in {
+        "precision_approach",
+        "offset_detected",
+        "pose_verified",
+        "pose_revalidated",
+        "occluded_view_1",
+        "occluded_view_2",
+        "occluded_view_3",
+        "view_adjust_1",
+        "view_adjust_2",
+        "insert_forks",
+        "lift_payload",
+        "tilt_stabilize",
+        "safe_retreat",
+        "safety_stop",
+    }:
+        return -2.5
+    if phase in {
+        "route_conveyor",
+        "prealign_conveyor",
+        "align_conveyor",
+        "lower_payload",
+        "place_payload",
+    }:
+        return 0.0
+    return -2.0
 
 
 def _bounds_corners(
@@ -206,7 +253,10 @@ def camera_pose_for_frame(frame: FrameState) -> CameraPose:
     fit_distance = radius / max(math.sin(usable_half_angle), 1e-6)
     distance = max(15.0, fit_distance)
     direction = _camera_direction_for_phase(frame.phase)
-    position = tuple(center[index] + direction[index] * distance for index in range(3))
+    raw_position = tuple(
+        center[index] + direction[index] * distance for index in range(3)
+    )
+    position = (raw_position[0], _camera_lane_y_for_phase(frame.phase), raw_position[2])
     return CameraPose(position, center)
 
 
@@ -610,7 +660,6 @@ def build_scene(
     forklift_body = UsdPhysics.RigidBodyAPI.Apply(forklift_root)
     forklift_body.CreateKinematicEnabledAttr(True)
     UsdPhysics.MassAPI.Apply(forklift_root).CreateMassAttr(3200.0)
-    UsdPhysics.ArticulationRootAPI.Apply(forklift_root)
     stage.DefinePrim("/World/Forklift/Body", "Xform")
     for name, spec in FORKLIFT_PARTS.items():
         path = f"/World/Forklift/Body/{name}"
@@ -660,6 +709,10 @@ def build_scene(
     payload_joint = UsdPhysics.FixedJoint.Define(stage, "/World/Constraints/PayloadAttachment")
     payload_joint.CreateBody0Rel().SetTargets([Sdf.Path("/World/Forklift")])
     payload_joint.CreateBody1Rel().SetTargets([Sdf.Path("/World/ActivePayload")])
+    payload_joint.CreateLocalPos0Attr(Gf.Vec3f(0.0, 0.0, 0.0))
+    payload_joint.CreateLocalPos1Attr(Gf.Vec3f(0.0, 0.0, 0.0))
+    payload_joint.CreateLocalRot0Attr(Gf.Quatf(1.0))
+    payload_joint.CreateLocalRot1Attr(Gf.Quatf(1.0))
     payload_joint.CreateJointEnabledAttr(False)
 
     # Background pallets show the container is a multi-load task, not an isolated cube.
@@ -796,6 +849,18 @@ def apply_frame(handles: SceneHandles, frame: FrameState) -> None:
             payload_rotation_value, sample_time
         )
     attachment_enabled = physical_attachment_for_frame(frame)
+    joint_position, joint_yaw_deg = attachment_joint_pose_for_frame(frame)
+    joint_half_yaw = math.radians(joint_yaw_deg) / 2.0
+    joint_rotation = Gf.Quatf(
+        math.cos(joint_half_yaw),
+        Gf.Vec3f(0.0, 0.0, math.sin(joint_half_yaw)),
+    )
+    local_pos0 = handles.payload_joint.GetLocalPos0Attr()
+    local_rot0 = handles.payload_joint.GetLocalRot0Attr()
+    local_pos0.Set(Gf.Vec3f(*joint_position))
+    local_pos0.Set(Gf.Vec3f(*joint_position), sample_time)
+    local_rot0.Set(joint_rotation)
+    local_rot0.Set(joint_rotation, sample_time)
     joint_enabled = handles.payload_joint.GetJointEnabledAttr()
     joint_enabled.Set(attachment_enabled)
     joint_enabled.Set(attachment_enabled, sample_time)

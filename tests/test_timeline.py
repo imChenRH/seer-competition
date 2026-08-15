@@ -26,6 +26,7 @@ from seer_demo.isaac.layout import (
     local_from_world,
     static_physics_contract,
     warehouse_layout_spec,
+    warehouse_shell_geometry_specs,
     world_from_local,
 )
 from seer_demo.isaac.scene import (
@@ -471,10 +472,28 @@ class IsaacTimelineTests(unittest.TestCase):
                 "CollisionAPI",
                 "RigidBodyAPI",
                 "MassAPI",
-                "ArticulationRootAPI",
                 "FixedJoint",
             },
         )
+
+    def test_payload_joint_anchors_match_the_authored_body_transforms(self):
+        joint_pose = getattr(isaac_scene, "attachment_joint_pose_for_frame", None)
+        self.assertIsNotNone(joint_pose)
+        attached = next(
+            frame for frame in build_timeline("normal", fps=8).frames
+            if frame.payload_attached
+        )
+
+        local_position, local_yaw = joint_pose(attached)
+        expected = local_from_world(
+            (attached.base_x_m, attached.base_y_m, attached.base_z_m),
+            attached.yaw_deg,
+            (attached.payload_x_m, attached.payload_y_m, attached.payload_z_m),
+        )
+
+        for actual, target in zip(local_position, expected):
+            self.assertAlmostEqual(actual, target, places=6)
+        self.assertAlmostEqual(local_yaw, 0.0, places=6)
 
     def test_pallet_has_two_open_fork_pockets_aligned_with_forks(self):
         parts = pallet_part_specs()
@@ -584,6 +603,34 @@ class IsaacTimelineTests(unittest.TestCase):
                     for previous, current in zip(poses, poses[1:])
                 ),
                 2.0,
+                scenario,
+            )
+
+    def test_camera_remains_below_the_warehouse_ceiling_beams(self):
+        beam_bottom = min(
+            spec.position[2] - spec.size[2] / 2.0
+            for spec in warehouse_shell_geometry_specs()
+            if spec.role == "ceiling_beam"
+        )
+
+        for scenario in ("normal", "recovery", "intervention"):
+            poses = isaac_scene.camera_poses_for_timeline(
+                build_timeline(scenario, fps=8)
+            )
+            self.assertLess(
+                max(pose.position[2] for pose in poses),
+                beam_bottom - 0.25,
+                scenario,
+            )
+
+    def test_camera_uses_the_clear_central_aisle_instead_of_rack_bays(self):
+        for scenario in ("normal", "recovery", "intervention"):
+            poses = isaac_scene.camera_poses_for_timeline(
+                build_timeline(scenario, fps=8)
+            )
+            self.assertLess(
+                max(abs(pose.position[1]) for pose in poses),
+                4.5,
                 scenario,
             )
 
