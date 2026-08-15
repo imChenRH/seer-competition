@@ -7,3 +7,11 @@ demo/.env
 __pycache__/
 .DS_Store
 MinerU_markdown_*.md
+
+# 本地 AI / 工具与生成产物（不提交）
+.claude/
+.dsh-vision-toolkit/
+codex-*.md
+vision_health_check.html
+*.local-backup.png
+demo/evidence/local/
