@@ -116,7 +116,7 @@ def main() -> int:
                 "presentation_fps": fps,
                 "presentation_frame_count": frame_count,
                 "presentation_duration_s": presentation_probe["duration_s"],
-                "presentation_contract": "fastwam_observed_action_projection_v1",
+                "presentation_contract": "auditable_common_projection_v2",
             }
         )
         summary_path.write_text(

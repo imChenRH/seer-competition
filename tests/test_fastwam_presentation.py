@@ -1,15 +1,17 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from seer_demo.contracts import EventWriter, load_events
 from seer_demo.fastwam.contracts import ActionRecord, FASTWAM_SCENARIO, FASTWAM_SKILLS
 from seer_demo.fastwam.presentation import (
     FASTWAM_PRESENTATION_SIZE,
     action_at_frame,
-    fastwam_snapshot,
-    fastwam_theme,
+    fastwam_decision_snapshot,
+    render_fastwam_frames,
 )
+from seer_demo.presentation import presentation_theme
 
 
 class FastWamPresentationTests(unittest.TestCase):
@@ -22,7 +24,7 @@ class FastWamPresentationTests(unittest.TestCase):
                 "task_started",
                 0.0,
                 status="RUNNING",
-                message="把红色苹果放入黄色盘子",
+                message="把黑色碗放入盘子",
                 evidence={"observed_frame": 0},
             )
             for index, skill_id in enumerate(FASTWAM_SKILLS, 1):
@@ -39,7 +41,7 @@ class FastWamPresentationTests(unittest.TestCase):
                     status="RUNNING",
                     skill_id=skill_id,
                     state={
-                        "apple_lift_m": 0.04 if index >= 5 else 0.0,
+                        "bowl_lift_m": 0.04 if index >= 5 else 0.0,
                         "plate_xy_error_m": 0.04 if index >= 7 else 0.3,
                         "gripper_closed": 4 <= index <= 7,
                         "official_success": skill_id == "ARM-VER-01",
@@ -83,32 +85,66 @@ class FastWamPresentationTests(unittest.TestCase):
         self.assertEqual(action_at_frame(self.actions, 42), self.actions[41])
 
     def test_snapshot_projects_only_observed_state_and_action(self):
-        snapshot = fastwam_snapshot(
+        snapshot = fastwam_decision_snapshot(
             self.events, self.actions, self.summary, frame=42
         )
 
-        self.assertEqual(snapshot.phase, "ARM-VER-01")
-        self.assertEqual(snapshot.action, self.actions[41].action)
-        self.assertEqual(snapshot.layer, "Fast-WAM policy action")
-        self.assertTrue(snapshot.official_success)
-        document = snapshot.to_dict()
+        self.assertEqual(snapshot["current_skill_id"], "ARM-VER-01")
+        self.assertEqual(snapshot["cerebellum"]["action"], self.actions[41].action)
+        self.assertEqual(snapshot["cerebellum"]["controller"], "Fast-WAM 7-D 相对动作")
+        self.assertTrue(snapshot["safety"]["official_success"])
+        self.assertEqual(
+            {"goal", "brain", "cerebellum", "safety", "audit"}.difference(snapshot),
+            set(),
+        )
+        self.assertEqual(snapshot["cerebellum"]["metrics"][0][0], "bowl_lift_m")
+        document = snapshot
         self.assertNotIn("reasoning", document)
         self.assertNotIn("thought", document)
         self.assertNotIn("chain_of_thought", document)
 
     def test_green_theme_requires_observed_official_success(self):
-        running = fastwam_snapshot(self.events, self.actions, self.summary, frame=35)
-        completed = fastwam_snapshot(self.events, self.actions, self.summary, frame=42)
+        running = fastwam_decision_snapshot(self.events, self.actions, self.summary, frame=35)
+        completed = fastwam_decision_snapshot(self.events, self.actions, self.summary, frame=42)
 
-        self.assertNotEqual(fastwam_theme(running).name, "VERIFIED")
-        self.assertEqual(fastwam_theme(completed).name, "VERIFIED")
+        self.assertNotEqual(presentation_theme(running).name, "COMPLETED")
+        self.assertEqual(presentation_theme(completed).name, "COMPLETED")
         forged_summary = {**self.summary, "official_success": True}
-        early = fastwam_snapshot(self.events, self.actions, forged_summary, frame=10)
-        self.assertFalse(early.official_success)
+        early = fastwam_decision_snapshot(self.events, self.actions, forged_summary, frame=10)
+        self.assertFalse(early["safety"]["official_success"])
+
+    def test_frame_renderer_delegates_to_the_common_layout(self):
+        image = Mock()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "frames"
+            with patch(
+                "seer_demo.fastwam.presentation.common_presentation.render_overlay",
+                return_value=image,
+            ) as renderer:
+                pattern = render_fastwam_frames(
+                    self.events,
+                    self.actions,
+                    self.summary,
+                    output,
+                    frame_count=1,
+                )
+
+        self.assertEqual(pattern.name, "frame-%06d.png")
+        renderer.assert_called_once()
+        rendered_snapshot = renderer.call_args.args[0]
+        self.assertEqual(rendered_snapshot["source_title"], "LIBERO / MUJOCO · FAST-WAM")
+        self.assertEqual(rendered_snapshot["goal"], "把黑色碗放入盘子")
+        image.save.assert_called_once()
 
     def test_presentation_contract_is_2560_by_1080(self):
         self.assertEqual(FASTWAM_PRESENTATION_SIZE, (2560, 1080))
+        adapter = Path("demo/seer_demo/fastwam/presentation.py").read_text(
+            encoding="utf-8"
+        )
         source = Path("scripts/build_fastwam_presentation.py").read_text(encoding="utf-8")
+        self.assertNotIn("苹果", adapter)
+        self.assertIn("common_presentation.render_overlay", adapter)
+        self.assertIn("auditable_common_projection_v2", source)
         self.assertIn("validate_fastwam_package(summary, events, actions)", source)
         self.assertIn("assert_video_matches_summary(summary, source_probe)", source)
         self.assertIn("presentation frame count changed", source)

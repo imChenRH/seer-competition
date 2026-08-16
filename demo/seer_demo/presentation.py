@@ -37,6 +37,8 @@ def presentation_theme(snapshot: Mapping[str, Any]) -> PresentationTheme:
     status = snapshot["status"]
     if status == "COMPLETED":
         return PresentationTheme("COMPLETED", "#43D17C", "#0C3525", "#071B15")
+    if status == "FAILED":
+        return PresentationTheme("FAILED", "#FF5D68", "#401820", "#200C11")
     if mode in {"HUMAN_HANDOFF", "SAFETY_STOP"} or status == "HUMAN_REQUIRED":
         return PresentationTheme("SAFETY", "#FF5D68", "#401820", "#200C11")
     if mode == "RECOVERY" or status == "FALLBACK":
@@ -382,8 +384,10 @@ def render_overlay(
     small = _load_font(21, explicit=font_path)
     mono = _load_font(23, explicit=font_path)
 
-    draw.text((54, 34), "ISAAC SIM · 仓库内部作业", font=title_font, fill=white)
-    draw.text((54, 106), f"SCENE  {snapshot['scenario'].upper()}  ·  RAW PHYSICS VIEW", font=small, fill=cyan)
+    source_title = str(snapshot.get("source_title", "ISAAC SIM · 仓库内部作业"))
+    scene_label = str(snapshot.get("scene_label", "RAW PHYSICS VIEW"))
+    draw.text((54, 34), source_title, font=title_font, fill=white)
+    draw.text((54, 106), f"SCENE  {snapshot['scenario'].upper()}  ·  {scene_label}", font=small, fill=cyan)
     draw.text((54, 948), f"SIM TIME  {snapshot['sim_time_s']:06.2f}s", font=h1, fill=white)
     draw.text((402, 955), f"SKILL  {snapshot['current_skill_id'] or '—'}", font=h2, fill=muted)
     progress = 0.0 if frame_count <= 1 else min(1.0, frame_index / (frame_count - 1))
@@ -435,27 +439,36 @@ def render_overlay(
     card((1320, 560, 1920, 810), "CEREBELLUM / 小脑 · 规控执行", green)
     cerebellum = snapshot["cerebellum"]
     draw.text((1350, 616), str(cerebellum["controller"]), font=h1, fill=white)
-    metrics = [
-        f"base     x={cerebellum['base_x_m'] if cerebellum['base_x_m'] is not None else '—'} m  y={cerebellum['base_y_m'] if cerebellum['base_y_m'] is not None else '—'} m  yaw={cerebellum['yaw_deg'] if cerebellum['yaw_deg'] is not None else '—'}°",
-        f"speed    {cerebellum['speed_mps'] if cerebellum['speed_mps'] is not None else '—'} m/s",
-        f"mast     {cerebellum['mast_height_m'] if cerebellum['mast_height_m'] is not None else '—'} m",
-        f"tilt     {cerebellum['fork_tilt_deg'] if cerebellum['fork_tilt_deg'] is not None else '—'} deg",
-        f"payload  {'ATTACHED' if cerebellum['payload_attached'] else 'PLACED' if cerebellum['payload_placed'] else 'FREE'}",
-    ]
+    source_metrics = cerebellum.get("metrics")
+    if source_metrics is not None:
+        metrics = [f"{label:<13} {value}" for label, value in source_metrics]
+    else:
+        metrics = [
+            f"base     x={cerebellum['base_x_m'] if cerebellum['base_x_m'] is not None else '—'} m  y={cerebellum['base_y_m'] if cerebellum['base_y_m'] is not None else '—'} m  yaw={cerebellum['yaw_deg'] if cerebellum['yaw_deg'] is not None else '—'}°",
+            f"speed    {cerebellum['speed_mps'] if cerebellum['speed_mps'] is not None else '—'} m/s",
+            f"mast     {cerebellum['mast_height_m'] if cerebellum['mast_height_m'] is not None else '—'} m",
+            f"tilt     {cerebellum['fork_tilt_deg'] if cerebellum['fork_tilt_deg'] is not None else '—'} deg",
+            f"payload  {'ATTACHED' if cerebellum['payload_attached'] else 'PLACED' if cerebellum['payload_placed'] else 'FREE'}",
+        ]
     _draw_text_lines(draw, (1350, 674), metrics, mono, muted, 8)
 
     safety_color = red if snapshot["safety"]["gate"] == "BLOCKED" else green
     card((1945, 560, 2520, 810), "SAFETY / 安全门控", safety_color)
     safety = snapshot["safety"]
     draw.text((1975, 624), safety["gate"], font=title_font, fill=safety_color)
-    draw.text((1975, 692), f"obstacle  {'YES' if safety['obstacle_visible'] else 'NO'}", font=mono, fill=muted)
-    draw.text((1975, 732), f"stopped   {'YES' if safety['stopped'] else 'NO'}", font=mono, fill=muted)
-    geometry_state = (
-        "CERTIFIED" if safety.get("collision_certified") is True else "UNRECORDED"
-    )
-    clearance = safety.get("minimum_body_clearance_m")
-    clearance_text = f" · min {clearance:.3f}m" if isinstance(clearance, (int, float)) else ""
-    draw.text((1975, 772), f"geometry  {geometry_state}{clearance_text}", font=small, fill=muted)
+    source_details = safety.get("details")
+    if source_details is not None:
+        detail_lines = [f"{label:<10} {value}" for label, value in source_details]
+        _draw_text_lines(draw, (1975, 692), detail_lines[:3], small, muted, 12)
+    else:
+        draw.text((1975, 692), f"obstacle  {'YES' if safety['obstacle_visible'] else 'NO'}", font=mono, fill=muted)
+        draw.text((1975, 732), f"stopped   {'YES' if safety['stopped'] else 'NO'}", font=mono, fill=muted)
+        geometry_state = (
+            "CERTIFIED" if safety.get("collision_certified") is True else "UNRECORDED"
+        )
+        clearance = safety.get("minimum_body_clearance_m")
+        clearance_text = f" · min {clearance:.3f}m" if isinstance(clearance, (int, float)) else ""
+        draw.text((1975, 772), f"geometry  {geometry_state}{clearance_text}", font=small, fill=muted)
 
     card((1320, 835, 2520, 1045), "AUDIT / 最近审计事件", cyan)
     y = 890
