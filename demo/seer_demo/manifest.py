@@ -12,6 +12,11 @@ import subprocess
 from typing import Callable, Mapping
 
 from .contracts import load_events, validate_scenario_events
+from .fastwam.contracts import (
+    FASTWAM_SOURCE,
+    load_action_records,
+    validate_fastwam_package,
+)
 from .isaac.collision import COLLISION_GUARD_VERSION
 
 
@@ -77,6 +82,17 @@ def _safe_declared_file(run_dir: Path, value: object, label: str) -> Path:
     if not path.is_file():
         raise ValueError(f"missing declared {label} file: {path}")
     return path
+
+
+def _additional_evidence_paths(run_dir: Path, summary: Mapping[str, object]) -> list[Path]:
+    values = summary.get("additional_evidence_files", [])
+    if not isinstance(values, list):
+        raise ValueError("additional_evidence_files must be an array")
+    if any(not isinstance(value, str) for value in values):
+        raise ValueError("additional_evidence_files must contain only filenames")
+    if len(values) != len(set(values)):
+        raise ValueError("additional_evidence_files must not contain duplicates")
+    return [_safe_declared_file(run_dir, value, "additional evidence") for value in values]
 
 
 def assert_collision_summary(summary: Mapping[str, object]) -> None:
@@ -175,9 +191,25 @@ def build_manifest(
                 run_dir, summary.get("presentation_file"), "presentation"
             )
         scene_path = _safe_declared_file(run_dir, summary.get("scene_file"), "scene")
-        validation = validate_scenario_events(
-            load_events(events_path), expected_scenario=str(summary["scenario"])
-        )
+        events = load_events(events_path)
+        actions_path = None
+        if summary.get("source") == FASTWAM_SOURCE:
+            actions_path = _safe_declared_file(
+                run_dir, summary.get("actions_file"), "actions"
+            )
+            validation = validate_fastwam_package(
+                summary, events, load_action_records(actions_path)
+            )
+            evaluation_path = _safe_declared_file(
+                run_dir, "evaluation.json", "evaluation"
+            )
+            evaluation = json.loads(evaluation_path.read_text(encoding="utf-8"))
+            if not isinstance(evaluation, dict) or evaluation.get("attempts") != summary.get("attempts"):
+                raise ValueError("evaluation attempt results disagree with summary")
+        else:
+            validation = validate_scenario_events(
+                events, expected_scenario=str(summary["scenario"])
+            )
         assert_summary_matches_validation(summary, validation)
         video = dict(video_probe(video_path))
         assert_video_matches_summary(summary, video)
@@ -187,9 +219,12 @@ def build_manifest(
             _assert_presentation(summary, presentation)
         files = {}
         declared_paths = [events_path, summary_path, scene_path, video_path]
+        if actions_path is not None:
+            declared_paths.append(actions_path)
+        declared_paths.extend(_additional_evidence_paths(run_dir, summary))
         if presentation_path is not None:
             declared_paths.append(presentation_path)
-        for path in declared_paths:
+        for path in dict.fromkeys(declared_paths):
             files[path.name] = {"size_bytes": path.stat().st_size, "sha256": sha256_file(path)}
         run_record = {
             "run_id": validation.run_id,
@@ -215,6 +250,15 @@ def build_manifest(
         }
         if presentation is not None:
             run_record["presentation_probe"] = presentation
+        if validation.source == FASTWAM_SOURCE:
+            run_record.update(
+                {
+                    "policy_checkpoint": summary.get("policy_checkpoint"),
+                    "official_success": summary.get("official_success"),
+                    "attempt_count": summary.get("attempt_count"),
+                    "selected_attempt": summary.get("selected_attempt"),
+                }
+            )
         runs.append(run_record)
     if not runs:
         raise ValueError(f"no validated evidence runs found below {root}")

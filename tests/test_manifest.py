@@ -6,6 +6,7 @@ from pathlib import Path
 from seer_demo.backends.dry_run import DryRunBackend
 from seer_demo.contracts import EventWriter, validate_events, load_events
 from seer_demo.engine import DemoEngine
+from seer_demo.fastwam.contracts import ActionRecord, FASTWAM_SCENARIO, FASTWAM_SKILLS
 from seer_demo.manifest import build_manifest, sha256_file
 
 
@@ -40,6 +41,133 @@ class ObservedIsaacBackend(DryRunBackend):
 
 
 class EvidenceManifestTests(unittest.TestCase):
+    def make_fastwam_package(self, root):
+        run = root / "fastwam-manifest-test"
+        run.mkdir()
+        events = run / "events.jsonl"
+        with EventWriter(events, run.name, FASTWAM_SCENARIO, "fastwam_policy") as writer:
+            writer.emit("task_started", 0.0, status="RUNNING")
+            for index, skill_id in enumerate(FASTWAM_SKILLS, 1):
+                writer.emit("skill_started", index / 20, status="RUNNING", skill_id=skill_id)
+                writer.emit(
+                    "skill_completed",
+                    index / 20,
+                    status="RUNNING",
+                    skill_id=skill_id,
+                    state={"official_success": skill_id == "ARM-VER-01"},
+                    evidence={"observed_frame": index},
+                )
+            writer.emit(
+                "task_completed",
+                0.5,
+                status="COMPLETED",
+                state={"official_success": True},
+                evidence={"observed_frame": 9},
+            )
+        actions = [
+            ActionRecord("1.0", run.name, 0, 0, 0.0, (0.0,) * 7, True, 0.2),
+            ActionRecord("1.0", run.name, 1, 1, 0.05, (0.1,) * 7, False, 0.001),
+        ]
+        action_path = run / "actions.jsonl"
+        action_path.write_text(
+            "".join(json.dumps(item.to_dict()) + "\n" for item in actions), encoding="utf-8"
+        )
+        attempts = [
+            {
+                "attempt_index": index,
+                "seed": 202608160 + index,
+                "init_state_id": index,
+                "success": index == 2,
+                "executed_steps": 20,
+                "policy_calls": 2,
+                "terminal_reason": "official_success" if index == 2 else "step_budget",
+            }
+            for index in range(5)
+        ]
+        evaluation = run / "evaluation.json"
+        evaluation.write_text(json.dumps({"attempts": attempts}), encoding="utf-8")
+        scene = run / "scene_variant.json"
+        scene.write_text('{"scene_variant":"apple-plate"}\n', encoding="utf-8")
+        video = run / "simulation.mp4"
+        video.write_bytes(b"video")
+        summary = {
+            "schema_version": "1.0",
+            "run_id": run.name,
+            "scenario": FASTWAM_SCENARIO,
+            "source": "fastwam_policy",
+            "event_count": 18,
+            "terminal_status": "COMPLETED",
+            "duration_s": 0.5,
+            "events_file": "events.jsonl",
+            "actions_file": "actions.jsonl",
+            "video_file": "simulation.mp4",
+            "scene_file": "scene_variant.json",
+            "additional_evidence_files": ["actions.jsonl", "evaluation.json"],
+            "resolution": "1280x720",
+            "fps": 20,
+            "frame_count": 10,
+            "action_count": 2,
+            "policy_call_count": 1,
+            "policy_checkpoint": "fastwam_libero_uncond_2cam224",
+            "attempt_count": 5,
+            "attempts": attempts,
+            "selected_attempt": 2,
+            "official_success": True,
+        }
+        (run / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+        return run, summary
+
+    def test_manifest_validates_fastwam_and_hashes_additional_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            run, summary = self.make_fastwam_package(root)
+
+            manifest = build_manifest(
+                root,
+                require_auxiliary=False,
+                video_probe=lambda _: {
+                    "width": 1280,
+                    "height": 720,
+                    "fps": 20.0,
+                    "frame_count": 10,
+                    "duration_s": 0.5,
+                },
+            )
+
+            record = manifest["runs"][0]
+            self.assertEqual(record["policy_checkpoint"], "fastwam_libero_uncond_2cam224")
+            self.assertTrue(record["official_success"])
+            self.assertEqual(record["selected_attempt"], 2)
+            self.assertEqual(
+                record["files"]["actions.jsonl"]["sha256"],
+                sha256_file(run / "actions.jsonl"),
+            )
+            self.assertEqual(
+                record["files"]["evaluation.json"]["sha256"],
+                sha256_file(run / "evaluation.json"),
+            )
+
+            for invalid_files in (
+                ["actions.jsonl", "../secret"],
+                ["actions.jsonl", "/tmp/secret"],
+                ["actions.jsonl", "actions.jsonl"],
+                ["actions.jsonl", {"not": "a filename"}],
+            ):
+                forged = {**summary, "additional_evidence_files": invalid_files}
+                (run / "summary.json").write_text(json.dumps(forged), encoding="utf-8")
+                with self.subTest(invalid_files=invalid_files):
+                    with self.assertRaises(ValueError):
+                        build_manifest(
+                            root,
+                            require_auxiliary=False,
+                            video_probe=lambda _: {
+                                "width": 1280,
+                                "height": 720,
+                                "fps": 20.0,
+                                "frame_count": 10,
+                                "duration_s": 0.5,
+                            },
+                        )
     def test_manifest_revalidates_events_and_hashes_every_declared_file(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

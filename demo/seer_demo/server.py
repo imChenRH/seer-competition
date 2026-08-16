@@ -11,6 +11,11 @@ import re
 from urllib.parse import unquote, urlsplit
 
 from .contracts import load_events, validate_scenario_events
+from .fastwam.contracts import (
+    FASTWAM_SOURCE,
+    load_action_records,
+    validate_fastwam_package,
+)
 
 
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -50,7 +55,14 @@ class EvidenceCatalog:
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         if not isinstance(summary, dict):
             raise ValueError("summary must be an object")
-        validation = validate_scenario_events(load_events(events_path))
+        events = load_events(events_path)
+        if summary.get("source") == FASTWAM_SOURCE:
+            actions_path = self._declared_file(run_dir, summary.get("actions_file"))
+            validation = validate_fastwam_package(
+                summary, events, load_action_records(actions_path)
+            )
+        else:
+            validation = validate_scenario_events(events)
         if validation.run_id != run_id:
             raise ValueError("evidence run_id must match its directory name")
         exact = {
@@ -78,7 +90,13 @@ class EvidenceCatalog:
         self.get_summary(run_id)
         return self._run_dir(run_id) / "events.jsonl"
 
-    def fastwam_summary(self) -> dict[str, object]:
+    def actions_path(self, run_id: str) -> Path:
+        summary = self.get_summary(run_id)
+        if summary.get("source") != FASTWAM_SOURCE:
+            raise FileNotFoundError(run_id)
+        return self._declared_file(self._run_dir(run_id), summary.get("actions_file"))
+
+    def _fastwam_technical_validation(self) -> dict[str, object]:
         evidence_dir = self.root / "fastwam"
         log_path = evidence_dir / "validation.log"
         readme_path = evidence_dir / "README.md"
@@ -106,6 +124,18 @@ class EvidenceCatalog:
             "validation_log_sha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
         }
 
+    def fastwam_summary(self) -> dict[str, object]:
+        technical = self._fastwam_technical_validation()
+        rollout = next(
+            (item for item in self.list_runs() if item.get("source") == FASTWAM_SOURCE),
+            None,
+        )
+        return {
+            **technical,
+            "technical_validation": technical,
+            "rollout": rollout,
+        }
+
     def media_path(self, run_id: str, filename: str) -> Path:
         summary = self.get_summary(run_id)
         if Path(filename).name != filename:
@@ -120,6 +150,15 @@ class EvidenceCatalog:
         path = self._run_dir(run_id) / filename
         if not path.is_file():
             raise FileNotFoundError(filename)
+        return path
+
+    @staticmethod
+    def _declared_file(run_dir: Path, value: object) -> Path:
+        if not isinstance(value, str) or not value or Path(value).name != value:
+            raise FileNotFoundError(str(value))
+        path = run_dir / value
+        if not path.is_file():
+            raise FileNotFoundError(value)
         return path
 
     def _run_dir(self, run_id: str) -> Path:
@@ -153,12 +192,16 @@ def create_server(host: str, port: int, evidence_root: Path | str, web_root: Pat
                     return self._send_json({"runs": catalog.list_runs()})
                 if path == "/api/fastwam":
                     return self._send_json(catalog.fastwam_summary())
-                match = re.fullmatch(r"/api/runs/([^/]+)(/events)?", path)
+                match = re.fullmatch(r"/api/runs/([^/]+)(/(?:events|actions))?", path)
                 if match:
-                    run_id, events_suffix = match.groups()
-                    if events_suffix:
+                    run_id, suffix = match.groups()
+                    if suffix == "/events":
                         return self._send_file(
                             catalog.events_path(run_id), "application/x-ndjson; charset=utf-8"
+                        )
+                    if suffix == "/actions":
+                        return self._send_file(
+                            catalog.actions_path(run_id), "application/x-ndjson; charset=utf-8"
                         )
                     return self._send_json(catalog.get_summary(run_id))
                 match = re.fullmatch(r"/media/([^/]+)/([^/]+)", path)
