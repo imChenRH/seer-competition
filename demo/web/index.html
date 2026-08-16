@@ -3,19 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SEER–HVLA 证据控制台</title>
+  <title>SEER × AgentOS × VLA · 工业仓储智能叉车演示</title>
   <link rel="stylesheet" href="/assets/styles.css">
 </head>
 <body>
   <main>
     <nav class="scenario-tabs panel" aria-label="演示场景" role="tablist">
-      <button class="scenario-tab active" type="button" role="tab" aria-selected="true" data-scenario="normal">正常执行</button>
-      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="recovery">自动恢复</button>
-      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="intervention">安全介入</button>
-      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="fastwam">Fast-WAM 验证</button>
+      <button class="scenario-tab active" type="button" role="tab" aria-selected="true" data-scenario="normal"><span class="tab-label">正常卸货</span><span class="tab-badge" data-badge-for="normal">读取中</span></button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="recovery"><span class="tab-label">自动恢复</span><span class="tab-badge" data-badge-for="recovery">读取中</span></button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="intervention"><span class="tab-label">安全介入</span><span class="tab-badge" data-badge-for="intervention">读取中</span></button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="fastwam"><span class="tab-label">Fast-WAM 苹果→黄盘</span><span class="tab-badge" data-badge-for="fastwam">读取中</span></button>
     </nav>
 
-    <section class="agent-console panel" aria-label="AgentOS 任务对话">
+    <section id="judge-hero" class="panel">
+      <div class="hero-copy">
+        <p class="eyebrow">SEER-HVLA · 企业交流演示</p>
+        <h1>AgentOS 任务大脑 + VLA 执行 + 可审计安全恢复</h1>
+        <p class="hero-subtitle">自然语言下达仓储任务，演示九技能闭环、异常自动恢复与人工接管，以及 Fast-WAM 真实策略动作；所有结果均来自同一份可验证证据。</p>
+      </div>
+      <div class="hero-actions">
+        <button id="quick-normal" class="hero-primary" type="button">开始完整演示</button>
+        <button id="quick-fastwam" class="hero-secondary" type="button">只看 Fast-WAM</button>
+        <button id="demo-mode-toggle" class="hero-ghost" type="button" aria-pressed="false">演示模式</button>
+      </div>
+      <div class="hero-stats">
+        <div><strong id="hero-stat-forklift">九技能闭环</strong><span>正常 / 恢复 / 介入三场景</span></div>
+        <div><strong id="hero-stat-safety">异常恢复与安全停车</strong><span>Fallback + 审计事件</span></div>
+        <div><strong id="hero-stat-fastwam">Fast-WAM 2/5 官方成功</strong><span>600 步语义迁移预算</span></div>
+      </div>
+    </section>
+
+    <section id="agent-console" class="agent-console panel" aria-label="AgentOS 任务对话">
       <div class="feishu-conversation">
         <header class="feishu-header">
           <div class="agent-identity">
@@ -79,6 +97,10 @@
         </div>
         <video id="simulation-video" controls preload="metadata" playsinline></video>
         <div id="no-video" class="empty-state" hidden>该运行是 Mac dry-run，仅有逻辑证据，没有仿真视频。</div>
+        <div class="playback-timeline" aria-label="播放进度">
+          <div class="timeline-caption"><span>播放进度</span><em>点击阶段可跳转</em></div>
+          <ol id="phase-track" class="phase-track"></ol>
+        </div>
       </article>
 
       <article class="panel skills-card">
@@ -115,8 +137,14 @@
         <video id="fastwam-video" controls preload="metadata" playsinline></video>
         <div id="fastwam-no-video" class="empty-state" hidden>当前没有通过完整证据校验的 Fast-WAM 录像。</div>
       </div>
+      <div class="playback-timeline" aria-label="Fast-WAM 播放进度">
+        <div class="timeline-caption"><span>阶段进度</span><em>点击阶段可跳转</em></div>
+        <ol id="fastwam-phase-track" class="phase-track"></ol>
+      </div>
 
-      <div class="fastwam-live-grid">
+      <details class="technical-details" id="fastwam-technical">
+        <summary>展开策略动作与五次尝试明细</summary>
+        <div class="fastwam-live-grid">
         <article class="fastwam-card">
           <div class="section-heading"><div><p class="eyebrow">7-D POLICY ACTION</p><h2>Fast-WAM 当前动作</h2></div></div>
           <div id="fastwam-action-values" class="fastwam-actions">
@@ -140,6 +168,7 @@
           <ol id="fastwam-attempts" class="fastwam-attempts"></ol>
         </article>
       </div>
+      </details>
 
       <div class="fastwam-flow" aria-label="Fast-WAM 机械臂闭环">
         <div><span>01 · 大脑层</span><strong>AgentOS：把红色苹果放入黄色盘子</strong></div>

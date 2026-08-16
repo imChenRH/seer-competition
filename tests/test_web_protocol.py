@@ -31,6 +31,14 @@ class WebProtocolTests(unittest.TestCase):
             "fastwam-attempts",
             "fastwam-official-success",
             "fastwam-phase",
+            "judge-hero",
+            "quick-normal",
+            "quick-fastwam",
+            "demo-mode-toggle",
+            "phase-track",
+            "fastwam-phase-track",
+            "fastwam-technical",
+            "agent-console",
         ):
             self.assertIn(f'id="{element_id}"', html)
         self.assertIn("eventAtTime", source)
@@ -43,11 +51,18 @@ class WebProtocolTests(unittest.TestCase):
         self.assertIn("fetchFastWamEvidence", source)
         self.assertIn("syncFastWamPlayback", source)
         self.assertIn("validateFastWamEvidence", source)
+        self.assertIn("populateRunBadges", source)
+        self.assertIn("renderPlaybackTrack", source)
+        self.assertIn("setConsoleCompact", source)
+        self.assertIn("toggleDemoMode", source)
         self.assertIn("把红色苹果放入黄色盘子", source)
         self.assertNotIn("select.addEventListener", source)
 
         styles = (ROOT / "demo" / "web" / "styles.css").read_text(encoding="utf-8")
         self.assertIn("minmax(0, 2.85fr) minmax(260px, 1fr)", styles)
+        self.assertIn("position: sticky", styles)
+        self.assertIn("body.demo-mode", styles)
+        self.assertIn("playback-timeline", styles)
 
     def test_console_prefers_declared_presentation_and_retains_raw_fallback(self):
         source = (ROOT / "demo" / "web" / "app.js").read_text(encoding="utf-8")

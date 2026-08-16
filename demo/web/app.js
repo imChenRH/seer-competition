@@ -4,6 +4,7 @@
   const video = document.getElementById("simulation-video");
   const noVideo = document.getElementById("no-video");
   const evidenceContent = document.getElementById("evidence-content");
+  const agentConsole = document.getElementById("agent-console");
   const fastwamContent = document.getElementById("fastwam-content");
   const fastwamVideo = document.getElementById("fastwam-video");
   const fastwamNoVideo = document.getElementById("fastwam-no-video");
@@ -75,6 +76,7 @@
   }
 
   function collapseDetails() {
+    setConsoleCompact(false);
     renderGeneration += 1;
     activeRunId = null;
     activeEvents = [];
@@ -110,14 +112,13 @@
       number.className = "skill-index";
       number.textContent = String(index + 1).padStart(2, "0");
       const name = document.createElement("div");
-      const id = document.createElement("div");
-      id.className = "skill-id";
-      id.textContent = event.skill_id;
       const label = document.createElement("div");
+      label.className = "skill-label";
       label.textContent = skillNames[event.skill_id] || "未知技能";
-      label.style.fontSize = "12px";
-      label.style.color = "#61717d";
-      name.append(id, label);
+      const id = document.createElement("div");
+      id.className = "skill-code";
+      id.textContent = event.skill_id;
+      name.append(label, id);
       const time = document.createElement("span");
       time.className = "skill-time";
       time.textContent = SeerProtocol.eventDisplayTime(event).toFixed(1) + "s";
@@ -202,6 +203,75 @@
     target.scrollIntoView(SeerProtocol.scrollOptions(reducedMotion));
   }
 
+  function setConsoleCompact(compact) {
+    agentConsole.classList.toggle("compact", Boolean(compact));
+  }
+
+  function playbackSegments(events) {
+    const starts = new Map();
+    const segments = [];
+    events.forEach(function (event) {
+      const time = SeerProtocol.eventDisplayTime(event);
+      if (typeof time !== "number") return;
+      const attempt = event.evidence && Number.isInteger(event.evidence.attempt)
+        ? event.evidence.attempt : 1;
+      if (event.event_type === "skill_started" && event.skill_id) {
+        starts.set("s:" + event.skill_id + ":" + attempt, {time: time, id: event.skill_id, kind: "skill"});
+      } else if (event.event_type === "fallback_started" && event.fallback_id) {
+        starts.set("f:" + event.fallback_id + ":" + attempt, {time: time, id: event.fallback_id, kind: "fallback"});
+      } else if (event.event_type === "skill_completed" && event.skill_id) {
+        const key = "s:" + event.skill_id + ":" + attempt;
+        const start = starts.get(key);
+        if (start && time >= start.time) {
+          segments.push({kind: "skill", label: skillNames[event.skill_id] || event.skill_id, start: start.time, end: time});
+        }
+      } else if (event.event_type === "fallback_completed" && event.fallback_id) {
+        const key = "f:" + event.fallback_id + ":" + attempt;
+        const start = starts.get(key);
+        if (start && time >= start.time) {
+          segments.push({kind: "fallback", label: event.fallback_id, start: start.time, end: time});
+        }
+      } else if (event.event_type === "safety_stop" || event.event_type === "human_intervention_requested") {
+        segments.push({kind: "safety", label: event.event_type === "safety_stop" ? "安全停车" : "人工接管", start: time, end: time + 0.1});
+      }
+    });
+    return segments.filter(function (segment) { return segment.end >= segment.start; });
+  }
+
+  function renderPlaybackTrack(events, targetId, mediaElement) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    target.replaceChildren();
+    const segments = playbackSegments(events);
+    const total = segments.reduce(function (max, segment) { return Math.max(max, segment.end); }, 0.001);
+    segments.forEach(function (segment) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "track-segment " + (segment.kind === "skill" ? "" : segment.kind);
+      button.textContent = segment.label;
+      button.title = segment.label + " · " + segment.start.toFixed(1) + "s – " + segment.end.toFixed(1) + "s";
+      button.dataset.start = String(segment.start);
+      button.style.flexGrow = String(Math.max(0.02, segment.end - segment.start));
+      button.addEventListener("click", function () {
+        const duration = mediaElement.duration || segment.end;
+        mediaElement.currentTime = Math.min(segment.start + 0.02, Math.max(0, duration - 0.02));
+        mediaElement.play().catch(function () {});
+      });
+      target.append(button);
+    });
+    updateTrackActive(mediaElement.currentTime, targetId);
+  }
+
+  function updateTrackActive(currentTime, targetId) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    target.querySelectorAll(".track-segment").forEach(function (button) {
+      const start = Number(button.dataset.start);
+      const next = button.nextElementSibling ? Number(button.nextElementSibling.dataset.start) : Infinity;
+      button.classList.toggle("active", currentTime >= start && currentTime < next);
+    });
+  }
+
   async function renderRun(runId, expectedScenario) {
     const generation = ++renderGeneration;
     const pair = await Promise.all([fetchJson("/api/runs/" + encodeURIComponent(runId)), loadEvents(runId)]);
@@ -217,6 +287,7 @@
     fastwamContent.hidden = true;
     dispatchDetails.hidden = false;
     demoBoundary.hidden = false;
+    setConsoleCompact(true);
     setText("metric-status", reduced.terminalStatus);
     setText("metric-skills", reduced.completedSkills.length + " / 9");
     setText("metric-fallbacks", reduced.fallbackCount);
@@ -228,6 +299,7 @@
     renderFallbacks(projectedEvents);
     renderLog(projectedEvents);
     renderDispatchPlan(projectedEvents);
+    renderPlaybackTrack(projectedEvents, "phase-track", video);
     updatePlaybackState(0);
     const preferredMedia = summary.has_presentation ? summary.presentation_file : (summary.has_video ? summary.video_file : null);
     if (preferredMedia) {
@@ -345,12 +417,14 @@
     fastwamContent.hidden = false;
     dispatchDetails.hidden = false;
     demoBoundary.hidden = false;
+    setConsoleCompact(true);
     setText("fastwam-claim", summary.claim_boundary);
     setText("fastwam-shape", result.technical_validation.action_shape || "—");
     setText("fastwam-latency", result.technical_validation.single_call_latency_s === null ? "—" : result.technical_validation.single_call_latency_s.toFixed(2) + " s");
     setText("fastwam-selected-attempt", summary.selected_attempt === null ? "无成功初态" : "INIT " + summary.selected_attempt);
     renderFastWamAttempts(summary.attempts);
     renderDispatchPlan(evidence.events);
+    renderPlaybackTrack(evidence.events, "fastwam-phase-track", fastwamVideo);
     const media = summary.has_presentation ? summary.presentation_file : (summary.has_video ? summary.video_file : null);
     if (media) {
       fastwamNoVideo.hidden = true;
@@ -406,11 +480,58 @@
     if (!video.hidden) video.play().catch(function () { /* browser may require another gesture */ });
   }
 
+  async function populateRunBadges(runList) {
+    const badgeCache = new Map();
+    async function statsFor(run) {
+      if (badgeCache.has(run.run_id)) return badgeCache.get(run.run_id);
+      const events = await loadEvents(run.run_id);
+      const fps = Number(run.fps || 0);
+      const projected = fps > 0 ? SeerProtocol.projectEventTimes(events, fps) : events;
+      const reduced = SeerProtocol.reduceEvents(projected);
+      const result = {
+        skills: reduced.completedSkills.length,
+        fallbacks: reduced.fallbackCount,
+        terminal: reduced.terminalStatus
+      };
+      badgeCache.set(run.run_id, result);
+      return result;
+    }
+    for (const run of runList) {
+      const badge = document.querySelector('[data-badge-for="' + run.scenario + '"]');
+      try {
+        const stats = await statsFor(run);
+        if (!badge) continue;
+        if (run.source === "fastwam_policy") {
+          badge.textContent = (typeof run.success_count === "number" ? run.success_count : "—") + "/5 · 官方成功";
+          setText("hero-stat-fastwam", "Fast-WAM " + (run.success_count || 0) + "/5 官方成功");
+        } else {
+          const fallbackText = stats.fallbacks > 0 ? " · " + stats.fallbacks + " Fallback" : "";
+          badge.textContent = stats.skills + "/9 · " + stats.terminal + fallbackText;
+        }
+      } catch (_) {
+        if (badge) badge.textContent = "证据读取失败";
+      }
+    }
+  }
+
+  function toggleDemoMode() {
+    const enabled = document.body.classList.toggle("demo-mode");
+    const button = document.getElementById("demo-mode-toggle");
+    button.setAttribute("aria-pressed", String(enabled));
+    button.textContent = enabled ? "退出演示模式" : "演示模式";
+  }
+
+  async function quickStart(scenario) {
+    selectScenario(scenario);
+    await dispatchCurrentEvidence();
+  }
+
   async function initialize() {
     try {
       const payload = await fetchJson("/api/runs");
       runs = payload.runs;
       SeerProtocol.chooseDefaultRun(runs);
+      populateRunBadges(runs);
       selectScenario("normal");
     } catch (error) {
       showError(error);
@@ -430,9 +551,28 @@
   document.getElementById("dispatch-button").addEventListener("click", function () {
     dispatchCurrentEvidence().catch(showError);
   });
-  video.addEventListener("timeupdate", function () { updatePlaybackState(video.currentTime); });
-  video.addEventListener("ended", function () { updatePlaybackState(video.duration || 0); });
-  fastwamVideo.addEventListener("timeupdate", function () { syncFastWamPlayback(fastwamVideo.currentTime); });
-  fastwamVideo.addEventListener("ended", function () { syncFastWamPlayback(fastwamVideo.duration || 0); });
+  document.getElementById("quick-normal").addEventListener("click", function () {
+    quickStart("normal").catch(showError);
+  });
+  document.getElementById("quick-fastwam").addEventListener("click", function () {
+    quickStart("fastwam").catch(showError);
+  });
+  document.getElementById("demo-mode-toggle").addEventListener("click", toggleDemoMode);
+  video.addEventListener("timeupdate", function () {
+    updatePlaybackState(video.currentTime);
+    updateTrackActive(video.currentTime, "phase-track");
+  });
+  video.addEventListener("ended", function () {
+    updatePlaybackState(video.duration || 0);
+    updateTrackActive(video.duration || 0, "phase-track");
+  });
+  fastwamVideo.addEventListener("timeupdate", function () {
+    syncFastWamPlayback(fastwamVideo.currentTime);
+    updateTrackActive(fastwamVideo.currentTime, "fastwam-phase-track");
+  });
+  fastwamVideo.addEventListener("ended", function () {
+    syncFastWamPlayback(fastwamVideo.duration || 0);
+    updateTrackActive(fastwamVideo.duration || 0, "fastwam-phase-track");
+  });
   initialize();
 })();
