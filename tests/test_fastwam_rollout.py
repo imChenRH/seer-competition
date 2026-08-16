@@ -259,6 +259,7 @@ class FastWamRolloutTests(unittest.TestCase):
 
         self.assertIn("def precompute_task_context", rollout_source)
         self.assertIn("config.prompt_template.format(task=task)", rollout_source)
+        self.assertIn("context = context.clone()", rollout_source)
         self.assertIn("context[~context_mask] = 0.0", rollout_source)
         self.assertIn("torch_module.ones_like(context_mask", rollout_source)
         self.assertIn('policy_observation["context"] = task_context', rollout_source)

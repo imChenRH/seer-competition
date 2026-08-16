@@ -107,6 +107,7 @@ def precompute_task_context(
     context_mask = context_mask.to("cuda", dtype=torch_module.bool)
     with torch_module.inference_mode():
         context = encoder(input_ids, context_mask)
+    context = context.clone()
     context[~context_mask] = 0.0
     context_mask = torch_module.ones_like(context_mask, dtype=torch_module.bool)
     expected = (1, config.context_len, config.video_dit_config["text_dim"])
