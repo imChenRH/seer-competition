@@ -41,4 +41,4 @@ exec "$python_bin" -m seer_demo.fastwam.rollout \
   --fps 20 \
   --width 1280 \
   --height 720 \
-  --max-steps 600
+  --max-steps 300

@@ -1,4 +1,4 @@
-"""Run Fast-WAM against the custom LIBERO apple/plate visual variant."""
+"""Run Fast-WAM against the canonical LIBERO bowl-on-plate task."""
 
 from __future__ import annotations
 
@@ -22,11 +22,11 @@ from .contracts import (
     load_action_records,
     validate_fastwam_package,
 )
-from .scene_variant import ApplePlateLiberoEnv, SCENE_VARIANT_ID
+from .scene_variant import BowlPlateLiberoEnv, SCENE_VARIANT_ID
 
 
 CANONICAL_POLICY_PROMPT = "Put the bowl on the plate"
-AGENTOS_TASK = "把红色苹果放入黄色盘子"
+AGENTOS_TASK = "把黑色碗放入盘子"
 POLICY_CHECKPOINT_NAME = "fastwam_libero_uncond_2cam224"
 
 
@@ -125,7 +125,7 @@ def derive_phase(observation: Mapping[str, Any]) -> str:
     if observation.get("official_success") is True:
         return "ARM-VER-01"
     error = float(observation.get("plate_xy_error_m", math.inf))
-    lift = float(observation.get("apple_lift_m", 0.0))
+    lift = float(observation.get("bowl_lift_m", 0.0))
     closed = observation.get("gripper_closed") is True
     if lift >= 0.025 and error <= 0.08:
         return "ARM-OP-04"
@@ -313,7 +313,7 @@ def _write_selected_events(
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Record a truthful Fast-WAM apple/plate rollout")
+    parser = argparse.ArgumentParser(description="Record a truthful Fast-WAM bowl/plate rollout")
     parser.add_argument("--model-dir", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--run-id", required=True)
@@ -321,7 +321,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--fps", type=int, default=20)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
-    parser.add_argument("--max-steps", type=int, default=600)
+    parser.add_argument("--max-steps", type=int, default=300)
     return parser
 
 
@@ -382,7 +382,7 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
         attempt_dir.mkdir()
         frames_dir = attempt_dir / "frames"
         frames_dir.mkdir()
-        env = ApplePlateLiberoEnv(attempt_index, episode_length=args.max_steps)
+        env = BowlPlateLiberoEnv(attempt_index, episode_length=args.max_steps)
         policy.reset()
         actions: list[ActionRecord] = []
         states: list[dict[str, Any]] = []
@@ -499,8 +499,8 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
         "official_task_name": "put_the_bowl_on_the_plate",
         "agentos_task": AGENTOS_TASK,
         "policy_prompt": CANONICAL_POLICY_PROMPT,
-        "semantic_adapter": {"akita_black_bowl": "red_apple", "plate": "yellow_plate"},
-        "apple_specific_finetuning": False,
+        "canonical_assets": True,
+        "task_specific_finetuning": False,
     }
     _write_json(output_dir / "scene_variant.json", scene)
     _write_selected_events(
@@ -545,8 +545,8 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
             *attempt_evidence_files,
         ],
         "claim_boundary": (
-            "记录仅证明官方 Fast-WAM checkpoint 在一次自定义 LIBERO 视觉语义变体中的五次固定初态结果；"
-            "不证明苹果专项训练、实机迁移或生产安全。"
+            "记录仅证明官方 Fast-WAM checkpoint 在官方 LIBERO 碗放盘子任务中的五次固定初态结果；"
+            "不代表通用成功率，也不证明实机迁移或生产安全。"
         ),
     }
     validate_fastwam_package(validation, events, load_action_records(output_dir / "actions.jsonl"))

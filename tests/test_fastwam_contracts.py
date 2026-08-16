@@ -99,6 +99,9 @@ class FastWamContractTests(unittest.TestCase):
             "selected_attempt": selected_attempt,
         }
 
+    def test_formal_scenario_is_canonical_bowl_on_plate(self):
+        self.assertEqual(FASTWAM_SCENARIO, "fastwam_bowl_plate")
+
     def test_writer_accepts_fastwam_policy_source(self):
         events = self.make_events()
         self.assertEqual(events[0].source, "fastwam_policy")

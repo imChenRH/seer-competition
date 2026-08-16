@@ -11,7 +11,7 @@ from typing import Any, Iterable, Mapping
 from ..contracts import Event, ValidationSummary, validate_events
 
 
-FASTWAM_SCENARIO = "fastwam_apple_plate"
+FASTWAM_SCENARIO = "fastwam_bowl_plate"
 FASTWAM_SOURCE = "fastwam_policy"
 FASTWAM_SKILLS = (
     "ARM-PER-01",

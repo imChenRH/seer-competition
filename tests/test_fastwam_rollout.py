@@ -1,7 +1,6 @@
 import math
 import json
 import unittest
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from seer_demo.contracts import load_events
@@ -18,65 +17,23 @@ from seer_demo.fastwam.rollout import (
 )
 from seer_demo.fastwam.preflight import validate_preflight_record
 from seer_demo.fastwam.scene_variant import (
-    ASSETS,
     SCENE_VARIANT_ID,
-    ApplePlateLiberoEnv,
+    BowlPlateLiberoEnv,
 )
 
 
 class FastWamRolloutTests(unittest.TestCase):
-    def test_variant_contains_physical_red_apple_and_yellow_plate_goal(self):
-        apple_path = ASSETS / "red_apple.xml"
-        plate_path = ASSETS / "yellow_plate.xml"
-        apple = ET.parse(apple_path)
-        plate = ET.parse(plate_path)
-        apple_text = apple_path.read_text(encoding="utf-8")
-        plate_text = plate_path.read_text(encoding="utf-8")
-        bddl = (ASSETS / "put_red_apple_on_yellow_plate.bddl").read_text(
+    def test_variant_uses_canonical_task_without_bddl_or_asset_override(self):
+        source = Path("demo/seer_demo/fastwam/scene_variant.py").read_text(
             encoding="utf-8"
         )
 
-        self.assertTrue(apple.findall(".//geom[@type='sphere']"))
-        self.assertIn("0.80 0.03 0.02 1", apple_text)
-        self.assertTrue(plate.findall(".//geom[@type='cylinder']"))
-        self.assertIn("0.95 0.70 0.04 1", plate_text)
-        plate_collision = plate.find(".//geom[@name='plate_collision']")
-        self.assertIsNotNone(plate_collision)
-        plate_radius = float(plate_collision.attrib["size"].split()[0])
-        self.assertLessEqual(plate_radius, 0.06)
-        radius_site = plate.find(".//site[@name='horizontal_radius_site']")
-        self.assertIsNotNone(radius_site)
-        self.assertLessEqual(float(radius_site.attrib["pos"].split()[0]), 0.06)
-        for model in (apple, plate):
-            self.assertIsNotNone(model.find("./worldbody/body/body[@name='object']"))
-            for site_name in ("bottom_site", "top_site", "horizontal_radius_site"):
-                self.assertIsNotNone(
-                    model.find(f"./worldbody/body/site[@name='{site_name}']")
-                )
-        self.assertIn("red_apple_1 - red_apple", bddl)
-        self.assertIn("yellow_plate_1 - yellow_plate", bddl)
-        self.assertIn("(On red_apple_1 yellow_plate_1)", bddl)
-        self.assertEqual(SCENE_VARIANT_ID, "libero_goal_8_apple_plate_visual_v1")
-
-    def test_variant_preserves_official_task_structure_and_policy_prompt(self):
-        bddl = (ASSETS / "put_red_apple_on_yellow_plate.bddl").read_text(
-            encoding="utf-8"
-        )
-        for fixture in ("main_table", "wooden_cabinet_1", "flat_stove_1", "wine_rack_1"):
-            self.assertIn(fixture, bddl)
-        for distractor in ("cream_cheese_1", "wine_bottle_1"):
-            self.assertIn(distractor, bddl)
-        for region in (
-            "plate_region",
-            "akita_black_bowl_region",
-            "wine_bottle_region",
-            "cream_cheese_region",
-            "cabinet_region",
-            "stove_region",
-            "wine_rack_region",
-        ):
-            self.assertIn(region, bddl)
-        self.assertIn("(:language Put the bowl on the plate)", bddl)
+        self.assertIn('task.name != "put_the_bowl_on_the_plate"', source)
+        self.assertNotIn("_task_bddl_file", source)
+        self.assertNotIn("register_scene_objects", source)
+        self.assertIn('"akita_black_bowl_1"', source)
+        self.assertIn('"plate_1"', source)
+        self.assertEqual(SCENE_VARIANT_ID, "libero_goal_8_bowl_plate_canonical_v1")
         self.assertEqual(CANONICAL_POLICY_PROMPT, "Put the bowl on the plate")
 
     def test_policy_action_requires_finite_bounded_seven_values(self):
@@ -93,7 +50,7 @@ class FastWamRolloutTests(unittest.TestCase):
 
     def test_phase_is_derived_only_from_measured_observation(self):
         initial = {
-            "apple_lift_m": 0.0,
+            "bowl_lift_m": 0.0,
             "plate_xy_error_m": 0.35,
             "gripper_closed": False,
             "official_success": False,
@@ -103,7 +60,7 @@ class FastWamRolloutTests(unittest.TestCase):
             derive_phase({**initial, "gripper_closed": True}), "ARM-OP-02"
         )
         self.assertEqual(
-            derive_phase({**initial, "gripper_closed": True, "apple_lift_m": 0.05}),
+            derive_phase({**initial, "gripper_closed": True, "bowl_lift_m": 0.05}),
             "ARM-OP-03",
         )
         self.assertEqual(
@@ -111,7 +68,7 @@ class FastWamRolloutTests(unittest.TestCase):
                 {
                     **initial,
                     "gripper_closed": True,
-                    "apple_lift_m": 0.05,
+                    "bowl_lift_m": 0.05,
                     "plate_xy_error_m": 0.05,
                 }
             ),
@@ -121,11 +78,11 @@ class FastWamRolloutTests(unittest.TestCase):
             derive_phase({**initial, "official_success": True}), "ARM-VER-01"
         )
         self.assertEqual(
-            derive_phase({**initial, "apple_lift_m": 0.05}), "ARM-OP-03"
+            derive_phase({**initial, "bowl_lift_m": 0.05}), "ARM-OP-03"
         )
         self.assertEqual(
             derive_phase(
-                {**initial, "apple_lift_m": 0.05, "plate_xy_error_m": 0.05}
+                {**initial, "bowl_lift_m": 0.05, "plate_xy_error_m": 0.05}
             ),
             "ARM-OP-04",
         )
@@ -143,15 +100,15 @@ class FastWamRolloutTests(unittest.TestCase):
 
         self.assertIn('mujoco.__version__ == "3.8.1"', launcher)
         self.assertNotIn('mujoco.__version__ == "3.3.2"', launcher)
-        self.assertIn("--max-steps 600", launcher)
+        self.assertIn("--max-steps 300", launcher)
 
     def test_semantic_transfer_budget_is_explicit_and_policy_rng_is_seeded(self):
         with self.assertRaisesRegex(ValueError, "episode_length"):
-            ApplePlateLiberoEnv(0, episode_length=0)
+            BowlPlateLiberoEnv(0, episode_length=0)
 
         source = Path("demo/seer_demo/fastwam/rollout.py").read_text(encoding="utf-8")
         self.assertIn(
-            "ApplePlateLiberoEnv(attempt_index, episode_length=args.max_steps)",
+            "BowlPlateLiberoEnv(attempt_index, episode_length=args.max_steps)",
             source,
         )
         seed_position = source.index("torch.manual_seed(seed)")
@@ -206,7 +163,7 @@ class FastWamRolloutTests(unittest.TestCase):
         from tempfile import TemporaryDirectory
 
         initial = {
-            "apple_lift_m": 0.0,
+            "bowl_lift_m": 0.0,
             "plate_xy_error_m": 0.2,
             "gripper_closed": False,
             "official_success": False,
@@ -215,8 +172,8 @@ class FastWamRolloutTests(unittest.TestCase):
             initial,
             initial,
             {**initial, "gripper_closed": True},
-            {**initial, "apple_lift_m": 0.05},
-            {**initial, "apple_lift_m": 0.05, "plate_xy_error_m": 0.05},
+            {**initial, "bowl_lift_m": 0.05},
+            {**initial, "bowl_lift_m": 0.05, "plate_xy_error_m": 0.05},
             {**initial, "official_success": True, "plate_xy_error_m": 0.02},
         ]
         with TemporaryDirectory() as directory:
