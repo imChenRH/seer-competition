@@ -146,7 +146,7 @@
       if (!state || !allowed.has(state.selectedScenario)) throw new Error("尚未选择演示模式");
       return Object.freeze({
         selectedScenario: state.selectedScenario,
-        detailView: state.selectedScenario === "fastwam" ? "fastwam" : "evidence"
+        detailView: "evidence"
       });
     }
     throw new Error("未知控制台动作");
@@ -167,7 +167,7 @@
   }
 
   function validateFastWamEvidence(summary, events, actions) {
-    if (!summary || summary.source !== "fastwam_policy" || summary.scenario !== "fastwam_apple_plate") {
+    if (!summary || summary.source !== "fastwam_policy" || summary.scenario !== "fastwam_bowl_plate") {
       throw new Error("Fast-WAM 摘要来源或场景无效");
     }
     const eventValidation = validateEvents(events);
@@ -176,6 +176,9 @@
     }
     if (!Number.isInteger(summary.frame_count) || summary.frame_count <= 0) {
       throw new Error("Fast-WAM 视频帧数无效");
+    }
+    if (typeof summary.fps !== "number" || !Number.isFinite(summary.fps) || summary.fps <= 0) {
+      throw new Error("Fast-WAM 视频帧率无效");
     }
     if (!Array.isArray(actions) || actions.length === 0 || summary.action_count !== actions.length) {
       throw new Error("Fast-WAM 动作数量无效");

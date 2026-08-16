@@ -101,24 +101,24 @@ assert(consoleState.detailView === "evidence", "recorded scenario dispatch revea
 consoleState = SeerProtocol.nextConsoleState(consoleState, {type: "select", scenario: "fastwam"});
 assert(consoleState.detailView === "hidden", "fastwam selection is also gated");
 consoleState = SeerProtocol.nextConsoleState(consoleState, {type: "dispatch"});
-assert(consoleState.detailView === "fastwam", "fastwam dispatch reveals independent proof");
+assert(consoleState.detailView === "evidence", "fastwam dispatch reuses common evidence view");
 assert(SeerProtocol.reconcileTask("  recorded task ", "recorded task").accepted, "matching task is accepted");
 const rejectedTask = SeerProtocol.reconcileTask("invented task", "recorded task");
 assert(!rejectedTask.accepted && rejectedTask.task === "recorded task", "unrecorded task falls back to evidence task");
 
 const fastEvents = [
-  event(0, "task_started", {run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy", evidence: {observed_frame: 0}}),
-  event(1, "skill_started", {run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy", skill_id: "ARM-OP-01", evidence: {observed_frame: 1}}),
-  event(2, "skill_completed", {run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy", skill_id: "ARM-VER-01", state: {official_success: true}, evidence: {observed_frame: 2}}),
-  event(3, "task_completed", {run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy", status: "COMPLETED", state: {official_success: true}, evidence: {observed_frame: 3}})
+  event(0, "task_started", {run_id: "wam-1", scenario: "fastwam_bowl_plate", source: "fastwam_policy", evidence: {observed_frame: 0}}),
+  event(1, "skill_started", {run_id: "wam-1", scenario: "fastwam_bowl_plate", source: "fastwam_policy", skill_id: "ARM-OP-01", evidence: {observed_frame: 1}}),
+  event(2, "skill_completed", {run_id: "wam-1", scenario: "fastwam_bowl_plate", source: "fastwam_policy", skill_id: "ARM-VER-01", state: {official_success: true}, evidence: {observed_frame: 2}}),
+  event(3, "task_completed", {run_id: "wam-1", scenario: "fastwam_bowl_plate", source: "fastwam_policy", status: "COMPLETED", state: {official_success: true}, evidence: {observed_frame: 3}})
 ];
 const fastActions = [
   {schema_version: "1.0", run_id: "wam-1", sequence: 0, observed_frame: 1, sim_time_s: 0.05, action: [0, 0, 0, 0, 0, 0, -1], model_call: true, latency_s: 0.22},
   {schema_version: "1.0", run_id: "wam-1", sequence: 1, observed_frame: 2, sim_time_s: 0.10, action: [0.1, 0, 0, 0, 0, 0, 1], model_call: false, latency_s: 0.001}
 ];
 const fastSummary = {
-  run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy",
-  frame_count: 4, action_count: 2, policy_call_count: 1,
+  run_id: "wam-1", scenario: "fastwam_bowl_plate", source: "fastwam_policy",
+  frame_count: 4, fps: 20, action_count: 2, policy_call_count: 1,
   terminal_status: "COMPLETED", official_success: true, selected_attempt: 2,
   attempts: [0, 1, 2, 3, 4].map(function (index) { return {attempt_index: index, success: index === 2}; })
 };

@@ -176,6 +176,7 @@ class DemoServerTests(unittest.TestCase):
         payload = json.loads(body)
         self.assertEqual(status, 200)
         self.assertEqual(payload["rollout"]["run_id"], "fastwam-test")
+        self.assertEqual(payload["rollout"]["scenario"], "fastwam_bowl_plate")
         self.assertTrue(payload["rollout"]["official_success"])
         self.assertIn("technical_validation", payload)
 

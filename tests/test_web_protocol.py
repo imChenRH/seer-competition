@@ -26,21 +26,20 @@ class WebProtocolTests(unittest.TestCase):
         self.assertIn('id="active-instruction"', html)
         self.assertNotIn("机械臂模型、任务数据与后训练", html)
         for element_id in (
-            "fastwam-video",
-            "fastwam-action-values",
-            "fastwam-attempts",
-            "fastwam-official-success",
-            "fastwam-phase",
+            "simulation-video",
+            "skill-list",
+            "fallback-list",
+            "event-log",
             "judge-hero",
             "quick-normal",
             "quick-fastwam",
             "demo-mode-toggle",
             "phase-track",
-            "fastwam-phase-track",
-            "fastwam-technical",
             "agent-console",
         ):
             self.assertIn(f'id="{element_id}"', html)
+        self.assertNotIn('id="fastwam-content"', html)
+        self.assertNotIn('id="fastwam-video"', html)
         self.assertIn("eventAtTime", source)
         self.assertIn("dispatchPlan", source)
         self.assertGreaterEqual(source.count("if (generation !== renderGeneration) return;"), 2)
@@ -55,7 +54,10 @@ class WebProtocolTests(unittest.TestCase):
         self.assertIn("renderPlaybackTrack", source)
         self.assertIn("setConsoleCompact", source)
         self.assertIn("toggleDemoMode", source)
-        self.assertIn("把红色苹果放入黄色盘子", source)
+        self.assertIn("把黑色碗放入盘子", source)
+        self.assertNotIn("红色苹果", source)
+        self.assertNotIn("fastwamContent", source)
+        self.assertNotIn("fastwamVideo", source)
         self.assertNotIn("select.addEventListener", source)
 
         styles = (ROOT / "demo" / "web" / "styles.css").read_text(encoding="utf-8")

@@ -5,9 +5,6 @@
   const noVideo = document.getElementById("no-video");
   const evidenceContent = document.getElementById("evidence-content");
   const agentConsole = document.getElementById("agent-console");
-  const fastwamContent = document.getElementById("fastwam-content");
-  const fastwamVideo = document.getElementById("fastwam-video");
-  const fastwamNoVideo = document.getElementById("fastwam-no-video");
   const dispatchDetails = document.getElementById("dispatch-details");
   const demoBoundary = document.getElementById("demo-boundary");
   const tabs = Array.from(document.querySelectorAll("[data-scenario]"));
@@ -15,7 +12,7 @@
     normal: "卸载3号集装箱货物到A区传送带",
     recovery: "卸载3号集装箱货物到A区传送带",
     intervention: "处理被倒塌货物遮挡的3号栈板",
-    fastwam: "把红色苹果放入黄色盘子"
+    fastwam: "把黑色碗放入盘子"
   };
   const skillNames = {
     "FORK-NAV-01": "进箱导航",
@@ -30,10 +27,10 @@
     "ARM-PER-01": "双相机观测",
     "ARM-PLAN-01": "任务语义映射",
     "WAM-ACT-01": "Fast-WAM 动作生成",
-    "ARM-OP-01": "接近红苹果",
-    "ARM-OP-02": "夹持红苹果",
+    "ARM-OP-01": "接近黑色碗",
+    "ARM-OP-02": "夹持黑色碗",
     "ARM-OP-03": "举升与转移",
-    "ARM-OP-04": "放入黄色盘子",
+    "ARM-OP-04": "放入盘子",
     "ARM-VER-01": "官方成功验证"
   };
   let runs = [];
@@ -82,13 +79,10 @@
     activeEvents = [];
     activeFastWam = null;
     evidenceContent.hidden = true;
-    fastwamContent.hidden = true;
     dispatchDetails.hidden = true;
     demoBoundary.hidden = true;
     video.pause();
     video.currentTime = 0;
-    fastwamVideo.pause();
-    fastwamVideo.currentTime = 0;
     setText("active-instruction", "未开始");
     setText("active-behavior", "等待小脑层");
     setText("active-audit", "#—");
@@ -283,8 +277,8 @@
     const reduced = SeerProtocol.reduceEvents(projectedEvents);
     activeRunId = runId;
     activeEvents = projectedEvents;
+    activeFastWam = null;
     evidenceContent.hidden = false;
-    fastwamContent.hidden = true;
     dispatchDetails.hidden = false;
     demoBoundary.hidden = false;
     setConsoleCompact(true);
@@ -295,6 +289,12 @@
     setText("source-pill", reduced.source);
     setText("event-count", reduced.eventCount + " events");
     setText("run-meta", reduced.runId + " · " + reduced.scenario + " · " + (summary.controller || "evidence replay"));
+    setText("video-eyebrow", "ISAAC SIM × ARCHITECTURE VIEW");
+    setText("video-heading", "仿真与双层架构同步画面");
+    setText("skills-heading", "技能执行链");
+    setText("lower-left-eyebrow", "FALLBACK & SAFETY");
+    setText("lower-left-heading", "恢复与安全事件");
+    noVideo.textContent = "该运行是 Mac dry-run，仅有逻辑证据，没有仿真视频。";
     renderSkills(projectedEvents);
     renderFallbacks(projectedEvents);
     renderLog(projectedEvents);
@@ -321,21 +321,54 @@
     }) || runs.find(function (run) { return run.scenario === scenario; });
   }
 
-  function renderFastWamAttempts(attempts) {
-    const target = document.getElementById("fastwam-attempts");
+  function renderFastWamDetails(summary, event, action) {
+    const target = document.getElementById("fallback-list");
     target.replaceChildren();
-    attempts.forEach(function (attempt) {
-      const item = document.createElement("li");
-      if (attempt.success) item.classList.add("success");
-      const name = document.createElement("strong");
-      name.textContent = "INIT " + attempt.attempt_index;
-      const details = document.createElement("em");
-      details.textContent = String(attempt.executed_steps === undefined ? "—" : attempt.executed_steps) + " steps";
-      const result = document.createElement("span");
-      result.textContent = attempt.success ? "成功" : "未成功";
-      item.append(name, details, result);
-      target.append(item);
+    const state = event && event.state ? event.state : {};
+    const officialSuccess = Boolean(
+      event && state.official_success === true
+      && (event.event_type === "skill_completed" || event.event_type === "task_completed")
+    );
+
+    function addCard(titleText, detailText, safety) {
+      const card = document.createElement("div");
+      card.className = "event-card" + (safety ? " safety" : "");
+      const title = document.createElement("strong");
+      title.textContent = titleText;
+      const detail = document.createElement("span");
+      detail.textContent = detailText;
+      card.append(title, detail);
+      target.append(card);
+    }
+
+    const bowlLift = typeof state.bowl_lift_m === "number"
+      ? state.bowl_lift_m.toFixed(3) + " m" : "—";
+    const targetError = typeof state.plate_xy_error_m === "number"
+      ? state.plate_xy_error_m.toFixed(3) + " m" : "—";
+    addCard(
+      "官方任务与物理观测",
+      "env.check_success=" + (officialSuccess ? "TRUE" : "FALSE")
+        + " · 碗举升=" + bowlLift
+        + " · 目标误差=" + targetError
+        + " · 夹爪=" + (state.gripper_closed ? "闭合" : "打开/过渡"),
+      false
+    );
+    addCard(
+      "Fast-WAM 当前 7-D 相对动作",
+      action ? action.action.map(function (value) { return Number(value).toFixed(3); }).join(" · ")
+        + " · " + (action.model_call ? "新策略调用" : "动作队列")
+        + " · " + action.latency_s.toFixed(3) + " s" : "尚无已执行动作",
+      false
+    );
+    summary.attempts.forEach(function (attempt) {
+      addCard(
+        "INIT " + attempt.attempt_index + " · " + (attempt.success ? "成功" : "未成功"),
+        String(attempt.executed_steps === undefined ? "—" : attempt.executed_steps)
+          + " steps · " + (attempt.terminal_reason || "—"),
+        !attempt.success
+      );
     });
+    addCard("证据边界", summary.claim_boundary || "仅证明五个固定初态的官方任务运行结果。", false);
   }
 
   async function fetchFastWamEvidence(expectedScenario, generation) {
@@ -374,28 +407,7 @@
     const action = projected.action;
     if (!event) return;
     const phase = event.skill_id || event.event_type;
-    const officialSuccess = Boolean(
-      event.state && event.state.official_success === true
-      && (event.event_type === "skill_completed" || event.event_type === "task_completed")
-    );
-    setText("fastwam-phase", phase);
-    setText("fastwam-official-success", officialSuccess ? "TRUE · 已观测" : "FALSE");
-    setText("fastwam-current-latency", action ? action.latency_s.toFixed(3) + " s" : "—");
-    setText("fastwam-apple-lift", event.state && typeof event.state.apple_lift_m === "number" ? event.state.apple_lift_m.toFixed(3) + " m" : "—");
-    setText("fastwam-plate-error", event.state && typeof event.state.plate_xy_error_m === "number" ? event.state.plate_xy_error_m.toFixed(3) + " m" : "—");
-    setText("fastwam-gripper", event.state && event.state.gripper_closed ? "闭合" : "打开/过渡");
-    setText("fastwam-audit", "#" + event.sequence + " · frame " + frame);
-    document.querySelectorAll("[data-fastwam-action]").forEach(function (node) {
-      const index = Number(node.dataset.fastwamAction);
-      node.textContent = action ? Number(action.action[index]).toFixed(3) : "—";
-    });
-    fastwamContent.classList.remove("state-running", "state-transfer", "state-verified", "state-failed");
-    let stateClass = "state-running";
-    if (officialSuccess) stateClass = "state-verified";
-    else if (event.status === "FAILED") stateClass = "state-failed";
-    else if (["ARM-OP-03", "ARM-OP-04"].includes(phase)) stateClass = "state-transfer";
-    fastwamContent.classList.add(stateClass);
-    setText("fastwam-status", officialSuccess ? "官方终态已验证" : (event.status === "FAILED" ? "运行未成功" : "Fast-WAM 执行中"));
+    renderFastWamDetails(summary, event, action);
     setText("active-instruction", event.message || phase);
     setText("active-behavior", phase + " · " + (skillNames[phase] || event.event_type));
     setText("active-audit", "#" + event.sequence + " · frame " + frame);
@@ -408,35 +420,44 @@
     video.pause();
     const evidence = await fetchFastWamEvidence(expectedScenario, generation);
     if (!evidence) return;
-    const result = evidence.envelope;
     const summary = evidence.summary;
     activeRunId = summary.run_id;
-    activeEvents = evidence.events;
+    activeEvents = SeerProtocol.projectEventTimes(evidence.events, Number(summary.fps));
     activeFastWam = evidence;
-    evidenceContent.hidden = true;
-    fastwamContent.hidden = false;
+    evidenceContent.hidden = false;
     dispatchDetails.hidden = false;
     demoBoundary.hidden = false;
     setConsoleCompact(true);
-    setText("fastwam-claim", summary.claim_boundary);
-    setText("fastwam-shape", result.technical_validation.action_shape || "—");
-    setText("fastwam-latency", result.technical_validation.single_call_latency_s === null ? "—" : result.technical_validation.single_call_latency_s.toFixed(2) + " s");
-    setText("fastwam-selected-attempt", summary.selected_attempt === null ? "无成功初态" : "INIT " + summary.selected_attempt);
-    renderFastWamAttempts(summary.attempts);
-    renderDispatchPlan(evidence.events);
-    renderPlaybackTrack(evidence.events, "fastwam-phase-track", fastwamVideo);
+    const reduced = SeerProtocol.reduceEvents(activeEvents);
+    setText("metric-status", reduced.terminalStatus);
+    setText("metric-skills", reduced.completedSkills.length + " / 8");
+    setText("metric-fallbacks", "0");
+    setText("metric-duration", reduced.durationS.toFixed(1) + " s");
+    setText("source-pill", "fastwam_policy");
+    setText("event-count", reduced.eventCount + " events");
+    setText("run-meta", summary.run_id + " · fastwam_bowl_plate · official LIBERO task 8");
+    setText("video-eyebrow", "LIBERO / MUJOCO × ARCHITECTURE VIEW");
+    setText("video-heading", "仿真与双层架构同步画面");
+    setText("skills-heading", "技能执行链");
+    setText("lower-left-eyebrow", "POLICY & OFFICIAL PREDICATE");
+    setText("lower-left-heading", "Fast-WAM 动作与五次初态证据");
+    renderSkills(activeEvents);
+    renderLog(activeEvents);
+    renderDispatchPlan(activeEvents);
+    renderPlaybackTrack(activeEvents, "phase-track", video);
     const media = summary.has_presentation ? summary.presentation_file : (summary.has_video ? summary.video_file : null);
     if (media) {
-      fastwamNoVideo.hidden = true;
-      fastwamVideo.hidden = false;
-      fastwamVideo.src = "/media/" + encodeURIComponent(summary.run_id) + "/" + encodeURIComponent(media);
+      noVideo.hidden = true;
+      video.hidden = false;
+      video.src = "/media/" + encodeURIComponent(summary.run_id) + "/" + encodeURIComponent(media);
     } else {
-      fastwamVideo.removeAttribute("src");
-      fastwamVideo.load();
-      fastwamVideo.hidden = true;
-      fastwamNoVideo.hidden = false;
+      video.removeAttribute("src");
+      video.load();
+      video.hidden = true;
+      noVideo.hidden = false;
+      noVideo.textContent = "当前没有通过完整证据校验的 Fast-WAM 录像。";
     }
-    fastwamVideo.currentTime = 0;
+    video.currentTime = 0;
     syncFastWamPlayback(0);
     setText(
       "chat-response",
@@ -444,7 +465,7 @@
         ? "任务已映射到官方 LIBERO task 8；下方重放 Fast-WAM 的 7-D 策略动作、五次固定初态结果与官方成功谓词。"
         : "输入与证据不一致，未伪造 Fast-WAM 执行；已切换为可审计任务：" + taskDecision.task
     );
-    if (!fastwamVideo.hidden) fastwamVideo.play().catch(function () { /* browser may require another gesture */ });
+    if (!video.hidden) video.play().catch(function () { /* browser may require another gesture */ });
   }
 
   async function dispatchCurrentEvidence() {
@@ -456,7 +477,7 @@
       const fastwamDecision = SeerProtocol.reconcileTask(fastwamInput.value, taskPresets.fastwam);
       fastwamInput.value = fastwamDecision.task;
       await showFastWam(scenario, fastwamDecision);
-      scrollEvidenceIntoView(fastwamContent);
+      scrollEvidenceIntoView(evidenceContent);
       return;
     }
     const run = runForScenario(scenario);
@@ -497,7 +518,7 @@
       return result;
     }
     for (const run of runList) {
-      const badgeScenario = run.scenario === "fastwam_apple_plate" ? "fastwam" : run.scenario;
+      const badgeScenario = run.scenario === "fastwam_bowl_plate" ? "fastwam" : run.scenario;
       const badge = document.querySelector('[data-badge-for="' + badgeScenario + '"]');
       try {
         const stats = await statsFor(run);
@@ -560,20 +581,14 @@
   });
   document.getElementById("demo-mode-toggle").addEventListener("click", toggleDemoMode);
   video.addEventListener("timeupdate", function () {
-    updatePlaybackState(video.currentTime);
+    if (activeFastWam) syncFastWamPlayback(video.currentTime);
+    else updatePlaybackState(video.currentTime);
     updateTrackActive(video.currentTime, "phase-track");
   });
   video.addEventListener("ended", function () {
-    updatePlaybackState(video.duration || 0);
+    if (activeFastWam) syncFastWamPlayback(video.duration || 0);
+    else updatePlaybackState(video.duration || 0);
     updateTrackActive(video.duration || 0, "phase-track");
-  });
-  fastwamVideo.addEventListener("timeupdate", function () {
-    syncFastWamPlayback(fastwamVideo.currentTime);
-    updateTrackActive(fastwamVideo.currentTime, "fastwam-phase-track");
-  });
-  fastwamVideo.addEventListener("ended", function () {
-    syncFastWamPlayback(fastwamVideo.duration || 0);
-    updateTrackActive(fastwamVideo.duration || 0, "fastwam-phase-track");
   });
   initialize();
 })();

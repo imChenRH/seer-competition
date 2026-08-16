@@ -12,7 +12,7 @@
       <button class="scenario-tab active" type="button" role="tab" aria-selected="true" data-scenario="normal"><span class="tab-label">正常卸货</span><span class="tab-badge" data-badge-for="normal">读取中</span></button>
       <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="recovery"><span class="tab-label">自动恢复</span><span class="tab-badge" data-badge-for="recovery">读取中</span></button>
       <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="intervention"><span class="tab-label">安全介入</span><span class="tab-badge" data-badge-for="intervention">读取中</span></button>
-      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="fastwam"><span class="tab-label">Fast-WAM 苹果→黄盘</span><span class="tab-badge" data-badge-for="fastwam">读取中</span></button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="fastwam"><span class="tab-label">Fast-WAM 碗→盘</span><span class="tab-badge" data-badge-for="fastwam">读取中</span></button>
     </nav>
 
     <section id="judge-hero" class="panel">
@@ -29,7 +29,7 @@
       <div class="hero-stats">
         <div><strong id="hero-stat-forklift">九技能闭环</strong><span>正常 / 恢复 / 介入三场景</span></div>
         <div><strong id="hero-stat-safety">异常恢复与安全停车</strong><span>Fallback + 审计事件</span></div>
-        <div><strong id="hero-stat-fastwam">Fast-WAM 2/5 官方成功</strong><span>600 步语义迁移预算</span></div>
+        <div><strong id="hero-stat-fastwam">Fast-WAM 正在读取</strong><span>官方 task 8 · 300 步预算</span></div>
       </div>
     </section>
 
@@ -92,7 +92,7 @@
     <section class="workspace">
       <article class="video-card panel">
         <div class="section-heading">
-          <div><p class="eyebrow">ISAAC SIM × ARCHITECTURE VIEW</p><h2>仿真与双层架构同步画面</h2></div>
+          <div><p id="video-eyebrow" class="eyebrow">ISAAC SIM × ARCHITECTURE VIEW</p><h2 id="video-heading">仿真与双层架构同步画面</h2></div>
           <span id="source-pill" class="pill">—</span>
         </div>
         <video id="simulation-video" controls preload="metadata" playsinline></video>
@@ -104,14 +104,14 @@
       </article>
 
       <article class="panel skills-card">
-        <div class="section-heading"><div><p class="eyebrow">SKILL GRAPH</p><h2>技能执行链</h2></div></div>
+        <div class="section-heading"><div><p class="eyebrow">SKILL GRAPH</p><h2 id="skills-heading">技能执行链</h2></div></div>
         <ol id="skill-list" class="skill-list"></ol>
       </article>
     </section>
 
     <section class="lower-grid">
       <article class="panel">
-        <div class="section-heading"><div><p class="eyebrow">FALLBACK & SAFETY</p><h2>恢复与安全事件</h2></div></div>
+        <div class="section-heading"><div><p id="lower-left-eyebrow" class="eyebrow">FALLBACK & SAFETY</p><h2 id="lower-left-heading">恢复与安全事件</h2></div></div>
         <div id="fallback-list" class="event-cards"></div>
       </article>
       <article class="panel">
@@ -120,73 +120,6 @@
       </article>
     </section>
     </div>
-
-    <section id="fastwam-content" class="fastwam-panel panel" hidden>
-      <div class="fastwam-hero">
-        <div><p class="eyebrow">LIBERO / MUJOCO × FAST-WAM</p><h2>红苹果放入黄盘 · 真实策略动作证据</h2></div>
-        <span id="fastwam-status" class="pill">读取中</span>
-      </div>
-      <div class="fastwam-summary-grid">
-        <div><span>当前阶段</span><strong id="fastwam-phase">—</strong></div>
-        <div><span>官方成功谓词</span><strong id="fastwam-official-success">—</strong></div>
-        <div><span>选中初态</span><strong id="fastwam-selected-attempt">—</strong></div>
-        <div><span>当前动作延迟</span><strong id="fastwam-current-latency">—</strong></div>
-      </div>
-
-      <div class="fastwam-video-shell">
-        <video id="fastwam-video" controls preload="metadata" playsinline></video>
-        <div id="fastwam-no-video" class="empty-state" hidden>当前没有通过完整证据校验的 Fast-WAM 录像。</div>
-      </div>
-      <div class="playback-timeline" aria-label="Fast-WAM 播放进度">
-        <div class="timeline-caption"><span>阶段进度</span><em>点击阶段可跳转</em></div>
-        <ol id="fastwam-phase-track" class="phase-track"></ol>
-      </div>
-
-      <details class="technical-details" id="fastwam-technical">
-        <summary>展开策略动作与五次尝试明细</summary>
-        <div class="fastwam-live-grid">
-        <article class="fastwam-card">
-          <div class="section-heading"><div><p class="eyebrow">7-D POLICY ACTION</p><h2>Fast-WAM 当前动作</h2></div></div>
-          <div id="fastwam-action-values" class="fastwam-actions">
-            <div><span>dx</span><strong data-fastwam-action="0">—</strong></div>
-            <div><span>dy</span><strong data-fastwam-action="1">—</strong></div>
-            <div><span>dz</span><strong data-fastwam-action="2">—</strong></div>
-            <div><span>drx</span><strong data-fastwam-action="3">—</strong></div>
-            <div><span>dry</span><strong data-fastwam-action="4">—</strong></div>
-            <div><span>drz</span><strong data-fastwam-action="5">—</strong></div>
-            <div><span>grip</span><strong data-fastwam-action="6">—</strong></div>
-          </div>
-          <div class="fastwam-observations">
-            <span>苹果举升 <strong id="fastwam-apple-lift">—</strong></span>
-            <span>目标误差 <strong id="fastwam-plate-error">—</strong></span>
-            <span>夹爪 <strong id="fastwam-gripper">—</strong></span>
-            <span>审计 <strong id="fastwam-audit">#—</strong></span>
-          </div>
-        </article>
-        <article class="fastwam-card">
-          <div class="section-heading"><div><p class="eyebrow">FIXED INITIAL STATES</p><h2>五次尝试完整结果</h2></div></div>
-          <ol id="fastwam-attempts" class="fastwam-attempts"></ol>
-        </article>
-      </div>
-      </details>
-
-      <div class="fastwam-flow" aria-label="Fast-WAM 机械臂闭环">
-        <div><span>01 · 大脑层</span><strong>AgentOS：把红色苹果放入黄色盘子</strong></div>
-        <div><span>02 · 语义适配</span><strong>官方提示：Put the bowl on the plate</strong></div>
-        <div><span>03 · 小脑层</span><strong>Fast-WAM 7-D 动作 → LIBERO/MuJoCo</strong></div>
-      </div>
-
-      <div class="fastwam-metrics">
-        <div><span>旧单批动作张量</span><strong id="fastwam-shape">—</strong></div>
-        <div><span>旧首次单次调用</span><strong id="fastwam-latency">—</strong></div>
-        <div><span>新闭环验证范围</span><strong>5 次固定初态 + 官方终态</strong></div>
-      </div>
-      <p id="fastwam-claim" class="fastwam-claim">正在读取本地验证证据。</p>
-      <aside class="limitations fastwam-boundary">
-        <strong>不可外推</strong>
-        <span>自定义红苹果/黄盘是官方 LIBERO task 8 的视觉语义适配，策略仍接收训练时提示；不代表苹果专项后训练、实机迁移、论文整体成功率或生产安全。</span>
-      </aside>
-    </section>
 
     <aside class="limitations" id="demo-boundary" hidden>
       <strong>演示边界</strong>
