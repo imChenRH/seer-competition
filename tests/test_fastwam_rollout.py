@@ -13,7 +13,11 @@ from seer_demo.fastwam.rollout import (
     validate_policy_action,
 )
 from seer_demo.fastwam.preflight import validate_preflight_record
-from seer_demo.fastwam.scene_variant import ASSETS, SCENE_VARIANT_ID
+from seer_demo.fastwam.scene_variant import (
+    ASSETS,
+    SCENE_VARIANT_ID,
+    ApplePlateLiberoEnv,
+)
 
 
 class FastWamRolloutTests(unittest.TestCase):
@@ -119,6 +123,21 @@ class FastWamRolloutTests(unittest.TestCase):
 
         self.assertIn('mujoco.__version__ == "3.8.1"', launcher)
         self.assertNotIn('mujoco.__version__ == "3.3.2"', launcher)
+        self.assertIn("--max-steps 600", launcher)
+
+    def test_semantic_transfer_budget_is_explicit_and_policy_rng_is_seeded(self):
+        with self.assertRaisesRegex(ValueError, "episode_length"):
+            ApplePlateLiberoEnv(0, episode_length=0)
+
+        source = Path("demo/seer_demo/fastwam/rollout.py").read_text(encoding="utf-8")
+        self.assertIn(
+            "ApplePlateLiberoEnv(attempt_index, episode_length=args.max_steps)",
+            source,
+        )
+        seed_position = source.index("torch.manual_seed(seed)")
+        reset_position = source.index("observation, _ = env.reset(seed)")
+        self.assertLess(seed_position, reset_position)
+        self.assertIn('"step_budget": args.max_steps', source)
 
     def test_recording_frames_are_removed_after_each_attempt_is_encoded(self):
         rollout_source = Path("demo/seer_demo/fastwam/rollout.py").read_text(

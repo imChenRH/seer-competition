@@ -291,7 +291,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--fps", type=int, default=20)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
-    parser.add_argument("--max-steps", type=int, default=300)
+    parser.add_argument("--max-steps", type=int, default=600)
     return parser
 
 
@@ -352,13 +352,15 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
         attempt_dir.mkdir()
         frames_dir = attempt_dir / "frames"
         frames_dir.mkdir()
-        env = ApplePlateLiberoEnv(attempt_index)
+        env = ApplePlateLiberoEnv(attempt_index, episode_length=args.max_steps)
         policy.reset()
         actions: list[ActionRecord] = []
         states: list[dict[str, Any]] = []
         success = False
         terminal_reason = "step_budget"
         try:
+            torch.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
             observation, _ = env.reset(seed)
             initial_state = env.physical_state(observation, official_success=False)
             states.append(initial_state)
@@ -496,6 +498,7 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
         "scene_variant": SCENE_VARIANT_ID,
         "official_success": selected_attempt is not None,
         "attempt_count": len(attempt_results),
+        "step_budget": args.max_steps,
         "attempts": attempt_results,
         "selected_attempt": selected_attempt,
         "presented_attempt": int(presented["result"]["attempt_index"]),

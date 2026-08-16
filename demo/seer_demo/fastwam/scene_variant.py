@@ -48,9 +48,17 @@ def register_scene_objects() -> None:
 class ApplePlateLiberoEnv:
     """Composition wrapper that swaps only the official task-8 BDDL before reset."""
 
-    def __init__(self, init_state_id: int, *, observation_size: int = 224):
+    def __init__(
+        self,
+        init_state_id: int,
+        *,
+        observation_size: int = 224,
+        episode_length: int = 600,
+    ):
         if type(init_state_id) is not int or init_state_id < 0:
             raise ValueError("init_state_id must be a non-negative integer")
+        if type(episode_length) is not int or episode_length <= 0:
+            raise ValueError("episode_length must be a positive integer")
         register_scene_objects()
         from libero.libero import benchmark
         from lerobot.envs.libero import LiberoEnv
@@ -63,7 +71,7 @@ class ApplePlateLiberoEnv:
             task_suite=suite,
             task_id=CANONICAL_TASK_ID,
             task_suite_name=CANONICAL_SUITE,
-            episode_length=300,
+            episode_length=episode_length,
             camera_name="agentview_image,robot0_eye_in_hand_image",
             obs_type="pixels_agent_pos",
             observation_width=observation_size,
