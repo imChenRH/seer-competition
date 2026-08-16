@@ -12,6 +12,7 @@ from typing import Any, Mapping
 
 from .rollout import (
     CANONICAL_POLICY_PROMPT,
+    batch_single_robot_state,
     load_policy_on_cuda,
     validate_policy_action,
 )
@@ -107,7 +108,9 @@ def run_preflight(model_dir: Path) -> dict[str, Any]:
             observation_width=224,
         )
         env_preprocessor, _ = env_config.get_env_processors()
-        policy_observation = preprocess_observation(observation)
+        policy_observation = preprocess_observation(
+            batch_single_robot_state(observation)
+        )
         policy_observation["task"] = [CANONICAL_POLICY_PROMPT]
         policy_observation = env_preprocessor(policy_observation)
         policy_observation = preprocessor(policy_observation)

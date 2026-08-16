@@ -6,6 +6,7 @@ from pathlib import Path
 
 from seer_demo.fastwam.rollout import (
     CANONICAL_POLICY_PROMPT,
+    batch_single_robot_state,
     derive_phase,
     load_policy_on_cuda,
     validate_policy_action,
@@ -219,6 +220,34 @@ class FastWamRolloutTests(unittest.TestCase):
         self.assertEqual(config.device, "cuda")
         self.assertEqual(config.n_action_steps, 10)
         self.assertEqual(policy.model.device, "torch:cuda")
+
+    def test_single_environment_robot_state_is_batched_without_mutating_raw_observation(self):
+        class FakeArray:
+            def __init__(self, name):
+                self.name = name
+                self.ndim = 1
+
+            def __getitem__(self, index):
+                self.last_index = index
+                return ("batched", self.name)
+
+        quat = FakeArray("quat")
+        observation = {
+            "pixels": {"image": "raw-image"},
+            "robot_state": {
+                "eef": {"quat": quat},
+                "gripper": {"qpos": FakeArray("qpos")},
+            },
+        }
+
+        batched = batch_single_robot_state(observation)
+
+        self.assertEqual(batched["robot_state"]["eef"]["quat"], ("batched", "quat"))
+        self.assertEqual(
+            batched["robot_state"]["gripper"]["qpos"], ("batched", "qpos")
+        )
+        self.assertIs(observation["robot_state"]["eef"]["quat"], quat)
+        self.assertEqual(batched["pixels"], observation["pixels"])
 
 
 if __name__ == "__main__":

@@ -64,6 +64,23 @@ def load_policy_on_cuda(
     return config, policy
 
 
+def batch_single_robot_state(observation: Mapping[str, Any]) -> dict[str, Any]:
+    """Add the vector-env batch axis expected by LeRobot's LIBERO processor."""
+
+    def batch_nested(value: Any) -> Any:
+        if isinstance(value, Mapping):
+            return {key: batch_nested(item) for key, item in value.items()}
+        if hasattr(value, "ndim") and hasattr(value, "__getitem__"):
+            return value[None, ...]
+        return value
+
+    prepared = dict(observation)
+    robot_state = observation.get("robot_state")
+    if isinstance(robot_state, Mapping):
+        prepared["robot_state"] = batch_nested(robot_state)
+    return prepared
+
+
 def derive_phase(observation: Mapping[str, Any]) -> str:
     if observation.get("official_success") is True:
         return "ARM-VER-01"
@@ -290,7 +307,9 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
             )
             for step in range(args.max_steps):
                 model_call = len(policy._action_queue) == 0
-                policy_observation = preprocess_observation(observation)
+                policy_observation = preprocess_observation(
+                    batch_single_robot_state(observation)
+                )
                 policy_observation["task"] = [CANONICAL_POLICY_PROMPT]
                 policy_observation = env_preprocessor(policy_observation)
                 policy_observation = preprocessor(policy_observation)
