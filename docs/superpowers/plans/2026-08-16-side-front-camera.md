@@ -198,7 +198,7 @@ bash -n scripts/*.sh
 git diff --check
 ```
 
-- [ ] **Step 4: Commit and push**
+- [x] **Step 4: Commit and push**
 
 ```bash
 git add -A
@@ -206,6 +206,6 @@ git commit -m "evidence: publish side-front Isaac V5 runs"
 git push myfork feature/demo-visual-physics-v2
 ```
 
-- [ ] **Step 5: Refresh the persistent local console**
+- [x] **Step 5: Refresh the persistent local console**
 
 Set `commit_id=$(git rev-parse --short HEAD)` and copy the exact committed `demo` directory to `/Users/captainnemo/Library/Caches/com.seer.hvla.demo/$commit_id/demo`. Restart `com.seer.hvla.demo`, then verify `/`, `/api/runs`, and all three declared presentation media paths return HTTP 200.
