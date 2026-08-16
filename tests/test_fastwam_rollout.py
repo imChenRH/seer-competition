@@ -6,6 +6,7 @@ from pathlib import Path
 
 from seer_demo.fastwam.rollout import (
     CANONICAL_POLICY_PROMPT,
+    _encode_attempt_video,
     batch_single_robot_state,
     derive_phase,
     load_policy_on_cuda,
@@ -31,6 +32,12 @@ class FastWamRolloutTests(unittest.TestCase):
         self.assertIn("0.80 0.03 0.02 1", apple_text)
         self.assertTrue(plate.findall(".//geom[@type='cylinder']"))
         self.assertIn("0.95 0.70 0.04 1", plate_text)
+        for model in (apple, plate):
+            self.assertIsNotNone(model.find("./worldbody/body/body[@name='object']"))
+            for site_name in ("bottom_site", "top_site", "horizontal_radius_site"):
+                self.assertIsNotNone(
+                    model.find(f"./worldbody/body/site[@name='{site_name}']")
+                )
         self.assertIn("red_apple_1 - red_apple", bddl)
         self.assertIn("yellow_plate_1 - yellow_plate", bddl)
         self.assertIn("(On red_apple_1 yellow_plate_1)", bddl)
@@ -121,6 +128,17 @@ class FastWamRolloutTests(unittest.TestCase):
         removed = rollout_source.index("shutil.rmtree(frames_dir)", encoded)
 
         self.assertGreater(removed, encoded)
+
+    def test_empty_attempt_does_not_invoke_ffmpeg_and_mask_root_error(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            frames = root / "frames"
+            frames.mkdir()
+
+            self.assertFalse(_encode_attempt_video(frames, root / "simulation.mp4", 20))
+            self.assertFalse((root / "simulation.mp4").exists())
 
     def test_preflight_record_binds_official_task_cameras_and_one_action(self):
         record = {

@@ -185,6 +185,14 @@ def _encode_video(frames_dir: Path, output_path: Path, fps: int) -> None:
         raise RuntimeError(f"ffmpeg failed: {process.stderr[-1000:]}")
 
 
+def _encode_attempt_video(frames_dir: Path, output_path: Path, fps: int) -> bool:
+    """Encode only attempts that reached an observed frame."""
+    if next(frames_dir.glob("frame_*.png"), None) is None:
+        return False
+    _encode_video(frames_dir, output_path, fps)
+    return True
+
+
 def _event_frame_for_skill(states: list[dict[str, Any]], skill_id: str) -> int:
     if skill_id in {"ARM-PER-01", "ARM-PLAN-01"}:
         return 0
@@ -417,7 +425,7 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
             env.close()
         _write_actions(attempt_dir / "actions.jsonl", actions)
         _write_json(attempt_dir / "states.json", states)
-        _encode_video(frames_dir, attempt_dir / "simulation.mp4", args.fps)
+        _encode_attempt_video(frames_dir, attempt_dir / "simulation.mp4", args.fps)
         shutil.rmtree(frames_dir)
         policy_calls = sum(action.model_call for action in actions)
         result = {
