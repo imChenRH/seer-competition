@@ -232,11 +232,11 @@
     return segments.filter(function (segment) { return segment.end >= segment.start; });
   }
 
-  function renderPlaybackTrack(events, targetId, mediaElement) {
+  function renderPlaybackTrack(events, targetId, mediaElement, displaySegments) {
     const target = document.getElementById(targetId);
     if (!target) return;
     target.replaceChildren();
-    const segments = playbackSegments(events);
+    const segments = displaySegments || playbackSegments(events);
     const total = segments.reduce(function (max, segment) { return Math.max(max, segment.end); }, 0.001);
     segments.forEach(function (segment) {
       const button = document.createElement("button");
@@ -278,6 +278,8 @@
     activeRunId = runId;
     activeEvents = projectedEvents;
     activeFastWam = null;
+    video.defaultPlaybackRate = 1;
+    video.playbackRate = 1;
     evidenceContent.hidden = false;
     dispatchDetails.hidden = false;
     demoBoundary.hidden = false;
@@ -286,6 +288,8 @@
     setText("metric-skills", reduced.completedSkills.length + " / 9");
     setText("metric-fallbacks", reduced.fallbackCount);
     setText("metric-duration", reduced.durationS.toFixed(1) + " s");
+    setText("metric-duration-label", "证据时长");
+    setText("timeline-hint", "点击阶段可跳转");
     setText("source-pill", reduced.source);
     setText("event-count", reduced.eventCount + " events");
     setText("run-meta", reduced.runId + " · " + reduced.scenario + " · " + (summary.controller || "evidence replay"));
@@ -429,10 +433,13 @@
     demoBoundary.hidden = false;
     setConsoleCompact(true);
     const reduced = SeerProtocol.reduceEvents(activeEvents);
+    const playbackPlan = SeerProtocol.fastWamPlaybackPlan(playbackSegments(activeEvents), reduced.durationS);
     setText("metric-status", reduced.terminalStatus);
     setText("metric-skills", reduced.completedSkills.length + " / 8");
     setText("metric-fallbacks", "0");
-    setText("metric-duration", reduced.durationS.toFixed(1) + " s");
+    setText("metric-duration", playbackPlan.presentationDurationS.toFixed(1) + " s");
+    setText("metric-duration-label", "展示时长（0.5×）");
+    setText("timeline-hint", "前 3 个准备阶段已隐藏 · 0.5× 慢速播放");
     setText("source-pill", "fastwam_policy");
     setText("event-count", reduced.eventCount + " events");
     setText("run-meta", summary.run_id + " · fastwam_bowl_plate · official LIBERO task 8");
@@ -444,7 +451,9 @@
     renderSkills(activeEvents);
     renderLog(activeEvents);
     renderDispatchPlan(activeEvents);
-    renderPlaybackTrack(activeEvents, "phase-track", video);
+    renderPlaybackTrack(activeEvents, "phase-track", video, playbackPlan.segments);
+    video.defaultPlaybackRate = playbackPlan.playbackRate;
+    video.playbackRate = playbackPlan.playbackRate;
     const media = summary.has_presentation ? summary.presentation_file : (summary.has_video ? summary.video_file : null);
     if (media) {
       noVideo.hidden = true;

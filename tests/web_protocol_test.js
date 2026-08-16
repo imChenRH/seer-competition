@@ -87,6 +87,23 @@ assert(SeerProtocol.scrollOptions(false).behavior === "smooth", "normal dispatch
 assert(SeerProtocol.scrollOptions(true).behavior === "auto", "reduced motion disables smooth scroll");
 assert(SeerProtocol.timelineFlexWeight(2.35, 2.35) === 1, "instant phase keeps a readable timeline share");
 assert(SeerProtocol.timelineFlexWeight(1, 3.5) === 2.5, "long phase keeps its relative duration");
+const fastWamPlaybackPlan = SeerProtocol.fastWamPlaybackPlan([
+  {label: "双相机观测"},
+  {label: "任务语义映射"},
+  {label: "Fast-WAM 动作生成"},
+  {label: "接近黑色碗"},
+  {label: "夹持黑色碗"},
+  {label: "举升与转移"},
+  {label: "放入盘子"},
+  {label: "官方成功验证"}
+], 4.2);
+assert(
+  fastWamPlaybackPlan.segments.map(function (segment) { return segment.label; }).join("|")
+    === "接近黑色碗|夹持黑色碗|举升与转移|放入盘子|官方成功验证",
+  "Fast-WAM playback omits the first three preparation phases and redistributes the remaining five"
+);
+assert(fastWamPlaybackPlan.playbackRate === 0.5, "Fast-WAM playback runs at half speed");
+assert(fastWamPlaybackPlan.presentationDurationS === 8.4, "half-speed playback doubles presentation duration");
 const dispatch = SeerProtocol.dispatchPlan(valid);
 assert(dispatch.length === 1, "dispatch plan uses started actions only");
 assert(dispatch[0].identifier === "FB-F01", "fallback dispatch identifier");

@@ -86,7 +86,7 @@
       <article class="metric"><span>终态</span><strong id="metric-status">—</strong></article>
       <article class="metric"><span>已完成技能</span><strong id="metric-skills">—</strong></article>
       <article class="metric"><span>Fallback</span><strong id="metric-fallbacks">—</strong></article>
-      <article class="metric"><span>证据时长</span><strong id="metric-duration">—</strong></article>
+      <article class="metric"><span id="metric-duration-label">证据时长</span><strong id="metric-duration">—</strong></article>
     </section>
 
     <section class="workspace">
@@ -98,7 +98,7 @@
         <video id="simulation-video" controls preload="metadata" playsinline></video>
         <div id="no-video" class="empty-state" hidden>该运行是 Mac dry-run，仅有逻辑证据，没有仿真视频。</div>
         <div class="playback-timeline" aria-label="播放进度">
-          <div class="timeline-caption"><span>播放进度</span><em>点击阶段可跳转</em></div>
+          <div class="timeline-caption"><span>播放进度</span><em id="timeline-hint">点击阶段可跳转</em></div>
           <ol id="phase-track" class="phase-track"></ol>
         </div>
       </article>

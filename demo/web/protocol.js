@@ -170,6 +170,19 @@
     return Math.max(1, end - start);
   }
 
+  function fastWamPlaybackPlan(segments, sourceDurationS) {
+    if (!Array.isArray(segments) || segments.length < 4
+        || typeof sourceDurationS !== "number" || !Number.isFinite(sourceDurationS) || sourceDurationS <= 0) {
+      throw new Error("Fast-WAM 播放计划无效");
+    }
+    const playbackRate = 0.5;
+    return Object.freeze({
+      segments: Object.freeze(segments.slice(3)),
+      playbackRate: playbackRate,
+      presentationDurationS: sourceDurationS / playbackRate
+    });
+  }
+
   function validateFastWamEvidence(summary, events, actions) {
     if (!summary || summary.source !== "fastwam_policy" || summary.scenario !== "fastwam_bowl_plate") {
       throw new Error("Fast-WAM 摘要来源或场景无效");
@@ -282,6 +295,7 @@
     dispatchPlan: dispatchPlan,
     eventDisplayTime: eventDisplayTime,
     eventAtTime: eventAtTime,
+    fastWamPlaybackPlan: fastWamPlaybackPlan,
     fastWamAtFrame: fastWamAtFrame,
     fastWamFrame: fastWamFrame,
     nextConsoleState: nextConsoleState,
