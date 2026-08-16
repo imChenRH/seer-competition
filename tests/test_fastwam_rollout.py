@@ -332,7 +332,11 @@ class FastWamRolloutTests(unittest.TestCase):
 
         self.assertEqual(
             calls,
-            [("config", "/model"), ("load", "/model", "cpu"), ("move", "cuda")],
+            [
+                ("config", str(Path("/model"))),
+                ("load", str(Path("/model")), "cpu"),
+                ("move", "cuda"),
+            ],
         )
         self.assertEqual(config.device, "cuda")
         self.assertEqual(config.n_action_steps, 10)
