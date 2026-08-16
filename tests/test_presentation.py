@@ -18,7 +18,8 @@ EVIDENCE = ROOT / "demo" / "evidence"
 
 
 def scenario_events(name: str):
-    return load_events(EVIDENCE / f"isaac-{name}-20260816-v5-r1" / "events.jsonl")
+    version = "v6-r1" if name == "intervention" else "v5-r1"
+    return load_events(EVIDENCE / f"isaac-{name}-20260816-{version}" / "events.jsonl")
 
 
 class DecisionSnapshotTests(unittest.TestCase):

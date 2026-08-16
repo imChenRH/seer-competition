@@ -178,6 +178,7 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(payload["rollout"]["run_id"], "fastwam-test")
         self.assertEqual(payload["rollout"]["scenario"], "fastwam_bowl_plate")
         self.assertTrue(payload["rollout"]["official_success"])
+        self.assertEqual(payload["rollout"]["success_count"], 1)
         self.assertIn("technical_validation", payload)
 
         status, headers, body = self.fetch("/api/runs/fastwam-test/actions")

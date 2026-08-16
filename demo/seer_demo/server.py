@@ -78,6 +78,10 @@ class EvidenceCatalog:
                 raise ValueError(f"summary field {key} does not match events")
         result = dict(summary)
         result["run_id"] = run_id
+        if summary.get("source") == FASTWAM_SOURCE:
+            result["success_count"] = sum(
+                attempt["success"] is True for attempt in summary["attempts"]
+            )
         result["has_video"] = _available_declared_media(
             run_dir, summary.get("video_file")
         ) is not None

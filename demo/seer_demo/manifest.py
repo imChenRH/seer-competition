@@ -261,6 +261,9 @@ def build_manifest(
                     "policy_checkpoint": summary.get("policy_checkpoint"),
                     "official_success": summary.get("official_success"),
                     "attempt_count": summary.get("attempt_count"),
+                    "success_count": sum(
+                        attempt["success"] is True for attempt in summary["attempts"]
+                    ),
                     "selected_attempt": summary.get("selected_attempt"),
                 }
             )

@@ -138,6 +138,7 @@ class EvidenceManifestTests(unittest.TestCase):
             record = manifest["runs"][0]
             self.assertEqual(record["policy_checkpoint"], "fastwam_libero_uncond_2cam224")
             self.assertTrue(record["official_success"])
+            self.assertEqual(record["success_count"], 1)
             self.assertEqual(record["selected_attempt"], 2)
             self.assertEqual(
                 record["files"]["actions.jsonl"]["sha256"],
