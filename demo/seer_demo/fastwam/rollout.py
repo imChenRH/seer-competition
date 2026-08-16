@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import gc
 import json
 import math
 from pathlib import Path
@@ -79,6 +80,44 @@ def batch_single_robot_state(observation: Mapping[str, Any]) -> dict[str, Any]:
     if isinstance(robot_state, Mapping):
         prepared["robot_state"] = batch_nested(robot_state)
     return prepared
+
+
+def precompute_task_context(
+    config: Any,
+    torch_module: Any,
+    encoder_loader: Any,
+    tokenizer_builder: Any,
+    task: str,
+) -> tuple[Any, Any]:
+    """Encode the reference prompt once, then release the resident text encoder."""
+    prompt = config.prompt_template.format(task=task)
+    encoder = encoder_loader(
+        model_id=config.text_encoder_model_id,
+        torch_dtype=torch_module.bfloat16,
+        device="cuda",
+    )
+    tokenizer = tokenizer_builder(
+        model_id=config.tokenizer_model_id,
+        tokenizer_max_len=config.tokenizer_max_len,
+    )
+    input_ids, context_mask = tokenizer(
+        prompt, return_mask=True, add_special_tokens=True
+    )
+    input_ids = input_ids.to("cuda")
+    context_mask = context_mask.to("cuda", dtype=torch_module.bool)
+    with torch_module.inference_mode():
+        context = encoder(input_ids, context_mask)
+    context[~context_mask] = 0.0
+    context_mask = torch_module.ones_like(context_mask, dtype=torch_module.bool)
+    expected = (1, config.context_len, config.video_dit_config["text_dim"])
+    if tuple(context.shape) != expected or tuple(context_mask.shape) != expected[:2]:
+        raise RuntimeError("precomputed Fast-WAM context has an unexpected shape")
+    context = context.detach().to("cpu")
+    context_mask = context_mask.detach().to("cpu")
+    del encoder, tokenizer, input_ids
+    gc.collect()
+    torch_module.cuda.empty_cache()
+    return context, context_mask
 
 
 def derive_phase(observation: Mapping[str, Any]) -> str:
@@ -256,6 +295,10 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
     from lerobot.policies import make_pre_post_processors
     from lerobot.policies.fastwam.configuration_fastwam import FastWAMConfig
     from lerobot.policies.fastwam.modeling_fastwam import FastWAMPolicy
+    from lerobot.policies.fastwam.wan.components import (
+        build_wan_tokenizer,
+        load_pretrained_wan_text_encoder,
+    )
 
     if args.attempts != 5:
         raise ValueError("formal Fast-WAM evaluation requires exactly five attempts")
@@ -266,6 +309,14 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
     attempts_dir = output_dir / "attempts"
     attempts_dir.mkdir()
 
+    context_config = FastWAMConfig.from_pretrained(str(args.model_dir))
+    task_context, task_context_mask = precompute_task_context(
+        context_config,
+        torch,
+        load_pretrained_wan_text_encoder,
+        build_wan_tokenizer,
+        CANONICAL_POLICY_PROMPT,
+    )
     config, policy = load_policy_on_cuda(
         args.model_dir, FastWAMConfig, FastWAMPolicy, torch
     )
@@ -310,9 +361,10 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
                 policy_observation = preprocess_observation(
                     batch_single_robot_state(observation)
                 )
-                policy_observation["task"] = [CANONICAL_POLICY_PROMPT]
                 policy_observation = env_preprocessor(policy_observation)
                 policy_observation = preprocessor(policy_observation)
+                policy_observation["context"] = task_context
+                policy_observation["context_mask"] = task_context_mask
                 started = time.perf_counter()
                 with torch.inference_mode():
                     action_tensor = policy.select_action(policy_observation)

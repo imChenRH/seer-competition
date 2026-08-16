@@ -14,6 +14,7 @@ from .rollout import (
     CANONICAL_POLICY_PROMPT,
     batch_single_robot_state,
     load_policy_on_cuda,
+    precompute_task_context,
     validate_policy_action,
 )
 
@@ -64,6 +65,10 @@ def run_preflight(model_dir: Path) -> dict[str, Any]:
     from lerobot.policies import make_pre_post_processors
     from lerobot.policies.fastwam.configuration_fastwam import FastWAMConfig
     from lerobot.policies.fastwam.modeling_fastwam import FastWAMPolicy
+    from lerobot.policies.fastwam.wan.components import (
+        build_wan_tokenizer,
+        load_pretrained_wan_text_encoder,
+    )
 
     started = time.perf_counter()
     suite = benchmark.get_benchmark_dict()["libero_goal"]()
@@ -91,6 +96,14 @@ def run_preflight(model_dir: Path) -> dict[str, Any]:
             name: list(observation["pixels"][name].shape)
             for name in ("image", "image2")
         }
+        context_config = FastWAMConfig.from_pretrained(str(model_dir))
+        task_context, task_context_mask = precompute_task_context(
+            context_config,
+            torch,
+            load_pretrained_wan_text_encoder,
+            build_wan_tokenizer,
+            CANONICAL_POLICY_PROMPT,
+        )
         config, policy = load_policy_on_cuda(
             model_dir, FastWAMConfig, FastWAMPolicy, torch
         )
@@ -111,9 +124,10 @@ def run_preflight(model_dir: Path) -> dict[str, Any]:
         policy_observation = preprocess_observation(
             batch_single_robot_state(observation)
         )
-        policy_observation["task"] = [CANONICAL_POLICY_PROMPT]
         policy_observation = env_preprocessor(policy_observation)
         policy_observation = preprocessor(policy_observation)
+        policy_observation["context"] = task_context
+        policy_observation["context_mask"] = task_context_mask
         with torch.inference_mode():
             action_tensor = policy.select_action(policy_observation)
         action_tensor = postprocessor(action_tensor)

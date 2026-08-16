@@ -249,6 +249,24 @@ class FastWamRolloutTests(unittest.TestCase):
         self.assertIs(observation["robot_state"]["eef"]["quat"], quat)
         self.assertEqual(batched["pixels"], observation["pixels"])
 
+    def test_rollout_uses_reference_precomputed_context_without_resident_text_encoder(self):
+        rollout_source = Path("demo/seer_demo/fastwam/rollout.py").read_text(
+            encoding="utf-8"
+        )
+        preflight_source = Path("demo/seer_demo/fastwam/preflight.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("def precompute_task_context", rollout_source)
+        self.assertIn("config.prompt_template.format(task=task)", rollout_source)
+        self.assertIn("context[~context_mask] = 0.0", rollout_source)
+        self.assertIn("torch_module.ones_like(context_mask", rollout_source)
+        self.assertIn('policy_observation["context"] = task_context', rollout_source)
+        self.assertIn('policy_observation["context_mask"] = task_context_mask', rollout_source)
+        self.assertNotIn('policy_observation["task"]', rollout_source)
+        self.assertIn('policy_observation["context"] = task_context', preflight_source)
+        self.assertNotIn('policy_observation["task"]', preflight_source)
+
 
 if __name__ == "__main__":
     unittest.main()
