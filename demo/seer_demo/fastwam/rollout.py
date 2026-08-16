@@ -330,6 +330,7 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
         _write_actions(attempt_dir / "actions.jsonl", actions)
         _write_json(attempt_dir / "states.json", states)
         _encode_video(frames_dir, attempt_dir / "simulation.mp4", args.fps)
+        shutil.rmtree(frames_dir)
         policy_calls = sum(action.model_call for action in actions)
         result = {
             "attempt_index": attempt_index,

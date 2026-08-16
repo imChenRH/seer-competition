@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the validated forklift track unchanged and add a separate `seer_demo.fastwam` package for scene registration, rollout recording, action/event validation, and presentation rendering. The existing server and manifest dispatch validation by evidence source; the Fast-WAM web tab loads a recorded manipulation run rather than presenting the old single-call-only metrics.
 
-**Tech Stack:** Python 3.12/3.14, `unittest`, LeRobot 0.6.2, Fast-WAM LIBERO 2-camera checkpoint, LIBERO, MuJoCo 3.3.2/EGL, PyTorch/CUDA, Pillow, ffmpeg, vanilla HTML/CSS/JavaScript.
+**Tech Stack:** Python 3.12/3.14, `unittest`, LeRobot 0.6.2, Fast-WAM LIBERO 2-camera checkpoint, `hf-libero` 0.1.4, MuJoCo 3.8.1/EGL, PyTorch/CUDA, Pillow, ffmpeg, vanilla HTML/CSS/JavaScript.
 
 ## Global Constraints
 
@@ -216,7 +216,7 @@ python -m seer_demo.fastwam.rollout \
 
 - [ ] **Step 6: Implement shell preflight and run focused tests**
 
-`scripts/run_fastwam_demo.sh` must require Linux, an executable Python, model config/safetensors, `Mujoco==3.3.2`, CUDA availability, EGL, at least 10 GB free disk before rendering, and a new output directory. The checkpoint already exists outside the output directory, so this threshold covers dependencies and five recorded attempts without pretending that a second 12 GB checkpoint copy is required. It invokes the module without `eval` or shell-generated Python.
+`scripts/run_fastwam_demo.sh` must require Linux, an executable Python, model config/safetensors, the officially resolved `Mujoco==3.8.1`, CUDA availability, EGL, at least 10 GB free disk before rendering, and a new output directory. The checkpoint already exists outside the output directory, so this threshold covers dependencies and five recorded attempts without pretending that a second 12 GB checkpoint copy is required. It invokes the module without `eval` or shell-generated Python.
 
 Run:
 
@@ -449,7 +449,7 @@ Record disk usage, then install only the missing environment packages into `/roo
 
 ```bash
 /root/autodl-tmp/conda/envs/fastwam/bin/python -m pip install \
-  "mujoco==3.3.2" "libero @ git+https://github.com/Lifelong-Robot-Learning/LIBERO.git"
+  -e '/root/autodl-tmp/lerobot[libero]'
 ```
 
 Require at least 10 GB free after installation and remove only pip's download cache after successful installation. Do not delete the checkpoint, Isaac evidence, or user files.

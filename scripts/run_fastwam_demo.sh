@@ -20,7 +20,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 }
 [[ ! -e "$output_dir" ]] || { echo "Output directory already exists: $output_dir" >&2; exit 73; }
 
-"$python_bin" -c 'import mujoco; assert mujoco.__version__ == "3.3.2"'
+"$python_bin" -c 'import mujoco; assert mujoco.__version__ == "3.8.1"'
 "$python_bin" -c 'import torch; assert torch.cuda.is_available()'
 "$python_bin" -c 'import libero, robosuite'
 

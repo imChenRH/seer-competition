@@ -1,4 +1,5 @@
 import math
+import json
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -8,6 +9,7 @@ from seer_demo.fastwam.rollout import (
     derive_phase,
     validate_policy_action,
 )
+from seer_demo.fastwam.preflight import validate_preflight_record
 from seer_demo.fastwam.scene_variant import ASSETS, SCENE_VARIANT_ID
 
 
@@ -101,6 +103,76 @@ class FastWamRolloutTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         before_runner = rollout_source.split("def run_remote_rollout", 1)[0]
         for dependency in ("import torch", "import numpy", "from lerobot", "from libero"):
+            self.assertNotIn(dependency, before_runner)
+
+    def test_remote_launcher_pins_the_resolved_official_libero_runtime(self):
+        launcher = Path("scripts/run_fastwam_demo.sh").read_text(encoding="utf-8")
+
+        self.assertIn('mujoco.__version__ == "3.8.1"', launcher)
+        self.assertNotIn('mujoco.__version__ == "3.3.2"', launcher)
+
+    def test_recording_frames_are_removed_after_each_attempt_is_encoded(self):
+        rollout_source = Path("demo/seer_demo/fastwam/rollout.py").read_text(
+            encoding="utf-8"
+        )
+        encoded = rollout_source.index("_encode_video(frames_dir")
+        removed = rollout_source.index("shutil.rmtree(frames_dir)", encoded)
+
+        self.assertGreater(removed, encoded)
+
+    def test_preflight_record_binds_official_task_cameras_and_one_action(self):
+        record = {
+            "schema_version": "1.0",
+            "task_suite": "libero_goal",
+            "task_id": 8,
+            "task_name": "put_the_bowl_on_the_plate",
+            "task_description": "Put the bowl on the plate",
+            "observation_shapes": {
+                "image": [224, 224, 3],
+                "image2": [224, 224, 3],
+            },
+            "action": [0.0] * 7,
+            "versions": {
+                "lerobot": "0.6.2",
+                "mujoco": "3.8.1",
+                "torch": "2.11.0+cu128",
+            },
+            "cuda_device": "NVIDIA GeForce RTX 4090",
+            "elapsed_s": 1.25,
+        }
+
+        validated = validate_preflight_record(record)
+
+        self.assertEqual(validated, record)
+        self.assertNotIn("model_dir", json.dumps(validated))
+
+    def test_preflight_rejects_wrong_task_or_malformed_action(self):
+        base = {
+            "schema_version": "1.0",
+            "task_suite": "libero_goal",
+            "task_id": 8,
+            "task_name": "put_the_bowl_on_the_plate",
+            "task_description": "Put the bowl on the plate",
+            "observation_shapes": {
+                "image": [224, 224, 3],
+                "image2": [224, 224, 3],
+            },
+            "action": [0.0] * 7,
+            "versions": {"lerobot": "0.6.2", "mujoco": "3.8.1", "torch": "2.11"},
+            "cuda_device": "RTX 4090",
+            "elapsed_s": 1.0,
+        }
+        for update in ({"task_id": 7}, {"action": [0.0] * 6}):
+            with self.subTest(update=update):
+                with self.assertRaises(ValueError):
+                    validate_preflight_record({**base, **update})
+
+    def test_preflight_keeps_gpu_dependencies_late_imported(self):
+        source = Path("demo/seer_demo/fastwam/preflight.py").read_text(
+            encoding="utf-8"
+        )
+        before_runner = source.split("def run_preflight", 1)[0]
+        for dependency in ("import torch", "import mujoco", "from lerobot", "from libero"):
             self.assertNotIn(dependency, before_runner)
 
 

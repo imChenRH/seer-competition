@@ -87,7 +87,7 @@ AgentOS records the semantic mapping explicitly. The policy prompt remains the e
 
 ## Rollout and Selection Rules
 
-- Environment: Linux, headless EGL, MuJoCo `3.3.2`, LIBERO, LeRobot `0.6.2`, RTX 4090.
+- Environment: Linux, headless EGL, MuJoCo `3.8.1` resolved by LeRobot's official `hf-libero` extra, LeRobot `0.6.2`, RTX 4090.
 - Checkpoint: existing local `/root/autodl-tmp/models/fastwam_libero_uncond_2cam224`; no second 12 GB download.
 - Policy inputs: agent view, wrist view, and real proprioceptive state from the environment.
 - Action contract: shape `[7]`, values finite and within the declared action bounds after post-processing.
