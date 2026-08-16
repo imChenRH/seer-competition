@@ -7,6 +7,7 @@ from pathlib import Path
 from seer_demo.fastwam.rollout import (
     CANONICAL_POLICY_PROMPT,
     _encode_attempt_video,
+    _publish_attempt_evidence,
     batch_single_robot_state,
     derive_phase,
     load_policy_on_cuda,
@@ -174,6 +175,29 @@ class FastWamRolloutTests(unittest.TestCase):
 
             self.assertFalse(_encode_attempt_video(frames, root / "simulation.mp4", 20))
             self.assertFalse((root / "simulation.mp4").exists())
+
+    def test_all_attempt_artifacts_are_flattened_for_manifest_hashing(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            attempt = root / "attempt-source"
+            attempt.mkdir()
+            for name in ("actions.jsonl", "states.json", "simulation.mp4"):
+                (attempt / name).write_bytes(name.encode("ascii"))
+
+            declared = _publish_attempt_evidence(root, [(2, attempt)])
+
+            self.assertEqual(
+                declared,
+                [
+                    "attempt-2-actions.jsonl",
+                    "attempt-2-states.json",
+                    "attempt-2-simulation.mp4",
+                ],
+            )
+            for name in declared:
+                self.assertTrue((root / name).is_file())
 
     def test_preflight_record_binds_official_task_cameras_and_one_action(self):
         record = {

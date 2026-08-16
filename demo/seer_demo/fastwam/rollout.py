@@ -193,6 +193,27 @@ def _encode_attempt_video(frames_dir: Path, output_path: Path, fps: int) -> bool
     return True
 
 
+def _publish_attempt_evidence(
+    output_dir: Path, attempts: Iterable[tuple[int, Path]]
+) -> list[str]:
+    """Flatten raw attempt artifacts so the manifest can hash every trial."""
+    declared: list[str] = []
+    for attempt_index, attempt_dir in attempts:
+        for source_name, suffix in (
+            ("actions.jsonl", "actions.jsonl"),
+            ("states.json", "states.json"),
+            ("simulation.mp4", "simulation.mp4"),
+            ("error.json", "error.json"),
+        ):
+            source = attempt_dir / source_name
+            if not source.is_file():
+                continue
+            target_name = f"attempt-{attempt_index}-{suffix}"
+            shutil.copy2(source, output_dir / target_name)
+            declared.append(target_name)
+    return declared
+
+
 def _event_frame_for_skill(states: list[dict[str, Any]], skill_id: str) -> int:
     if skill_id in {"ARM-PER-01", "ARM-PLAN-01"}:
         return 0
@@ -445,6 +466,13 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
         )
 
     successful = [item for item in captured if item["result"]["success"]]
+    attempt_evidence_files = _publish_attempt_evidence(
+        output_dir,
+        [
+            (int(item["result"]["attempt_index"]), item["dir"])
+            for item in captured
+        ],
+    )
     selected_attempt = int(successful[0]["result"]["attempt_index"]) if successful else None
     presented = successful[0] if successful else captured[0]
     selected_actions = list(presented["actions"])
@@ -502,7 +530,11 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
         "attempts": attempt_results,
         "selected_attempt": selected_attempt,
         "presented_attempt": int(presented["result"]["attempt_index"]),
-        "additional_evidence_files": ["actions.jsonl", "evaluation.json"],
+        "additional_evidence_files": [
+            "actions.jsonl",
+            "evaluation.json",
+            *attempt_evidence_files,
+        ],
         "claim_boundary": (
             "记录仅证明官方 Fast-WAM checkpoint 在一次自定义 LIBERO 视觉语义变体中的五次固定初态结果；"
             "不证明苹果专项训练、实机迁移或生产安全。"
