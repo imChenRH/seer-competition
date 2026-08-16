@@ -17,19 +17,22 @@
 
     <section id="judge-hero" class="panel">
       <div class="hero-copy">
-        <p class="eyebrow">SEER-HVLA · 企业交流演示</p>
-        <h1>AgentOS 任务大脑 + VLA 执行 + 可审计安全恢复</h1>
-        <p class="hero-subtitle">自然语言下达仓储任务，演示九技能闭环、异常自动恢复与人工接管，以及 Fast-WAM 真实策略动作；所有结果均来自同一份可验证证据。</p>
+        <p class="eyebrow">SEER-HVLA · 评委证据导览</p>
+        <h1>让大模型负责决策，让机器人按规控安全执行</h1>
+        <p class="hero-subtitle">面向集装箱卸货中的长流程、异常恢复和人机协同痛点，AgentOS 将自然语言任务分解为白名单技能，VLA 生成细粒度动作，仿真与连续审计共同验证结果。</p>
       </div>
       <div class="hero-actions">
         <button id="quick-normal" class="hero-primary" type="button">开始完整演示</button>
         <button id="quick-fastwam" class="hero-secondary" type="button">只看 Fast-WAM</button>
         <button id="demo-mode-toggle" class="hero-ghost" type="button" aria-pressed="false">演示模式</button>
       </div>
-      <div class="hero-stats">
-        <div><strong id="hero-stat-forklift">九技能闭环</strong><span>正常 / 恢复 / 介入三场景</span></div>
-        <div><strong id="hero-stat-safety">异常恢复与安全停车</strong><span>Fallback + 审计事件</span></div>
-        <div><strong id="hero-stat-fastwam">Fast-WAM 正在读取</strong><span>官方 task 8 · 300 步预算</span></div>
+      <ol id="evaluation-rubric" class="evaluation-rubric" aria-label="评分标准证据映射"></ol>
+      <div id="evaluation-proofline" class="evaluation-proofline" aria-label="当前可核验证据">
+        <strong>当前可核验证据</strong>
+        <span id="hero-stat-forklift">9/9 技能闭环</span>
+        <span id="hero-stat-safety">1 次自动恢复 · 0 禁止碰撞</span>
+        <span id="hero-stat-fastwam">Fast-WAM 正在读取</span>
+        <em>实机节拍、接管率、停机时长和 ROI 待与仙工联合标定</em>
       </div>
     </section>
 

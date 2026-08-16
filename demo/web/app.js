@@ -44,6 +44,35 @@
     document.getElementById(id).textContent = String(value);
   }
 
+  function renderEvaluationRubric() {
+    const target = document.getElementById("evaluation-rubric");
+    target.replaceChildren();
+    SeerProtocol.evaluationRubric().forEach(function (rubric) {
+      const item = document.createElement("li");
+      item.className = "evaluation-card";
+      item.dataset.rubric = rubric.id;
+
+      const heading = document.createElement("div");
+      heading.className = "rubric-heading";
+      const weight = document.createElement("strong");
+      weight.className = "rubric-weight";
+      weight.textContent = rubric.weight + "%";
+      const label = document.createElement("span");
+      label.className = "rubric-label";
+      label.textContent = rubric.label;
+      heading.append(weight, label);
+
+      const claim = document.createElement("p");
+      claim.className = "rubric-claim";
+      claim.textContent = rubric.claim;
+      const evidence = document.createElement("p");
+      evidence.className = "rubric-evidence";
+      evidence.textContent = rubric.evidence;
+      item.append(heading, claim, evidence);
+      target.append(item);
+    });
+  }
+
   async function fetchJson(path) {
     const response = await fetch(path, {cache: "no-store"});
     if (!response.ok) throw new Error(path + " returned " + response.status);
@@ -558,6 +587,7 @@
   }
 
   async function initialize() {
+    renderEvaluationRubric();
     try {
       const payload = await fetchJson("/api/runs");
       runs = payload.runs;

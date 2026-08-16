@@ -36,6 +36,8 @@ class WebProtocolTests(unittest.TestCase):
             "demo-mode-toggle",
             "phase-track",
             "agent-console",
+            "evaluation-rubric",
+            "evaluation-proofline",
         ):
             self.assertIn(f'id="{element_id}"', html)
         self.assertNotIn('id="fastwam-content"', html)
@@ -54,6 +56,8 @@ class WebProtocolTests(unittest.TestCase):
         self.assertIn("renderPlaybackTrack", source)
         self.assertIn("setConsoleCompact", source)
         self.assertIn("toggleDemoMode", source)
+        self.assertIn("renderEvaluationRubric", source)
+        self.assertIn("evaluationRubric", source)
         self.assertIn("把黑色碗放入盘子", source)
         self.assertNotIn("红色苹果", source)
         self.assertNotIn("fastwamContent", source)
@@ -65,6 +69,13 @@ class WebProtocolTests(unittest.TestCase):
         self.assertIn("position: sticky", styles)
         self.assertIn("body.demo-mode", styles)
         self.assertIn("playback-timeline", styles)
+        self.assertIn("evaluation-card", styles)
+        self.assertIn("rubric-weight", styles)
+        self.assertFalse(
+            styles.rstrip().endswith(".evaluation-rubric { grid-template-columns: 1fr; }"),
+            "the one-column rubric override must stay inside its mobile media query",
+        )
+        self.assertIn("待与仙工联合标定", html)
 
     def test_console_prefers_declared_presentation_and_retains_raw_fallback(self):
         source = (ROOT / "demo" / "web" / "app.js").read_text(encoding="utf-8")
@@ -86,7 +97,7 @@ class WebProtocolTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("protocol assertions: 53", result.stdout)
+        self.assertIn("protocol assertions: 56", result.stdout)
 
 
 if __name__ == "__main__":

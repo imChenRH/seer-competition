@@ -170,6 +170,39 @@
     return Math.max(1, end - start);
   }
 
+  function evaluationRubric() {
+    return Object.freeze([
+      Object.freeze({
+        id: "innovation",
+        weight: 30,
+        label: "AI 应用创新性",
+        claim: "AgentOS 规划 × 技能小脑 × VLA 策略",
+        evidence: "自然语言不直接控车；决策、动作与安全门分层"
+      }),
+      Object.freeze({
+        id: "business",
+        weight: 30,
+        label: "业务价值",
+        claim: "覆盖卸货、异常恢复与安全接管",
+        evidence: "9/9 技能闭环 · 自动 Fallback · HUMAN_REQUIRED"
+      }),
+      Object.freeze({
+        id: "depth",
+        weight: 20,
+        label: "AI 应用深度",
+        claim: "飞书任务表 → AgentOS → 7-D 动作 → 谓词验证",
+        evidence: "AI 进入核心操作链，而非只做问答展示"
+      }),
+      Object.freeze({
+        id: "completeness",
+        weight: 20,
+        label: "完整、落地与推广",
+        claim: "执行 → 审计 → 恢复 → 人工闭环",
+        evidence: "证据 SHA 绑定 · 硬件适配层可替换"
+      })
+    ]);
+  }
+
   function fastWamPlaybackPlan(segments, sourceDurationS) {
     if (!Array.isArray(segments) || segments.length < 4
         || typeof sourceDurationS !== "number" || !Number.isFinite(sourceDurationS) || sourceDurationS <= 0) {
@@ -293,6 +326,7 @@
   global.SeerProtocol = Object.freeze({
     chooseDefaultRun: chooseDefaultRun,
     dispatchPlan: dispatchPlan,
+    evaluationRubric: evaluationRubric,
     eventDisplayTime: eventDisplayTime,
     eventAtTime: eventAtTime,
     fastWamPlaybackPlan: fastWamPlaybackPlan,

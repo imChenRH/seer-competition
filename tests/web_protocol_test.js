@@ -87,6 +87,20 @@ assert(SeerProtocol.scrollOptions(false).behavior === "smooth", "normal dispatch
 assert(SeerProtocol.scrollOptions(true).behavior === "auto", "reduced motion disables smooth scroll");
 assert(SeerProtocol.timelineFlexWeight(2.35, 2.35) === 1, "instant phase keeps a readable timeline share");
 assert(SeerProtocol.timelineFlexWeight(1, 3.5) === 2.5, "long phase keeps its relative duration");
+const evaluationRubric = SeerProtocol.evaluationRubric();
+assert(
+  evaluationRubric.map(function (item) { return item.id; }).join("|")
+    === "innovation|business|depth|completeness",
+  "judge rubric follows the published scoring order"
+);
+assert(
+  evaluationRubric.reduce(function (sum, item) { return sum + item.weight; }, 0) === 100,
+  "judge rubric weights total 100 percent"
+);
+assert(
+  Object.isFrozen(evaluationRubric) && evaluationRubric.every(Object.isFrozen),
+  "judge rubric is immutable presentation data"
+);
 const fastWamPlaybackPlan = SeerProtocol.fastWamPlaybackPlan([
   {label: "双相机观测"},
   {label: "任务语义映射"},
