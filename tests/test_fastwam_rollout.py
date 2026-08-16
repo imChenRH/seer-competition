@@ -36,6 +36,13 @@ class FastWamRolloutTests(unittest.TestCase):
         self.assertIn("0.80 0.03 0.02 1", apple_text)
         self.assertTrue(plate.findall(".//geom[@type='cylinder']"))
         self.assertIn("0.95 0.70 0.04 1", plate_text)
+        plate_collision = plate.find(".//geom[@name='plate_collision']")
+        self.assertIsNotNone(plate_collision)
+        plate_radius = float(plate_collision.attrib["size"].split()[0])
+        self.assertLessEqual(plate_radius, 0.06)
+        radius_site = plate.find(".//site[@name='horizontal_radius_site']")
+        self.assertIsNotNone(radius_site)
+        self.assertLessEqual(float(radius_site.attrib["pos"].split()[0]), 0.06)
         for model in (apple, plate):
             self.assertIsNotNone(model.find("./worldbody/body/body[@name='object']"))
             for site_name in ("bottom_site", "top_site", "horizontal_radius_site"):
