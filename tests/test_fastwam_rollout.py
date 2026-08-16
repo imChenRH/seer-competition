@@ -116,6 +116,15 @@ class FastWamRolloutTests(unittest.TestCase):
         self.assertEqual(
             derive_phase({**initial, "official_success": True}), "ARM-VER-01"
         )
+        self.assertEqual(
+            derive_phase({**initial, "apple_lift_m": 0.05}), "ARM-OP-03"
+        )
+        self.assertEqual(
+            derive_phase(
+                {**initial, "apple_lift_m": 0.05, "plate_xy_error_m": 0.05}
+            ),
+            "ARM-OP-04",
+        )
 
     def test_heavy_runtime_dependencies_are_late_imported(self):
         rollout_source = Path(

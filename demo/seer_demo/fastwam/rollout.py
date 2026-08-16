@@ -127,9 +127,9 @@ def derive_phase(observation: Mapping[str, Any]) -> str:
     error = float(observation.get("plate_xy_error_m", math.inf))
     lift = float(observation.get("apple_lift_m", 0.0))
     closed = observation.get("gripper_closed") is True
-    if closed and lift >= 0.025 and error <= 0.08:
+    if lift >= 0.025 and error <= 0.08:
         return "ARM-OP-04"
-    if closed and lift >= 0.025:
+    if lift >= 0.025:
         return "ARM-OP-03"
     if closed:
         return "ARM-OP-02"
