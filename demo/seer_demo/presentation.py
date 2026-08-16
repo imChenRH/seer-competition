@@ -229,6 +229,9 @@ def decision_snapshot(
             "collision_guard": collision.get("collision_guard"),
             "collision_certified": collision.get("collision_certified"),
             "forbidden_collision_count": collision.get("forbidden_collision_count"),
+            "obstacle_interpenetration_count": collision.get(
+                "obstacle_interpenetration_count"
+            ),
             "minimum_body_clearance_m": collision.get("minimum_body_clearance_m"),
         },
         "audit": {
@@ -468,7 +471,13 @@ def render_overlay(
         )
         clearance = safety.get("minimum_body_clearance_m")
         clearance_text = f" · min {clearance:.3f}m" if isinstance(clearance, (int, float)) else ""
-        draw.text((1975, 772), f"geometry  {geometry_state}{clearance_text}", font=small, fill=muted)
+        obstacle_count = safety.get("obstacle_interpenetration_count")
+        obstacle_text = (
+            f" · obs {obstacle_count}"
+            if isinstance(obstacle_count, int)
+            else ""
+        )
+        draw.text((1975, 772), f"geometry  {geometry_state}{clearance_text}{obstacle_text}", font=small, fill=muted)
 
     card((1320, 835, 2520, 1045), "AUDIT / 最近审计事件", cyan)
     y = 890

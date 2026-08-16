@@ -49,10 +49,11 @@ class DecisionSnapshotTests(unittest.TestCase):
             scenario_events("normal"),
             26.0,
             collision_summary={
-                "collision_guard": "2.5D_OBB_SAT_SWEEP_V3",
+                "collision_guard": "2.5D_OBB_SAT_SWEEP_V4",
                 "collision_check_semantics": "z-overlapping SAT candidate pairs after explicit allowed-contact filtering",
                 "collision_certified": True,
                 "forbidden_collision_count": 0,
+                "obstacle_interpenetration_count": 0,
                 "minimum_body_clearance_m": 0.15,
                 "collision_check_count": 100,
                 "maximum_allowed_contact_error_m": 0.01,
@@ -63,9 +64,10 @@ class DecisionSnapshotTests(unittest.TestCase):
             },
         )
 
-        self.assertEqual(snapshot["safety"]["collision_guard"], "2.5D_OBB_SAT_SWEEP_V3")
+        self.assertEqual(snapshot["safety"]["collision_guard"], "2.5D_OBB_SAT_SWEEP_V4")
         self.assertTrue(snapshot["safety"]["collision_certified"])
         self.assertEqual(snapshot["safety"]["forbidden_collision_count"], 0)
+        self.assertEqual(snapshot["safety"]["obstacle_interpenetration_count"], 0)
         self.assertEqual(snapshot["safety"]["minimum_body_clearance_m"], 0.15)
 
     def test_snapshot_rejects_self_declared_but_incoherent_collision_summary(self):

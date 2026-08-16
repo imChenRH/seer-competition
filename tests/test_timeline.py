@@ -5,6 +5,8 @@ from dataclasses import replace
 
 from seer_demo.isaac import runner as isaac_runner
 from seer_demo.isaac import scene as isaac_scene
+from seer_demo.isaac import collision as isaac_collision
+from seer_demo.isaac import layout as isaac_layout
 from seer_demo.isaac.runner import IsaacTimelineBackend, annotate_payload_settle_state
 from seer_demo.isaac.collision import (
     OrientedBox,
@@ -48,6 +50,39 @@ from seer_demo.scenarios import skill_state_succeeded
 
 
 class IsaacTimelineTests(unittest.TestCase):
+    def test_intervention_obstacles_are_floor_supported_and_pairwise_disjoint(self):
+        helper = getattr(
+            isaac_layout,
+            "intervention_obstacle_geometry_specs",
+            None,
+        )
+        self.assertIsNotNone(helper)
+        specs = helper()
+        self.assertEqual(len(specs), 2)
+        self.assertEqual(len({spec.name for spec in specs}), 2)
+        for spec in specs:
+            self.assertGreaterEqual(
+                spec.position[2] - spec.size[2] / 2.0,
+                0.0,
+            )
+        left, right = specs
+        axis_gaps = (
+            abs(right.position[0] - left.position[0])
+            - (left.size[0] + right.size[0]) / 2.0,
+            abs(right.position[1] - left.position[1])
+            - (left.size[1] + right.size[1]) / 2.0,
+            abs(right.position[2] - left.position[2])
+            - (left.size[2] + right.size[2]) / 2.0,
+        )
+        self.assertGreater(max(axis_gaps), 0.0)
+        self.assertIn(
+            "intervention_obstacle_geometry_specs",
+            inspect.getsource(isaac_scene),
+        )
+        self.assertIn(
+            "intervention_obstacle_geometry_specs",
+            inspect.getsource(isaac_collision),
+        )
     def test_observation_reads_dynamic_payload_yaw_from_world_rotation(self):
         yaw_from_quaternion = getattr(
             isaac_scene, "yaw_degrees_from_quaternion_components", None
@@ -276,7 +311,7 @@ class IsaacTimelineTests(unittest.TestCase):
     def test_collision_certification_exports_formal_summary_fields(self):
         summary = certify_timeline(build_timeline("normal", fps=8)).to_summary()
 
-        self.assertEqual(summary["collision_guard"], "2.5D_OBB_SAT_SWEEP_V3")
+        self.assertEqual(summary["collision_guard"], "2.5D_OBB_SAT_SWEEP_V4")
         self.assertTrue(summary["collision_certified"])
         self.assertEqual(summary["forbidden_collision_count"], 0)
         self.assertGreater(summary["collision_check_count"], 0)
@@ -288,6 +323,7 @@ class IsaacTimelineTests(unittest.TestCase):
         )
         self.assertLessEqual(summary["maximum_horizontal_placement_error_m"], 0.02)
         self.assertEqual(summary["contact_violation_count"], 0)
+        self.assertEqual(summary["obstacle_interpenetration_count"], 0)
 
     def test_contact_certification_rejects_forged_support_height(self):
         timeline = build_timeline("normal", fps=8)

@@ -19,6 +19,7 @@ from .layout import (
     container_geometry_specs,
     conveyor_geometry_specs,
     forklift_lift_geometry_specs,
+    intervention_obstacle_geometry_specs,
     local_from_world,
     loading_dock_geometry_specs,
     static_physics_contract,
@@ -745,8 +746,18 @@ def build_scene(
 
     obstacle_root = stage.DefinePrim("/World/Obstacle", "Xform")
     obstacle_collision = scenario == "intervention"
-    box("/World/Obstacle/FallenBoxA", (0.85, 0.70, 0.85), (0.0, 0.0, 0.43), (0.78, 0.16, 0.12), collision=obstacle_collision)
-    box("/World/Obstacle/FallenBoxB", (0.65, 0.65, 0.65), (0.35, 0.30, 0.32), (0.92, 0.42, 0.08), collision=obstacle_collision)
+    obstacle_colors = ((0.78, 0.16, 0.12), (0.92, 0.42, 0.08))
+    for spec, color in zip(
+        intervention_obstacle_geometry_specs(),
+        obstacle_colors,
+    ):
+        box(
+            f"/World/Obstacle/{spec.name}",
+            spec.size,
+            spec.position,
+            color,
+            collision=obstacle_collision,
+        )
     obstacle_position = layout.container_payload_target
     UsdGeom.XformCommonAPI(obstacle_root).SetTranslate(
         Gf.Vec3d(

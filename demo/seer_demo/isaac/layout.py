@@ -274,6 +274,30 @@ def active_payload_geometry_specs() -> tuple[BoxGeometrySpec, ...]:
     return tuple(parts)
 
 
+@lru_cache(maxsize=1)
+def intervention_obstacle_geometry_specs() -> tuple[BoxGeometrySpec, ...]:
+    """Return floor-supported, pairwise-disjoint fault obstacles.
+
+    Positions are local to ``/World/Obstacle``.  The second box is placed on
+    the side away from the active pallet so it blocks the approach without
+    intersecting either the first box or the payload at its support pose.
+    """
+    return (
+        BoxGeometrySpec(
+            "FallenBoxA",
+            "fault_obstacle",
+            (0.85, 0.70, 0.85),
+            (0.0, 0.0, 0.425),
+        ),
+        BoxGeometrySpec(
+            "FallenBoxB",
+            "fault_obstacle",
+            (0.65, 0.65, 0.65),
+            (-0.80, 0.10, 0.325),
+        ),
+    )
+
+
 def warehouse_shell_geometry_specs() -> tuple[BoxGeometrySpec, ...]:
     width, depth = WAREHOUSE_EXTENT_M
     parts = [

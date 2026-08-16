@@ -16,6 +16,7 @@ from .layout import (
     container_geometry_specs,
     conveyor_geometry_specs,
     forklift_lift_geometry_specs,
+    intervention_obstacle_geometry_specs,
     loading_dock_geometry_specs,
     warehouse_layout_spec,
     warehouse_shell_geometry_specs,
@@ -35,7 +36,7 @@ ALLOWED_DYNAMIC_CONTACT_PAIRS = frozenset(
         frozenset(("fork_carrier", "fork_right")),
     }
 )
-COLLISION_GUARD_VERSION = "2.5D_OBB_SAT_SWEEP_V3"
+COLLISION_GUARD_VERSION = "2.5D_OBB_SAT_SWEEP_V4"
 
 
 def _is_allowed_fork_deck_contact(left: OrientedBox, right: OrientedBox) -> bool:
@@ -175,6 +176,7 @@ class CollisionCertification:
     maximum_contact_error_m: float
     maximum_horizontal_placement_error_m: float
     forbidden_collision_count: int
+    obstacle_interpenetration_count: int
     collisions: tuple[CollisionHit, ...]
     contact_violations: tuple[str, ...]
 
@@ -193,9 +195,11 @@ class CollisionCertification:
                 self.maximum_horizontal_placement_error_m
             ),
             "forbidden_collision_count": self.forbidden_collision_count,
+            "obstacle_interpenetration_count": self.obstacle_interpenetration_count,
             "contact_violation_count": len(self.contact_violations),
             "collision_certified": (
                 self.forbidden_collision_count == 0
+                and self.obstacle_interpenetration_count == 0
                 and not self.contact_violations
                 and self.maximum_contact_error_m <= 0.01
                 and self.maximum_horizontal_placement_error_m <= 0.02
@@ -351,6 +355,38 @@ def _snake_name(value: str) -> str:
     return "".join(characters)
 
 
+@lru_cache(maxsize=1)
+def _intervention_obstacle_boxes() -> tuple[OrientedBox, ...]:
+    layout = warehouse_layout_spec()
+    obstacle_origin = (
+        layout.container_payload_target[0] + INTERVENTION_OBSTACLE_X_OFFSET_M,
+        layout.container_payload_target[1],
+        0.0,
+    )
+    return tuple(
+        _world_box(
+            _snake_name(spec.name),
+            origin=obstacle_origin,
+            yaw_deg=0.0,
+            local_center=spec.position,
+            size=spec.size,
+        )
+        for spec in intervention_obstacle_geometry_specs()
+    )
+
+
+def obstacle_interpenetration_count(scenario: str) -> int:
+    """Count forbidden overlaps among authored fault-obstacle components."""
+    if scenario not in {"normal", "recovery", "intervention"}:
+        raise ValueError(f"unknown scenario: {scenario}")
+    if scenario != "intervention":
+        return 0
+    return sum(
+        boxes_overlap_3d(left, right)
+        for left, right in combinations(_intervention_obstacle_boxes(), 2)
+    )
+
+
 @lru_cache(maxsize=3)
 def warehouse_static_boxes(scenario: str) -> tuple[OrientedBox, ...]:
     """Mirror the scene's collision-bearing geometry needed by the route guard."""
@@ -431,30 +467,7 @@ def warehouse_static_boxes(scenario: str) -> tuple[OrientedBox, ...]:
             )
         )
     if scenario == "intervention":
-        obstacle_x = (
-            layout.container_payload_target[0] + INTERVENTION_OBSTACLE_X_OFFSET_M
-        )
-        obstacle_y = layout.container_payload_target[1]
-        boxes.extend(
-            (
-                OrientedBox(
-                    "fallen_box_a",
-                    (obstacle_x, obstacle_y),
-                    (0.85, 0.70),
-                    0.0,
-                    0.0,
-                    0.86,
-                ),
-                OrientedBox(
-                    "fallen_box_b",
-                    (obstacle_x + 0.35, obstacle_y + 0.30),
-                    (0.65, 0.65),
-                    0.0,
-                    0.0,
-                    0.65,
-                ),
-            )
-        )
+        boxes.extend(_intervention_obstacle_boxes())
     return tuple(boxes)
 
 
@@ -687,6 +700,7 @@ def certify_timeline(timeline) -> CollisionCertification:
     maximum_horizontal_placement_error = 0.0
     contact_violations: list[str] = []
     check_count = 0
+    obstacle_overlap_count = obstacle_interpenetration_count(timeline.scenario)
     layout = warehouse_layout_spec()
     for frame in timeline.frames:
         if frame.payload_attached:
@@ -779,6 +793,7 @@ def certify_timeline(timeline) -> CollisionCertification:
             maximum_horizontal_placement_error, 6
         ),
         forbidden_collision_count=len(hits),
+        obstacle_interpenetration_count=obstacle_overlap_count,
         collisions=tuple(hits),
         contact_violations=tuple(contact_violations),
     )
@@ -786,6 +801,8 @@ def certify_timeline(timeline) -> CollisionCertification:
 
 def assert_timeline_collision_safe(timeline) -> CollisionCertification:
     certification = certify_timeline(timeline)
+    if certification.obstacle_interpenetration_count:
+        raise RuntimeError("fault obstacles interpenetrate")
     if certification.collisions or certification.contact_violations:
         if not certification.collisions:
             raise RuntimeError(

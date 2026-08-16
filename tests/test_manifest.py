@@ -11,7 +11,7 @@ from seer_demo.manifest import build_manifest, sha256_file
 
 
 COLLISION_CERTIFICATION = {
-    "collision_guard": "2.5D_OBB_SAT_SWEEP_V3",
+    "collision_guard": "2.5D_OBB_SAT_SWEEP_V4",
     "collision_check_count": 100,
     "collision_check_semantics": "z-overlapping SAT candidate pairs after explicit allowed-contact filtering",
     "minimum_body_clearance_m": 0.15,
@@ -21,6 +21,7 @@ COLLISION_CERTIFICATION = {
     "maximum_horizontal_placement_error_m": 0.01,
     "contact_violation_count": 0,
     "forbidden_collision_count": 0,
+    "obstacle_interpenetration_count": 0,
     "collision_certified": True,
 }
 
@@ -221,6 +222,24 @@ class EvidenceManifestTests(unittest.TestCase):
             )
 
             summary["collision_certified"] = False
+            (run / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "collision certification"):
+                build_manifest(
+                    root,
+                    require_auxiliary=False,
+                    video_probe=lambda _: {
+                        "width": 1280,
+                        "height": 720,
+                        "fps": 8.0,
+                        "frame_count": 409,
+                        "duration_s": 51.125,
+                    },
+                )
+
+            summary.update(
+                collision_certified=True,
+                obstacle_interpenetration_count=1,
+            )
             (run / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "collision certification"):
                 build_manifest(

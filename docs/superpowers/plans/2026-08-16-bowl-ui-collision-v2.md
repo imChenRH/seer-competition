@@ -239,7 +239,7 @@ Define two boxes with a 0.05 m horizontal gap, bottoms at `z=0`, unique names, a
 ```python
 return (
     BoxGeometrySpec("FallenBoxA", "fault_obstacle", (0.85, 0.70, 0.85), (0.0, 0.0, 0.425)),
-    BoxGeometrySpec("FallenBoxB", "fault_obstacle", (0.65, 0.65, 0.65), (0.80, 0.10, 0.325)),
+    BoxGeometrySpec("FallenBoxB", "fault_obstacle", (0.65, 0.65, 0.65), (-0.80, 0.10, 0.325)),
 )
 ```
 

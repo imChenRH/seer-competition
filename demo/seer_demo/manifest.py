@@ -109,6 +109,8 @@ def assert_collision_summary(summary: Mapping[str, object]) -> None:
         and int(summary["collision_check_count"]) > 0
         and type(summary.get("forbidden_collision_count")) is int
         and int(summary["forbidden_collision_count"]) == 0
+        and type(summary.get("obstacle_interpenetration_count")) is int
+        and int(summary["obstacle_interpenetration_count"]) == 0
         and isinstance(numeric_clearance, (int, float))
         and not isinstance(numeric_clearance, bool)
         and math.isfinite(float(numeric_clearance))
@@ -244,6 +246,9 @@ def build_manifest(
             ),
             "contact_violation_count": summary.get("contact_violation_count"),
             "forbidden_collision_count": summary.get("forbidden_collision_count"),
+            "obstacle_interpenetration_count": summary.get(
+                "obstacle_interpenetration_count"
+            ),
             "collision_certified": summary.get("collision_certified"),
             "video_probe": video,
             "files": files,
