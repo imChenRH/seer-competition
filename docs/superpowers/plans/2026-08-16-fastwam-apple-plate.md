@@ -8,6 +8,8 @@
 
 **Tech Stack:** Python 3.12/3.14, `unittest`, LeRobot 0.6.2, Fast-WAM LIBERO 2-camera checkpoint, `hf-libero` 0.1.4, MuJoCo 3.8.1/EGL, PyTorch/CUDA, Pillow, ffmpeg, vanilla HTML/CSS/JavaScript.
 
+**Execution note (2026-08-16):** The 300-step `v1-r2` baseline produced 0/5 official successes. A 600-step diagnostic exposed an oversized target plate relative to the LIBERO training object and strict 3 cm `On` predicate. After restoring a training-scale plate, the formal `v1-r4` run produced 2/5 official successes (fixed seeds 0 and 2). All five raw attempts are retained; no rule-controller fallback was added.
+
 ## Global Constraints
 
 - Use branch `feature/fastwam-apple-plate`, based on commit `9b717c8` from `feature/demo-visual-physics-v2`.

@@ -17,6 +17,7 @@
 | 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一 `observed_frame / fps` 视频帧时钟；运行/恢复/完成/人工接管用蓝/琥珀/绿/红主题；右侧不是隐藏思维过程 | `presentation.mp4`、`demo/seer_demo/presentation.py`、`tests/test_presentation.py` |
 | 飞书 → Isaac 闭环 | DEMO_IMPLEMENTED | 同主机/同证据目录的单实例桥接可认领、一次启动、以哈希收据恢复回放；操作员见证回执对应 `T-DEMO-20260813-001`，不是三份 2026-08-15 正式录像的现场见证 | `tests/test_bridge.py`；经 manifest 哈希的操作员见证回执（不是飞书签名证明） |
 | Fast-WAM 能加载推理 | VERIFIED | 独立技术验证输出形状 `[1,7]`，首次单次约 0.86 s | 经顶层 manifest 哈希的脱敏验证日志 |
+| Fast-WAM 红苹果→黄盘操作 | VERIFIED | 在自定义 LIBERO task-8 视觉语义变体、五个固定初态和 600 步 Demo 预算下，官方 `On` 谓词通过 2/5；第一次成功轨迹由模型 596 个 7D 动作完成 | `fastwam-apple-plate-20260816-v1-r4` 的五组视频/动作/状态、事件、摘要、分屏片与 Manifest 哈希 |
 | Fast-WAM 190 ms | PAPER_METRIC | 论文报告指标，未在本机复现 | 论文引用；不得写成 Demo 实测 |
 | Fast-WAM 控制叉车 | NOT_IMPLEMENTED | 当前不控制；需叉车数据、后训练和安全门控 | 无 |
 | ROS 2 真实闭环 | NOT_IMPLEMENTED | 当前桥接为进程/API 边界，不宣称 ROS 2 | 无 |
@@ -32,3 +33,4 @@
 - “ROS 2 物理闭环已完成”
 - “视频证明了生产级安全”
 - “成功率 100%”——除非明确限定为某组已验证运行的结果，而不是系统泛化成功率
+- “Fast-WAM 已完成苹果专项训练”或“2/5 是官方 LIBERO 基准成绩”

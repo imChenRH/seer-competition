@@ -2,6 +2,132 @@
   "schema_version": "1.0",
   "runs": [
     {
+      "run_id": "fastwam-apple-plate-20260816-v1-r4",
+      "scenario": "fastwam_apple_plate",
+      "source": "fastwam_policy",
+      "terminal_status": "COMPLETED",
+      "event_count": 18,
+      "duration_s": 29.8,
+      "isaac_version": null,
+      "controller": null,
+      "collision_guard": null,
+      "collision_check_count": null,
+      "minimum_body_clearance_m": null,
+      "maximum_contact_error_m": null,
+      "maximum_horizontal_placement_error_m": null,
+      "contact_violation_count": null,
+      "forbidden_collision_count": null,
+      "collision_certified": null,
+      "video_probe": {
+        "width": 1280,
+        "height": 720,
+        "fps": 20.0,
+        "frame_count": 597,
+        "duration_s": 29.85
+      },
+      "files": {
+        "events.jsonl": {
+          "size_bytes": 9059,
+          "sha256": "773124960e0a3d9f7a87aaf9e76a37df8f4915ef183dbfcfcfa468974d9ee572"
+        },
+        "summary.json": {
+          "size_bytes": 3314,
+          "sha256": "30068b1336d0327e21f1b329f87a69361069f3dfca8cff0bb0d53842284cd230"
+        },
+        "scene_variant.json": {
+          "size_bytes": 436,
+          "sha256": "0cf4999908e1795d7f6830ddb79dbbf659131dc77306bd727ff1c82ae89ceafa"
+        },
+        "simulation.mp4": {
+          "size_bytes": 1828276,
+          "sha256": "33c8f12eea7fbf63ca21639d58150b99be5ab28d743c63130e44f14e6b064de7"
+        },
+        "actions.jsonl": {
+          "size_bytes": 169827,
+          "sha256": "57ac08a3d526836e5b988826233167be83be480247a335cd0f4ec870b7e456a8"
+        },
+        "evaluation.json": {
+          "size_bytes": 1071,
+          "sha256": "b33527412d99d204c4285d0c281230bf592403025817ca40131ff9bac4d9f4ca"
+        },
+        "attempt-0-actions.jsonl": {
+          "size_bytes": 169827,
+          "sha256": "57ac08a3d526836e5b988826233167be83be480247a335cd0f4ec870b7e456a8"
+        },
+        "attempt-0-states.json": {
+          "size_bytes": 211212,
+          "sha256": "cffdfc60cb72ba153c1877f4464d4b3d094f4c1020ecec284e7cba84f059a1eb"
+        },
+        "attempt-0-simulation.mp4": {
+          "size_bytes": 1828276,
+          "sha256": "33c8f12eea7fbf63ca21639d58150b99be5ab28d743c63130e44f14e6b064de7"
+        },
+        "attempt-1-actions.jsonl": {
+          "size_bytes": 170611,
+          "sha256": "96461fd2e5c5414ca50ac317203bf1221bb0ac278094f1b0794a14b3bc2c92e3"
+        },
+        "attempt-1-states.json": {
+          "size_bytes": 212479,
+          "sha256": "1e5869b45dbb815f7cc1b31e26281562e9f16a90d415e4e7db0ef009e018d367"
+        },
+        "attempt-1-simulation.mp4": {
+          "size_bytes": 1945023,
+          "sha256": "346c7743eeaf1201a671a8e39f062e3a056a66c28924a9191ee5209a422a61c7"
+        },
+        "attempt-2-actions.jsonl": {
+          "size_bytes": 149731,
+          "sha256": "913253986fc2e4bbec090e0c60dc685041f753160f6e7a00934341c8d690f287"
+        },
+        "attempt-2-states.json": {
+          "size_bytes": 186448,
+          "sha256": "ffe5b33a960c5789b49d295a82d2170b4a2a2308f39734834b9162fba8645a50"
+        },
+        "attempt-2-simulation.mp4": {
+          "size_bytes": 1592034,
+          "sha256": "fa6a5407220559a9dc9334b175b9d4449394bb603432fe098d0331c1d0f68256"
+        },
+        "attempt-3-actions.jsonl": {
+          "size_bytes": 171131,
+          "sha256": "ba3bdbb91dbab57a03a4e0ab9f48d17f6a9202203ed640a7daae044387d9d9c4"
+        },
+        "attempt-3-states.json": {
+          "size_bytes": 211984,
+          "sha256": "af351c90c46d18448301631302905459ced36f46b9282bab071302bda7e4254e"
+        },
+        "attempt-3-simulation.mp4": {
+          "size_bytes": 1838409,
+          "sha256": "efcb3b0f0fd355d60476ec86f9a1f5fe5c5e1fd3ff5e24fa3c2f3e4574265212"
+        },
+        "attempt-4-actions.jsonl": {
+          "size_bytes": 170976,
+          "sha256": "e53915a738a520c53fcf177333ed8d7a3b01b52ee0426423246533f8410080bc"
+        },
+        "attempt-4-states.json": {
+          "size_bytes": 212749,
+          "sha256": "4a77ed127ad8c4f02d856f958681b8461c05c9488fa635cb21763c4ab6a34497"
+        },
+        "attempt-4-simulation.mp4": {
+          "size_bytes": 1835420,
+          "sha256": "8da4994d7a080529bc6fc10a5e5b71be050b1fcd3fcdd532cab18f24f7dc87fd"
+        },
+        "presentation.mp4": {
+          "size_bytes": 3576737,
+          "sha256": "5a8f68bc031da02ccf5fd8d29817e4d8fb3ce1000858bd5280e240c7e2ac6568"
+        }
+      },
+      "presentation_probe": {
+        "width": 2560,
+        "height": 1080,
+        "fps": 20.0,
+        "frame_count": 597,
+        "duration_s": 29.85
+      },
+      "policy_checkpoint": "fastwam_libero_uncond_2cam224",
+      "official_success": true,
+      "attempt_count": 5,
+      "selected_attempt": 0
+    },
+    {
       "run_id": "isaac-intervention-20260816-v5-r1",
       "scenario": "intervention",
       "source": "isaac_sim",
@@ -178,7 +304,7 @@
       "sha256": "33ed304c4f286afb2f78096a847697464d90cc050d29113ff3757953d4a79434"
     }
   },
-  "generated_at": "2026-08-16T01:47:51.966435+00:00",
+  "generated_at": "2026-08-16T05:13:13.568833+00:00",
   "environment": {
     "simulator": "Isaac Sim 6.0.1",
     "recording_host": "AutoDL Linux / NVIDIA RTX 4090",

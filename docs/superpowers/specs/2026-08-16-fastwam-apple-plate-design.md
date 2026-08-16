@@ -98,7 +98,7 @@ AgentOS records the semantic mapping explicitly. The policy prompt remains the e
 
 ## Evidence Contract
 
-The formal run directory is `demo/evidence/fastwam-apple-plate-20260816-v1-r1/` and contains:
+The formal run directory is `demo/evidence/fastwam-apple-plate-20260816-v1-r4/` and contains the following files. The executed semantic-transfer budget is 600 steps per fixed seed; this is explicitly not the official 300-step benchmark budget:
 
 - `events.jsonl`: contiguous structured events tied to observed video frames;
 - `actions.jsonl`: one record per executed action with step, chunk index, seven finite values, model-call flag, and measured latency;
