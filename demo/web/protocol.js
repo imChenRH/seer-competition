@@ -166,6 +166,10 @@
     });
   }
 
+  function timelineFlexWeight(start, end) {
+    return Math.max(1, end - start);
+  }
+
   function validateFastWamEvidence(summary, events, actions) {
     if (!summary || summary.source !== "fastwam_policy" || summary.scenario !== "fastwam_bowl_plate") {
       throw new Error("Fast-WAM 摘要来源或场景无效");
@@ -284,6 +288,7 @@
     projectEventTimes: projectEventTimes,
     reconcileTask: reconcileTask,
     scrollOptions: scrollOptions,
+    timelineFlexWeight: timelineFlexWeight,
     validateFastWamEvidence: validateFastWamEvidence,
     validateEvents: validateEvents,
     reduceEvents: reduceEvents

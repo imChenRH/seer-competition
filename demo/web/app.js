@@ -245,7 +245,7 @@
       button.textContent = segment.label;
       button.title = segment.label + " · " + segment.start.toFixed(1) + "s – " + segment.end.toFixed(1) + "s";
       button.dataset.start = String(segment.start);
-      button.style.flexGrow = String(Math.max(0.02, segment.end - segment.start));
+      button.style.flexGrow = String(SeerProtocol.timelineFlexWeight(segment.start, segment.end));
       button.addEventListener("click", function () {
         const duration = mediaElement.duration || segment.end;
         mediaElement.currentTime = Math.min(segment.start + 0.02, Math.max(0, duration - 0.02));

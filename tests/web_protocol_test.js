@@ -85,6 +85,8 @@ try { SeerProtocol.projectEventTimes(projected, 0); } catch (_) { badObservedFps
 assert(badObservedFpsRejected, "observed frames require a positive video frame rate");
 assert(SeerProtocol.scrollOptions(false).behavior === "smooth", "normal dispatch scrolls smoothly");
 assert(SeerProtocol.scrollOptions(true).behavior === "auto", "reduced motion disables smooth scroll");
+assert(SeerProtocol.timelineFlexWeight(2.35, 2.35) === 1, "instant phase keeps a readable timeline share");
+assert(SeerProtocol.timelineFlexWeight(1, 3.5) === 2.5, "long phase keeps its relative duration");
 const dispatch = SeerProtocol.dispatchPlan(valid);
 assert(dispatch.length === 1, "dispatch plan uses started actions only");
 assert(dispatch[0].identifier === "FB-F01", "fallback dispatch identifier");
