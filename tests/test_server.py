@@ -50,7 +50,17 @@ class DemoServerTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.server = create_server(
-            "127.0.0.1", 0, self.evidence_root, ROOT / "demo" / "web"
+            "127.0.0.1",
+            0,
+            self.evidence_root,
+            ROOT / "demo" / "web",
+            video_probe=lambda _: {
+                "width": 1280,
+                "height": 720,
+                "fps": 20.0,
+                "frame_count": 3,
+                "duration_s": 0.15,
+            },
         )
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -91,8 +101,8 @@ class DemoServerTests(unittest.TestCase):
                 evidence={"observed_frame": 9},
             )
         actions = [
-            ActionRecord("1.0", run_id, 0, 0, 0.0, (0.0,) * 7, True, 0.2),
-            ActionRecord("1.0", run_id, 1, 1, 0.05, (0.1,) * 7, False, 0.001),
+            ActionRecord("1.0", run_id, 0, 1, 0.05, (0.0,) * 7, True, 0.2),
+            ActionRecord("1.0", run_id, 1, 2, 0.10, (0.1,) * 7, False, 0.001),
         ]
         (run_dir / "actions.jsonl").write_text(
             "".join(json.dumps(item.to_dict()) + "\n" for item in actions), encoding="utf-8"
@@ -103,12 +113,40 @@ class DemoServerTests(unittest.TestCase):
                 "seed": 202608160 + index,
                 "init_state_id": index,
                 "success": index == 2,
-                "executed_steps": 20,
-                "policy_calls": 2,
+                "executed_steps": 2,
+                "policy_calls": 1,
                 "terminal_reason": "official_success" if index == 2 else "step_budget",
             }
             for index in range(5)
         ]
+        (run_dir / "evaluation.json").write_text(
+            json.dumps({"attempts": attempts}), encoding="utf-8"
+        )
+        attempt_evidence = []
+        for attempt in attempts:
+            index = attempt["attempt_index"]
+            attempt_actions = run_dir / f"attempt-{index}-actions.jsonl"
+            attempt_states = run_dir / f"attempt-{index}-states.json"
+            attempt_video = run_dir / f"attempt-{index}-simulation.mp4"
+            attempt_actions.write_text(
+                (run_dir / "actions.jsonl").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            attempt_states.write_text(
+                json.dumps(
+                    [
+                        {"official_success": False},
+                        {"official_success": False},
+                        {"official_success": attempt["success"]},
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            attempt_video.write_bytes(b"video")
+            attempt_evidence.extend(
+                [attempt_actions.name, attempt_states.name, attempt_video.name]
+            )
+        (run_dir / "simulation.mp4").write_bytes(b"video")
         summary = {
             "schema_version": "1.0",
             "run_id": run_id,
@@ -119,7 +157,10 @@ class DemoServerTests(unittest.TestCase):
             "duration_s": 0.5,
             "events_file": "events.jsonl",
             "actions_file": "actions.jsonl",
-            "frame_count": 10,
+            "video_file": "simulation.mp4",
+            "resolution": "1280x720",
+            "fps": 20,
+            "frame_count": 3,
             "action_count": 2,
             "policy_call_count": 1,
             "policy_repository": POLICY_REPOSITORY,
@@ -129,6 +170,12 @@ class DemoServerTests(unittest.TestCase):
             "attempt_count": 5,
             "attempts": attempts,
             "selected_attempt": 2,
+            "presented_attempt": 2,
+            "additional_evidence_files": [
+                "actions.jsonl",
+                "evaluation.json",
+                *attempt_evidence,
+            ],
             "official_success": official_success,
         }
         (run_dir / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
@@ -204,6 +251,26 @@ class DemoServerTests(unittest.TestCase):
         _, _, body = self.fetch("/api/runs")
 
         self.assertNotIn("fastwam-test", [run["run_id"] for run in json.loads(body)["runs"]])
+
+    def test_fastwam_endpoint_rejects_unbound_attempt_artifacts(self):
+        run_dir = self.make_fastwam_run()
+        summary_path = run_dir / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        summary["additional_evidence_files"] = [
+            "actions.jsonl",
+            "evaluation.json",
+            *[
+                f"attempt-{index}-{suffix}"
+                for index in range(5)
+                for suffix in ("actions.jsonl", "states.json", "simulation.mp4")
+            ],
+            "missing-attempt.json",
+        ]
+        summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+        _, _, body = self.fetch("/api/fastwam")
+
+        self.assertIsNone(json.loads(body)["rollout"])
 
     def test_does_not_list_structurally_valid_but_semantically_forged_run(self):
         run_dir = self.evidence_root / "forged-normal"

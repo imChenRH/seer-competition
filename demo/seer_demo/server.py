@@ -8,6 +8,8 @@ import json
 import mimetypes
 from pathlib import Path
 import re
+from threading import Lock
+from typing import Callable, Mapping
 from urllib.parse import unquote, urlsplit
 
 from .contracts import load_events, validate_scenario_events
@@ -16,6 +18,7 @@ from .fastwam.contracts import (
     load_action_records,
     validate_fastwam_package,
 )
+from .manifest import probe_video, validate_fastwam_attempt_evidence
 
 
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -30,8 +33,48 @@ def _available_declared_media(run_dir: Path, value: object) -> str | None:
 
 
 class EvidenceCatalog:
-    def __init__(self, root: Path | str):
+    def __init__(
+        self,
+        root: Path | str,
+        *,
+        video_probe: Callable[[Path], Mapping[str, object]] = probe_video,
+    ):
         self.root = Path(root).resolve()
+        self._video_probe = video_probe
+        self._fastwam_validation_cache: dict[str, tuple[tuple[str, int, int], ...]] = {}
+        self._fastwam_validation_lock = Lock()
+
+    def _fastwam_validation_stamp(
+        self, run_dir: Path, summary: Mapping[str, object]
+    ) -> tuple[tuple[str, int, int], ...]:
+        additional = summary.get("additional_evidence_files")
+        if not isinstance(additional, list):
+            raise ValueError("Fast-WAM additional_evidence_files must be an array")
+        names = [
+            "summary.json",
+            "events.jsonl",
+            str(summary.get("actions_file") or ""),
+            str(summary.get("video_file") or ""),
+            *additional,
+        ]
+        stamp = []
+        for name in dict.fromkeys(names):
+            path = self._declared_file(run_dir, name)
+            stat = path.stat()
+            stamp.append((path.name, stat.st_size, stat.st_mtime_ns))
+        return tuple(stamp)
+
+    def _validate_fastwam_artifacts(
+        self, run_id: str, run_dir: Path, summary: Mapping[str, object]
+    ) -> None:
+        stamp = self._fastwam_validation_stamp(run_dir, summary)
+        with self._fastwam_validation_lock:
+            if self._fastwam_validation_cache.get(run_id) == stamp:
+                return
+            validate_fastwam_attempt_evidence(
+                run_dir, summary, video_probe=self._video_probe
+            )
+            self._fastwam_validation_cache[run_id] = stamp
 
     def list_runs(self) -> list[dict[str, object]]:
         if not self.root.is_dir():
@@ -61,6 +104,7 @@ class EvidenceCatalog:
             validation = validate_fastwam_package(
                 summary, events, load_action_records(actions_path)
             )
+            self._validate_fastwam_artifacts(run_id, run_dir, summary)
         else:
             validation = validate_scenario_events(events)
         if validation.run_id != run_id:
@@ -174,8 +218,15 @@ class EvidenceCatalog:
         return candidate
 
 
-def create_server(host: str, port: int, evidence_root: Path | str, web_root: Path | str):
-    catalog = EvidenceCatalog(evidence_root)
+def create_server(
+    host: str,
+    port: int,
+    evidence_root: Path | str,
+    web_root: Path | str,
+    *,
+    video_probe: Callable[[Path], Mapping[str, object]] = probe_video,
+):
+    catalog = EvidenceCatalog(evidence_root, video_probe=video_probe)
     web = Path(web_root).resolve()
     asset_map = {
         "/": web / "index.html",

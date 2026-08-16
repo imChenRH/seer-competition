@@ -96,12 +96,15 @@ def _additional_evidence_paths(run_dir: Path, summary: Mapping[str, object]) -> 
     return [_safe_declared_file(run_dir, value, "additional evidence") for value in values]
 
 
-def _validate_fastwam_attempt_evidence(
+def validate_fastwam_attempt_evidence(
     run_dir: Path,
     summary: Mapping[str, object],
-    additional_paths: list[Path],
-    video_probe: Callable[[Path], Mapping[str, object]],
+    video_probe: Callable[[Path], Mapping[str, object]] = probe_video,
+    *,
+    additional_paths: list[Path] | None = None,
 ) -> None:
+    if additional_paths is None:
+        additional_paths = _additional_evidence_paths(run_dir, summary)
     attempts = summary["attempts"]
     expected_names = {"actions.jsonl", "evaluation.json"}
     for index in range(5):
@@ -287,8 +290,11 @@ def build_manifest(
             evaluation = json.loads(evaluation_path.read_text(encoding="utf-8"))
             if not isinstance(evaluation, dict) or evaluation.get("attempts") != summary.get("attempts"):
                 raise ValueError("evaluation attempt results disagree with summary")
-            _validate_fastwam_attempt_evidence(
-                run_dir, summary, additional_paths, video_probe
+            validate_fastwam_attempt_evidence(
+                run_dir,
+                summary,
+                video_probe,
+                additional_paths=additional_paths,
             )
         else:
             validation = validate_scenario_events(
@@ -340,12 +346,12 @@ def build_manifest(
         if validation.source == FASTWAM_SOURCE:
             run_record.update(
                 {
-            "policy_checkpoint": summary.get("policy_checkpoint"),
-            "policy_repository": summary.get("policy_repository"),
-            "policy_revision": summary.get("policy_revision"),
-            "policy_config_sha256": summary.get("policy_config_sha256"),
-            "policy_weights_sha256": summary.get("policy_weights_sha256"),
-            "official_success": summary.get("official_success"),
+                    "policy_checkpoint": summary.get("policy_checkpoint"),
+                    "policy_repository": summary.get("policy_repository"),
+                    "policy_revision": summary.get("policy_revision"),
+                    "policy_config_sha256": summary.get("policy_config_sha256"),
+                    "policy_weights_sha256": summary.get("policy_weights_sha256"),
+                    "official_success": summary.get("official_success"),
                     "attempt_count": summary.get("attempt_count"),
                     "success_count": sum(
                         attempt["success"] is True for attempt in summary["attempts"]
