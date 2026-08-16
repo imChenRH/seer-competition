@@ -7,6 +7,7 @@ from pathlib import Path
 from seer_demo.fastwam.rollout import (
     CANONICAL_POLICY_PROMPT,
     derive_phase,
+    load_policy_on_cuda,
     validate_policy_action,
 )
 from seer_demo.fastwam.preflight import validate_preflight_record
@@ -174,6 +175,50 @@ class FastWamRolloutTests(unittest.TestCase):
         before_runner = source.split("def run_preflight", 1)[0]
         for dependency in ("import torch", "import mujoco", "from lerobot", "from libero"):
             self.assertNotIn(dependency, before_runner)
+
+    def test_policy_loads_weights_on_cpu_before_one_cuda_move(self):
+        calls = []
+
+        class FakeConfig:
+            device = "unset"
+            n_action_steps = 32
+
+            @classmethod
+            def from_pretrained(cls, model_dir):
+                calls.append(("config", model_dir))
+                return cls()
+
+        class FakeModel:
+            device = "cpu"
+
+        class FakePolicy:
+            model = FakeModel()
+
+            @classmethod
+            def from_pretrained(cls, model_dir, *, config):
+                calls.append(("load", model_dir, config.device))
+                return cls()
+
+            def to(self, device):
+                calls.append(("move", device))
+                return self
+
+        class FakeTorch:
+            @staticmethod
+            def device(value):
+                return f"torch:{value}"
+
+        config, policy = load_policy_on_cuda(
+            Path("/model"), FakeConfig, FakePolicy, FakeTorch
+        )
+
+        self.assertEqual(
+            calls,
+            [("config", "/model"), ("load", "/model", "cpu"), ("move", "cuda")],
+        )
+        self.assertEqual(config.device, "cuda")
+        self.assertEqual(config.n_action_steps, 10)
+        self.assertEqual(policy.model.device, "torch:cuda")
 
 
 if __name__ == "__main__":

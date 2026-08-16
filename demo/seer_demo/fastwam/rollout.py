@@ -47,6 +47,23 @@ def validate_policy_action(action: Iterable[object]) -> tuple[float, ...]:
     return tuple(normalized)
 
 
+def load_policy_on_cuda(
+    model_dir: Path,
+    config_class: Any,
+    policy_class: Any,
+    torch_module: Any,
+) -> tuple[Any, Any]:
+    """Load the checkpoint once on CPU, then make one bounded CUDA move."""
+    config = config_class.from_pretrained(str(model_dir))
+    config.device = "cpu"
+    config.n_action_steps = 10
+    policy = policy_class.from_pretrained(str(model_dir), config=config)
+    policy.to("cuda")
+    config.device = "cuda"
+    policy.model.device = torch_module.device("cuda")
+    return config, policy
+
+
 def derive_phase(observation: Mapping[str, Any]) -> str:
     if observation.get("official_success") is True:
         return "ARM-VER-01"
@@ -232,10 +249,9 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
     attempts_dir = output_dir / "attempts"
     attempts_dir.mkdir()
 
-    config = FastWAMConfig.from_pretrained(str(args.model_dir))
-    config.device = "cuda"
-    config.n_action_steps = 10
-    policy = FastWAMPolicy.from_pretrained(str(args.model_dir), config=config)
+    config, policy = load_policy_on_cuda(
+        args.model_dir, FastWAMConfig, FastWAMPolicy, torch
+    )
     policy.eval()
     preprocessor, postprocessor = make_pre_post_processors(
         policy_cfg=config,

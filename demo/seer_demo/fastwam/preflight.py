@@ -10,7 +10,11 @@ from pathlib import Path
 import time
 from typing import Any, Mapping
 
-from .rollout import CANONICAL_POLICY_PROMPT, validate_policy_action
+from .rollout import (
+    CANONICAL_POLICY_PROMPT,
+    load_policy_on_cuda,
+    validate_policy_action,
+)
 
 
 def validate_preflight_record(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -86,10 +90,9 @@ def run_preflight(model_dir: Path) -> dict[str, Any]:
             name: list(observation["pixels"][name].shape)
             for name in ("image", "image2")
         }
-        config = FastWAMConfig.from_pretrained(str(model_dir))
-        config.device = "cuda"
-        config.n_action_steps = 10
-        policy = FastWAMPolicy.from_pretrained(str(model_dir), config=config)
+        config, policy = load_policy_on_cuda(
+            model_dir, FastWAMConfig, FastWAMPolicy, torch
+        )
         policy.eval()
         preprocessor, postprocessor = make_pre_post_processors(
             policy_cfg=config,
