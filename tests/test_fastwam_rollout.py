@@ -128,7 +128,8 @@ class FastWamRolloutTests(unittest.TestCase):
             "task_suite": "libero_goal",
             "task_id": 8,
             "task_name": "put_the_bowl_on_the_plate",
-            "task_description": "Put the bowl on the plate",
+            "task_description": "put the bowl on the plate",
+            "policy_prompt": "Put the bowl on the plate",
             "observation_shapes": {
                 "image": [224, 224, 3],
                 "image2": [224, 224, 3],
@@ -154,7 +155,8 @@ class FastWamRolloutTests(unittest.TestCase):
             "task_suite": "libero_goal",
             "task_id": 8,
             "task_name": "put_the_bowl_on_the_plate",
-            "task_description": "Put the bowl on the plate",
+            "task_description": "put the bowl on the plate",
+            "policy_prompt": "Put the bowl on the plate",
             "observation_shapes": {
                 "image": [224, 224, 3],
                 "image2": [224, 224, 3],

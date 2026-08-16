@@ -27,7 +27,8 @@ def validate_preflight_record(record: Mapping[str, Any]) -> dict[str, Any]:
         "task_suite": "libero_goal",
         "task_id": 8,
         "task_name": "put_the_bowl_on_the_plate",
-        "task_description": CANONICAL_POLICY_PROMPT,
+        "task_description": "put the bowl on the plate",
+        "policy_prompt": CANONICAL_POLICY_PROMPT,
     }
     for key, expected in expected_task.items():
         if validated.get(key) != expected:
@@ -146,6 +147,7 @@ def run_preflight(model_dir: Path) -> dict[str, Any]:
             "task_id": 8,
             "task_name": task.name,
             "task_description": task.language,
+            "policy_prompt": CANONICAL_POLICY_PROMPT,
             "observation_shapes": shapes,
             "action": action,
             "versions": {
