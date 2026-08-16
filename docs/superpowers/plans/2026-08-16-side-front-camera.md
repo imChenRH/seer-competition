@@ -93,13 +93,13 @@ git commit -m "feat: track forklift from side-front camera"
 - Consumes: the Task 1 camera API and strategy identifier.
 - Produces: a source tree cleared for formal Isaac rendering.
 
-- [ ] **Step 1: Run focused camera tests**
+- [x] **Step 1: Run focused camera tests**
 
 ```bash
 PYTHONPATH=demo python3 -m unittest discover -s tests -p 'test_timeline.py'
 ```
 
-- [ ] **Step 2: Run all local checks**
+- [x] **Step 2: Run all local checks**
 
 ```bash
 ./scripts/run_demo.sh check
