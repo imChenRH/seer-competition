@@ -497,7 +497,8 @@
       return result;
     }
     for (const run of runList) {
-      const badge = document.querySelector('[data-badge-for="' + run.scenario + '"]');
+      const badgeScenario = run.scenario === "fastwam_apple_plate" ? "fastwam" : run.scenario;
+      const badge = document.querySelector('[data-badge-for="' + badgeScenario + '"]');
       try {
         const stats = await statsFor(run);
         if (!badge) continue;
