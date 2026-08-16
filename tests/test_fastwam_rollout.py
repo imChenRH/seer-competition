@@ -4,10 +4,13 @@ import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from seer_demo.contracts import load_events
+from seer_demo.fastwam.contracts import validate_fastwam_events
 from seer_demo.fastwam.rollout import (
     CANONICAL_POLICY_PROMPT,
     _encode_attempt_video,
     _publish_attempt_evidence,
+    _write_selected_events,
     batch_single_robot_state,
     derive_phase,
     load_policy_on_cuda,
@@ -198,6 +201,41 @@ class FastWamRolloutTests(unittest.TestCase):
             )
             for name in declared:
                 self.assertTrue((root / name).is_file())
+
+    def test_success_event_projection_is_monotonic_and_uses_measured_phases(self):
+        from tempfile import TemporaryDirectory
+
+        initial = {
+            "apple_lift_m": 0.0,
+            "plate_xy_error_m": 0.2,
+            "gripper_closed": False,
+            "official_success": False,
+        }
+        states = [
+            initial,
+            initial,
+            {**initial, "gripper_closed": True},
+            {**initial, "apple_lift_m": 0.05},
+            {**initial, "apple_lift_m": 0.05, "plate_xy_error_m": 0.05},
+            {**initial, "official_success": True, "plate_xy_error_m": 0.02},
+        ]
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "events.jsonl"
+            _write_selected_events(path, "wam-monotonic", states, 20, True)
+            events = load_events(path)
+
+        self.assertEqual(validate_fastwam_events(events).terminal_status, "COMPLETED")
+        self.assertEqual(
+            [event.sim_time_s for event in events],
+            sorted(event.sim_time_s for event in events),
+        )
+        completed_frames = {
+            event.skill_id: event.evidence["observed_frame"]
+            for event in events
+            if event.event_type == "skill_completed"
+        }
+        self.assertEqual(completed_frames["ARM-OP-03"], 3)
+        self.assertEqual(completed_frames["ARM-OP-04"], 4)
 
     def test_preflight_record_binds_official_task_cameras_and_one_action(self):
         record = {

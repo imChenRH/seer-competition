@@ -234,6 +234,14 @@ def _write_selected_events(
     success: bool,
 ) -> None:
     terminal_frame = len(states) - 1
+    last_projected_frame = 0
+
+    def project(skill_id: str) -> int:
+        nonlocal last_projected_frame
+        measured_frame = _event_frame_for_skill(states, skill_id)
+        last_projected_frame = max(last_projected_frame, measured_frame)
+        return last_projected_frame
+
     with EventWriter(path, run_id, FASTWAM_SCENARIO, "fastwam_policy") as writer:
         writer.emit(
             "task_started",
@@ -245,7 +253,7 @@ def _write_selected_events(
         )
         if success:
             for skill_id in FASTWAM_SKILLS:
-                frame = _event_frame_for_skill(states, skill_id)
+                frame = project(skill_id)
                 state = dict(states[frame])
                 writer.emit(
                     "skill_started",
@@ -271,7 +279,7 @@ def _write_selected_events(
             )
         else:
             for skill_id in FASTWAM_SKILLS[:3]:
-                frame = _event_frame_for_skill(states, skill_id)
+                frame = project(skill_id)
                 writer.emit(
                     "skill_started",
                     frame / fps,
@@ -287,12 +295,13 @@ def _write_selected_events(
                     state=states[frame],
                     evidence={"observed_frame": frame, "measured": True},
                 )
+            failed_frame = project("ARM-OP-01")
             writer.emit(
                 "skill_started",
-                min(1, terminal_frame) / fps,
+                failed_frame / fps,
                 status="RUNNING",
                 skill_id="ARM-OP-01",
-                evidence={"observed_frame": min(1, terminal_frame)},
+                evidence={"observed_frame": failed_frame},
             )
             writer.emit(
                 "task_failed",
