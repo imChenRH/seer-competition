@@ -104,7 +104,7 @@ Aily/飞书待执行任务
 
 ## 验证
 
-当前 `run_demo.sh check` 在 macOS/Linux 上包含 195 项 Python 测试；Windows 上仅跳过依赖 macOS JavaScriptCore 的协议执行测试。独立 JavaScript 协议脚本包含 48 项断言。
+当前 `run_demo.sh check` 在 macOS/Linux 上包含 196 项 Python 测试；Windows 上仅跳过依赖 macOS JavaScriptCore 的协议执行测试。独立 JavaScript 协议脚本包含 48 项断言。
 
 ```bash
 ./scripts/run_demo.sh check

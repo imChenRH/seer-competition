@@ -223,13 +223,48 @@ def create_server(host: str, port: int, evidence_root: Path | str, web_root: Pat
         def _send_file(self, path: Path, content_type: str | None = None):
             if not path.is_file():
                 return self._not_found()
-            body = path.read_bytes()
+            file_size = path.stat().st_size
             guessed = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
             if guessed in {"text/html", "text/css", "application/javascript", "text/javascript"}:
                 guessed += "; charset=utf-8"
-            self.send_response(200)
+            range_header = self.headers.get("Range")
+            status = 200
+            start = 0
+            end = file_size - 1
+            if range_header:
+                match = re.fullmatch(r"bytes=(\d*)-(\d*)", range_header.strip())
+                if not match:
+                    self.send_response(416)
+                    self.send_header("Content-Range", f"bytes */{file_size}")
+                    self.send_header("Content-Length", "0")
+                    self.send_header("Accept-Ranges", "bytes")
+                    self.end_headers()
+                    return
+                start_text, end_text = match.groups()
+                if start_text and end_text:
+                    start, requested_end = int(start_text), int(end_text)
+                    end = min(requested_end, file_size - 1)
+                elif start_text:
+                    start = int(start_text)
+                    end = file_size - 1
+                else:
+                    suffix_length = int(end_text)
+                    start = max(0, file_size - suffix_length)
+                    end = file_size - 1
+                if start >= file_size or end < start:
+                    self.send_response(416)
+                    self.send_header("Content-Range", f"bytes */{file_size}")
+                    self.send_header("Content-Length", "0")
+                    self.send_header("Accept-Ranges", "bytes")
+                    self.end_headers()
+                    return
+                status = 206
+            self.send_response(status)
             self.send_header("Content-Type", content_type or guessed)
-            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Content-Length", str(end - start + 1))
+            self.send_header("Accept-Ranges", "bytes")
+            if status == 206:
+                self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
             if path.name == "index.html":
@@ -238,7 +273,15 @@ def create_server(host: str, port: int, evidence_root: Path | str, web_root: Pat
                     "default-src 'self'; script-src 'self'; style-src 'self'; media-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'",
                 )
             self.end_headers()
-            self.wfile.write(body)
+            with path.open("rb") as stream:
+                stream.seek(start)
+                remaining = end - start + 1
+                while remaining > 0:
+                    chunk = stream.read(min(1024 * 1024, remaining))
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    remaining -= len(chunk)
 
         def _not_found(self):
             body = b'{"error":"not found"}'

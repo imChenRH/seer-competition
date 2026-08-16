@@ -4,7 +4,7 @@ import threading
 import unittest
 from pathlib import Path
 from urllib.error import HTTPError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from seer_demo.backends.dry_run import DryRunBackend
 from seer_demo.contracts import EventWriter, load_events, validate_events
@@ -233,6 +233,42 @@ class DemoServerTests(unittest.TestCase):
         self.assertEqual(json.loads(summary_body)["run_id"], "normal-proof")
         self.assertIn("application/x-ndjson", event_headers["Content-Type"])
         self.assertEqual(len(event_body.decode("utf-8").splitlines()), json.loads(summary_body)["event_count"])
+
+    def test_media_supports_byte_range_requests_for_video_playback(self):
+        run_dir = self.evidence_root / "normal-proof"
+        summary_path = run_dir / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        summary["video_file"] = "simulation.mp4"
+        summary_path.write_text(json.dumps(summary), encoding="utf-8")
+        (run_dir / "simulation.mp4").write_bytes(b"0123456789")
+
+        request = Request(
+            self.base_url + "/media/normal-proof/simulation.mp4",
+            headers={"Range": "bytes=2-5"},
+        )
+        with urlopen(request, timeout=2) as response:
+            self.assertEqual(response.status, 206)
+            self.assertEqual(response.headers["Accept-Ranges"], "bytes")
+            self.assertEqual(response.headers["Content-Range"], "bytes 2-5/10")
+            self.assertEqual(response.read(), b"2345")
+
+        suffix = Request(
+            self.base_url + "/media/normal-proof/simulation.mp4",
+            headers={"Range": "bytes=-3"},
+        )
+        with urlopen(suffix, timeout=2) as response:
+            self.assertEqual(response.status, 206)
+            self.assertEqual(response.headers["Content-Range"], "bytes 7-9/10")
+            self.assertEqual(response.read(), b"789")
+
+        invalid = Request(
+            self.base_url + "/media/normal-proof/simulation.mp4",
+            headers={"Range": "bytes=99-"},
+        )
+        with self.assertRaises(HTTPError) as raised:
+            urlopen(invalid, timeout=2)
+        self.assertEqual(raised.exception.code, 416)
+        raised.exception.close()
 
     def test_serves_only_summary_declared_raw_and_presentation_media(self):
         run_dir = self.evidence_root / "normal-proof"
