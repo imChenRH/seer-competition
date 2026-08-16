@@ -29,7 +29,7 @@
 - Consumes: `FrameState`, `CameraPose`, `local_from_world(...)`, `warehouse_layout_spec()`.
 - Produces: `_payload_is_camera_subject(frame: FrameState) -> bool`, side-front poses from `camera_pose_for_frame(frame: FrameState) -> CameraPose`, and unchanged `camera_poses_for_timeline(timeline) -> tuple[CameraPose, ...]`.
 
-- [ ] **Step 1: Write failing side-front and payload-subject tests**
+- [x] **Step 1: Write failing side-front and payload-subject tests**
 
 Add tests that convert each key pose into forklift-local coordinates and require `local_x > 0.5`, `abs(local_y) > 1.5`, and `abs(local_y) / local_x >= 0.25`. Add a close `precision_approach` frame assertion that `subject_world_corners(frame)` reaches at least `payload_x_m + 0.5` even while `payload_attached` is false.
 
@@ -44,7 +44,7 @@ self.assertGreater(abs(local_camera[1]), 1.5)
 self.assertGreaterEqual(abs(local_camera[1]) / local_camera[0], 0.25)
 ```
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run:
 
@@ -56,13 +56,13 @@ PYTHONPATH=demo python3 -m unittest \
 
 Expected: FAIL because current camera local X is behind the forklift and unattached payload corners are excluded.
 
-- [ ] **Step 3: Implement the minimal side-front desired pose**
+- [x] **Step 3: Implement the minimal side-front desired pose**
 
 In `scene.py`, replace rearward phase directions with positive forward directions. Use the existing phase-specific lane Y values so container work remains on the negative-Y cutaway side and conveyor work remains in the central aisle. Reduce the hard minimum distance only as far as needed for a clear side angle; keep the margin-based expansion loop authoritative.
 
 Add `_payload_is_camera_subject` with an explicit interaction-phase allow-list and a maximum horizontal payload distance. Use it from `subject_world_corners` so distant payloads do not shrink establishing shots.
 
-- [ ] **Step 4: Add and satisfy container back-wall and existing framing tests**
+- [x] **Step 4: Add and satisfy container back-wall and existing framing tests**
 
 For container interaction phases, assert `pose.position[0] <= layout.container.position[0] + CONTAINER_LENGTH_M - 0.5`. Clamp the desired X before smoothing and keep the existing 5% frame margin loop.
 
@@ -74,7 +74,7 @@ PYTHONPATH=demo python3 -m unittest discover -s tests -p 'test_timeline.py'
 
 Expected: all timeline tests PASS.
 
-- [ ] **Step 5: Update the formal strategy identifier and commit**
+- [x] **Step 5: Update the formal strategy identifier and commit**
 
 Change `demo/seer_demo/isaac/runner.py` from `subject_fit_smoothed_internal_views_v2` to `subject_fit_smoothed_side_front_v3`, update its exact expectations in `tests/test_manifest.py` and `tests/test_presentation.py`, then commit:
 

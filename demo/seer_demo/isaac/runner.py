@@ -25,6 +25,9 @@ from .timeline import FrameState, Timeline, build_timeline
 from .collision import assert_frame_transition_safe, assert_timeline_collision_safe
 
 
+CAMERA_STRATEGY = "subject_fit_smoothed_side_front_v3"
+
+
 def capture_action_observation(
     observations: dict[tuple[str, str, int], dict[str, object]],
     key: tuple[str, str, int],
@@ -395,7 +398,7 @@ def run_isaac(args: argparse.Namespace) -> dict[str, object]:
                     asdict(item) for item in static_physics_contract(args.scenario)
                 ],
                 "static_collision_prim_count": len(handles.static_collision_prims),
-                "camera_strategy": "subject_fit_smoothed_internal_views_v2",
+                "camera_strategy": CAMERA_STRATEGY,
             }
         )
         (output_dir / "summary.json").write_text(

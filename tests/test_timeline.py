@@ -19,6 +19,7 @@ from seer_demo.isaac.collision import (
     warehouse_static_boxes,
 )
 from seer_demo.isaac.layout import (
+    CONTAINER_LENGTH_M,
     CONVEYOR_SUPPORT_TOP_M,
     PAYLOAD_ATTACHMENT_X_OFFSET_M,
     active_payload_geometry_specs,
@@ -175,7 +176,7 @@ class IsaacTimelineTests(unittest.TestCase):
                 "warehouse_back_wall",
                 "warehouse_side_wall",
                 "warehouse_ceiling_beam_0",
-                "container_right_top_rail",
+                "container_left_top_rail",
                 "container_roof_back_rail",
             }.issubset(names)
         )
@@ -642,10 +643,17 @@ class IsaacTimelineTests(unittest.TestCase):
 
         self.assertNotEqual(establishing.position, pickup.position)
         self.assertNotEqual(pickup.position, placement.position)
-        self.assertLess(pickup.position[1], 0.0)
-        self.assertLess(abs(placement.position[1]), 3.3)
+        for pose in (establishing, pickup, placement):
+            self.assertGreater(pose.position[0], pose.look_at[0])
+            self.assertGreater(pose.position[1], pose.look_at[1])
         self.assertAlmostEqual(pickup.look_at[0], 3.1, places=1)
         self.assertAlmostEqual(placement.look_at[0], -6.8, places=1)
+
+    def test_formal_summary_declares_side_front_camera_strategy(self):
+        self.assertEqual(
+            getattr(isaac_runner, "CAMERA_STRATEGY", None),
+            "subject_fit_smoothed_side_front_v3",
+        )
 
     def test_subject_aware_camera_keeps_the_complete_forklift_in_every_frame(self):
         build_poses = getattr(isaac_scene, "camera_poses_for_timeline", None)
@@ -671,6 +679,90 @@ class IsaacTimelineTests(unittest.TestCase):
                 2.0,
                 scenario,
             )
+
+    def test_camera_stays_side_front_relative_to_forklift(self):
+        for scenario in ("normal", "recovery", "intervention"):
+            timeline = build_timeline(scenario, fps=8)
+            poses = isaac_scene.camera_poses_for_timeline(timeline)
+            for frame, pose in zip(timeline.frames, poses):
+                local_camera = local_from_world(
+                    (frame.base_x_m, frame.base_y_m, frame.base_z_m),
+                    frame.yaw_deg,
+                    pose.position,
+                )
+                self.assertGreater(local_camera[0], 0.5, (scenario, frame.frame))
+                self.assertGreater(abs(local_camera[1]), 1.5, (scenario, frame.frame))
+                self.assertGreaterEqual(
+                    abs(local_camera[1]) / local_camera[0],
+                    0.25,
+                    (scenario, frame.frame),
+                )
+
+    def test_close_unattached_payload_is_in_camera_subject(self):
+        timeline = build_timeline("normal", fps=8)
+        frame = next(
+            frame
+            for frame in reversed(timeline.frames)
+            if frame.phase == "precision_approach"
+        )
+
+        self.assertFalse(frame.payload_attached)
+        corners = isaac_scene.subject_world_corners(frame)
+        self.assertGreaterEqual(
+            max(point[0] for point in corners),
+            frame.payload_x_m + 0.5,
+        )
+
+    def test_container_side_front_camera_stays_before_back_wall(self):
+        layout = warehouse_layout_spec()
+        back_wall_limit = layout.container.position[0] + CONTAINER_LENGTH_M - 0.5
+        container_phases = {
+            "precision_approach",
+            "offset_detected",
+            "lateral_realign",
+            "pose_verified",
+            "pose_revalidated",
+            "occluded_view_1",
+            "occluded_view_2",
+            "occluded_view_3",
+            "view_adjust_1",
+            "view_adjust_2",
+            "insert_forks",
+            "lift_payload",
+            "tilt_stabilize",
+        }
+
+        for scenario in ("normal", "recovery", "intervention"):
+            timeline = build_timeline(scenario, fps=8)
+            for frame in timeline.frames:
+                if frame.phase not in container_phases:
+                    continue
+                pose = isaac_scene.camera_pose_for_frame(frame)
+                self.assertLessEqual(pose.position[0], back_wall_limit)
+
+    def test_container_cutaway_is_on_the_side_front_camera_side(self):
+        frame = next(
+            frame
+            for frame in build_timeline("normal", fps=8).frames
+            if frame.phase == "precision_approach"
+        )
+        pose = isaac_scene.camera_pose_for_frame(frame)
+        local_camera = local_from_world(
+            (frame.base_x_m, frame.base_y_m, frame.base_z_m),
+            frame.yaw_deg,
+            pose.position,
+        )
+        side_walls = [
+            spec
+            for spec in container_geometry_specs()
+            if spec.role == "wall"
+            and spec.size[0] >= CONTAINER_LENGTH_M - 0.1
+            and spec.size[1] <= 0.11
+        ]
+
+        self.assertGreater(local_camera[1], 0.0)
+        self.assertTrue(side_walls)
+        self.assertTrue(all(spec.position[1] < 0.0 for spec in side_walls))
 
     def test_camera_remains_below_the_warehouse_ceiling_beams(self):
         beam_bottom = min(

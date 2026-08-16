@@ -327,16 +327,16 @@ def container_geometry_specs() -> tuple[BoxGeometrySpec, ...]:
             (CONTAINER_LENGTH_M, 0.0, half_height),
         ),
         BoxGeometrySpec(
-            "Left",
+            "Right",
             "wall",
             (CONTAINER_LENGTH_M, 0.10, CONTAINER_HEIGHT_M),
-            (half_length, half_width, half_height),
+            (half_length, -half_width, half_height),
         ),
         BoxGeometrySpec(
-            "RightTopRail",
+            "LeftTopRail",
             "top_rail",
             (CONTAINER_LENGTH_M, 0.10, 0.12),
-            (half_length, -half_width, CONTAINER_HEIGHT_M - 0.06),
+            (half_length, half_width, CONTAINER_HEIGHT_M - 0.06),
         ),
         BoxGeometrySpec(
             "RoofBackRail",

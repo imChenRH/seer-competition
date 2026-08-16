@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .layout import (
+    CONTAINER_LENGTH_M,
     INTERVENTION_OBSTACLE_X_OFFSET_M,
     PAYLOAD_ATTACHMENT_Z_OFFSET_M,
     PAYLOAD_ATTACHMENT_X_OFFSET_M,
@@ -52,9 +53,50 @@ class CameraPose:
     look_at: tuple[float, float, float]
 
 
-CAMERA_FOCAL_LENGTH_MM = 24.0
+CAMERA_FOCAL_LENGTH_MM = 13.0
 CAMERA_HORIZONTAL_APERTURE_MM = 36.0
 CAMERA_SAFE_MARGIN = 0.05
+CAMERA_LOCAL_FORWARD_M = 8.0
+CAMERA_LOCAL_SIDE_M = 2.6
+CAMERA_LOCAL_HEIGHT_M = 4.5
+
+_PAYLOAD_INTERACTION_PHASES = frozenset(
+    {
+        "precision_approach",
+        "offset_detected",
+        "pose_verified",
+        "pose_revalidated",
+        "occluded_view_1",
+        "occluded_view_2",
+        "occluded_view_3",
+        "view_adjust_1",
+        "view_adjust_2",
+        "insert_forks",
+        "lift_payload",
+        "tilt_stabilize",
+    }
+)
+_CONTAINER_CAMERA_PHASES = frozenset(
+    {
+        "enter_container",
+        "precision_approach",
+        "offset_detected",
+        "lateral_realign",
+        "pose_verified",
+        "pose_revalidated",
+        "occluded_view_1",
+        "occluded_view_2",
+        "occluded_view_3",
+        "view_adjust_1",
+        "view_adjust_2",
+        "insert_forks",
+        "lift_payload",
+        "tilt_stabilize",
+        "exit_container",
+        "safe_retreat",
+        "safety_stop",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,14 +173,14 @@ def warehouse_asset_specs(asset_root: Path | str) -> tuple[WarehouseAssetSpec, .
 
 def camera_pose_for_phase(phase: str) -> CameraPose:
     if phase in {"precision_approach", "offset_detected", "pose_verified", "pose_revalidated", "occluded_view_1", "occluded_view_2", "occluded_view_3", "view_adjust_1", "view_adjust_2"}:
-        return CameraPose((-3.8, -4.8, 4.6), (3.1, 1.7, 0.8))
+        return CameraPose((7.5, 4.3, 4.8), (3.1, 1.7, 0.8))
     if phase in {"insert_forks", "lift_payload", "tilt_stabilize"}:
-        return CameraPose((-2.8, -4.8, 4.0), (3.1, 1.7, 0.85))
+        return CameraPose((7.5, 4.3, 4.6), (3.1, 1.7, 0.85))
     if phase in {"prealign_conveyor", "align_conveyor", "place_payload"}:
-        return CameraPose((-14.0, 0.5, 5.4), (-6.8, -4.1, 0.75))
+        return CameraPose((1.2, -1.5, 4.8), (-6.8, -4.1, 0.75))
     if phase in {"safe_retreat", "safety_stop"}:
-        return CameraPose((-9.5, -5.4, 5.2), (-0.8, 1.2, 0.9))
-    return CameraPose((-16.5, -5.6, 5.4), (0.0, 1.3, 0.9))
+        return CameraPose((7.2, 3.8, 4.8), (-0.8, 1.2, 0.9))
+    return CameraPose((6.0, 4.3, 4.8), (0.0, 1.3, 0.9))
 
 
 def _normalized(vector: tuple[float, float, float]) -> tuple[float, float, float]:
@@ -146,64 +188,6 @@ def _normalized(vector: tuple[float, float, float]) -> tuple[float, float, float
     if length <= 1e-9:
         raise ValueError("camera direction must be non-zero")
     return tuple(value / length for value in vector)
-
-
-def _camera_direction_for_phase(phase: str) -> tuple[float, float, float]:
-    if phase in {
-        "precision_approach",
-        "offset_detected",
-        "pose_verified",
-        "pose_revalidated",
-        "occluded_view_1",
-        "occluded_view_2",
-        "occluded_view_3",
-        "view_adjust_1",
-        "view_adjust_2",
-        "insert_forks",
-        "lift_payload",
-        "tilt_stabilize",
-    }:
-        return _normalized((-12.0, -3.0, 2.2))
-    if phase in {
-        "route_conveyor",
-        "prealign_conveyor",
-        "align_conveyor",
-        "lower_payload",
-        "place_payload",
-    }:
-        return _normalized((-12.0, 5.0, 2.5))
-    if phase in {"safe_retreat", "safety_stop"}:
-        return _normalized((-12.0, -3.0, 2.6))
-    return _normalized((-12.0, 0.0, 2.7))
-
-
-def _camera_lane_y_for_phase(phase: str) -> float:
-    if phase in {
-        "precision_approach",
-        "offset_detected",
-        "pose_verified",
-        "pose_revalidated",
-        "occluded_view_1",
-        "occluded_view_2",
-        "occluded_view_3",
-        "view_adjust_1",
-        "view_adjust_2",
-        "insert_forks",
-        "lift_payload",
-        "tilt_stabilize",
-        "safe_retreat",
-        "safety_stop",
-    }:
-        return -2.5
-    if phase in {
-        "route_conveyor",
-        "prealign_conveyor",
-        "align_conveyor",
-        "lower_payload",
-        "place_payload",
-    }:
-        return 0.0
-    return -2.0
 
 
 def _bounds_corners(
@@ -231,7 +215,7 @@ def subject_world_corners(frame: FrameState) -> tuple[tuple[float, float, float]
                 frame.base_z_m + z,
             )
         )
-    if frame.payload_attached or frame.payload_placed:
+    if _payload_is_camera_subject(frame):
         payload_yaw = math.radians(frame.payload_yaw_deg)
         payload_cosine, payload_sine = math.cos(payload_yaw), math.sin(payload_yaw)
         for x, y, z in _bounds_corners((-0.58, -0.65, 0.0), (0.58, 0.65, 0.76)):
@@ -243,6 +227,18 @@ def subject_world_corners(frame: FrameState) -> tuple[tuple[float, float, float]
                 )
             )
     return tuple(points)
+
+
+def _payload_is_camera_subject(frame: FrameState) -> bool:
+    if frame.payload_attached or frame.payload_placed:
+        return True
+    if frame.phase not in _PAYLOAD_INTERACTION_PHASES:
+        return False
+    horizontal_distance = math.hypot(
+        frame.payload_x_m - frame.base_x_m,
+        frame.payload_y_m - frame.base_y_m,
+    )
+    return horizontal_distance <= 6.0
 
 
 def _subject_center_and_radius(
@@ -257,19 +253,23 @@ def _subject_center_and_radius(
 
 
 def camera_pose_for_frame(frame: FrameState) -> CameraPose:
-    center, radius = _subject_center_and_radius(frame)
-    horizontal_half_angle = math.atan(
-        CAMERA_HORIZONTAL_APERTURE_MM / (2.0 * CAMERA_FOCAL_LENGTH_MM)
+    center, _ = _subject_center_and_radius(frame)
+    yaw = math.radians(frame.yaw_deg)
+    forward = (math.cos(yaw), math.sin(yaw))
+    left = (-math.sin(yaw), math.cos(yaw))
+    position = (
+        frame.base_x_m
+        + forward[0] * CAMERA_LOCAL_FORWARD_M
+        + left[0] * CAMERA_LOCAL_SIDE_M,
+        frame.base_y_m
+        + forward[1] * CAMERA_LOCAL_FORWARD_M
+        + left[1] * CAMERA_LOCAL_SIDE_M,
+        frame.base_z_m + CAMERA_LOCAL_HEIGHT_M,
     )
-    vertical_half_angle = math.atan(math.tan(horizontal_half_angle) / (16.0 / 9.0))
-    usable_half_angle = vertical_half_angle * (1.0 - 2.0 * CAMERA_SAFE_MARGIN)
-    fit_distance = radius / max(math.sin(usable_half_angle), 1e-6)
-    distance = max(15.0, fit_distance)
-    direction = _camera_direction_for_phase(frame.phase)
-    raw_position = tuple(
-        center[index] + direction[index] * distance for index in range(3)
-    )
-    position = (raw_position[0], _camera_lane_y_for_phase(frame.phase), raw_position[2])
+    if frame.phase in _CONTAINER_CAMERA_PHASES:
+        container = warehouse_layout_spec().container
+        back_wall_limit = container.position[0] + CONTAINER_LENGTH_M - 0.5
+        position = (min(position[0], back_wall_limit), position[1], position[2])
     return CameraPose(position, center)
 
 
@@ -313,27 +313,23 @@ def camera_poses_for_timeline(timeline) -> tuple[CameraPose, ...]:
     """Smooth phase-angle changes while preserving per-frame subject framing."""
     poses: list[CameraPose] = []
     alpha = min(1.0, 1.0 / max(1.0, timeline.fps * 1.25))
-    previous_position: tuple[float, float, float] | None = None
+    previous_relative: tuple[float, float, float] | None = None
     for frame in timeline.frames:
         desired = camera_pose_for_frame(frame)
-        if previous_position is None:
-            position = desired.position
+        desired_relative = tuple(
+            desired.position[index] - desired.look_at[index] for index in range(3)
+        )
+        if previous_relative is None:
+            relative = desired_relative
         else:
-            position = tuple(
-                previous_position[index]
-                + (desired.position[index] - previous_position[index]) * alpha
+            relative = tuple(
+                previous_relative[index]
+                + (desired_relative[index] - previous_relative[index]) * alpha
                 for index in range(3)
             )
-            relative = tuple(
-                position[index] - desired.look_at[index] for index in range(3)
-            )
-            distance = math.sqrt(sum(value * value for value in relative))
-            if distance < 15.0:
-                direction = _normalized(relative)
-                position = tuple(
-                    desired.look_at[index] + direction[index] * 15.0
-                    for index in range(3)
-                )
+        position = tuple(
+            desired.look_at[index] + relative[index] for index in range(3)
+        )
         pose = CameraPose(position, desired.look_at)
         margin = camera_frame_margin(frame, pose, aspect_ratio=16.0 / 9.0)
         while margin < CAMERA_SAFE_MARGIN:
@@ -346,7 +342,9 @@ def camera_poses_for_timeline(timeline) -> tuple[CameraPose, ...]:
             pose = CameraPose(position, pose.look_at)
             margin = camera_frame_margin(frame, pose, aspect_ratio=16.0 / 9.0)
         poses.append(pose)
-        previous_position = pose.position
+        previous_relative = tuple(
+            pose.position[index] - pose.look_at[index] for index in range(3)
+        )
     return tuple(poses)
 
 
