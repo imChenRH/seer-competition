@@ -123,11 +123,11 @@ Expected: 159 or more Python tests, 40 JavaScript protocol assertions, and all s
 - Consumes: Task 2 source snapshot, remote Isaac Sim root `/root/autodl-tmp/isaacsim601`, and warehouse assets `/root/autodl-tmp/simready_warehouse`.
 - Produces: three self-contained evidence directories with `events.jsonl`, `summary.json`, `scene.usda`, `simulation.mp4`, and `presentation.mp4`.
 
-- [ ] **Step 1: Sync the exact committed source to the Isaac host**
+- [x] **Step 1: Sync the exact committed source to the Isaac host**
 
 Use remote source directory `/root/autodl-tmp/seer-hvla-v5-side-front` and evidence directory `/root/autodl-tmp/seer-v5-side-front-evidence`. Exclude `.git`, local credentials, and existing evidence videos.
 
-- [ ] **Step 2: Render all three scenarios**
+- [x] **Step 2: Render all three scenarios**
 
 On the Isaac host run:
 
@@ -139,11 +139,11 @@ export ISAAC_WAREHOUSE_ASSET_ROOT=/root/autodl-tmp/simready_warehouse
 ./scripts/run_isaac_demo.sh intervention /root/autodl-tmp/seer-v5-side-front-evidence/isaac-intervention-20260816-v5-r1 isaac-intervention-20260816-v5-r1
 ```
 
-- [ ] **Step 3: Validate and download exact run artifacts**
+- [x] **Step 3: Validate and download exact run artifacts**
 
 Require all summaries to report `camera_strategy=subject_fit_smoothed_side_front_v3`, `collision_certified=true`, `forbidden_collision_count=0`, and `contact_violation_count=0`. Download only the five declared evidence files per run.
 
-- [ ] **Step 4: Build synchronized presentations**
+- [x] **Step 4: Build synchronized presentations**
 
 For every V5 run execute:
 
@@ -158,7 +158,7 @@ done
 
 Require presentation frame count and fps to match each source video exactly.
 
-- [ ] **Step 5: Rebuild and verify the manifest**
+- [x] **Step 5: Rebuild and verify the manifest**
 
 ```bash
 python3 scripts/build_evidence_manifest.py demo/evidence demo/evidence/MANIFEST.json
@@ -181,15 +181,15 @@ diff <(jq 'del(.generated_at)' demo/evidence/MANIFEST.json) \
 - Consumes: Task 3 V5 videos and manifest.
 - Produces: user-visible local console, updated public branch, and PR evidence.
 
-- [ ] **Step 1: Create and inspect contact sheets**
+- [x] **Step 1: Create and inspect contact sheets**
 
 Extract evenly spaced frames from all three raw videos and all three presentation videos. Reject any run where the forklift is cropped, the payload interaction is obscured, the camera crosses the container back wall, or a phase transition visibly jumps.
 
-- [ ] **Step 2: Update exact V5 documentation**
+- [x] **Step 2: Update exact V5 documentation**
 
 Replace V4 formal run IDs and the previous camera strategy with V5 values. State that the view is a smoothed side-front tracking camera and preserve the existing capability boundaries.
 
-- [ ] **Step 3: Run final verification**
+- [x] **Step 3: Run final verification**
 
 ```bash
 ./scripts/run_demo.sh check
