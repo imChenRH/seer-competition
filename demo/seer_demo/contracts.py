@@ -11,7 +11,9 @@ from typing import Any, Iterable, Mapping, TextIO
 
 
 SCHEMA_VERSION = "1.0"
-ALLOWED_SOURCES = frozenset({"dry_run", "isaac_sim", "feishu_bridge", "fastwam_verification"})
+ALLOWED_SOURCES = frozenset(
+    {"dry_run", "isaac_sim", "feishu_bridge", "fastwam_verification", "fastwam_policy"}
+)
 ALLOWED_STATUSES = frozenset(
     {"PENDING", "RUNNING", "FALLBACK", "PAUSED", "COMPLETED", "FAILED", "HUMAN_REQUIRED"}
 )
