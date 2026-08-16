@@ -17,7 +17,7 @@
 | 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一 `observed_frame / fps` 视频帧时钟；运行/恢复/完成/人工接管用蓝/琥珀/绿/红主题；右侧不是隐藏思维过程 | `presentation.mp4`、`demo/seer_demo/presentation.py`、`tests/test_presentation.py` |
 | 飞书 → Isaac 闭环 | DEMO_IMPLEMENTED | 同主机/同证据目录的单实例桥接可认领、一次启动、以哈希收据恢复回放；操作员见证回执对应 `T-DEMO-20260813-001`，不是三份 2026-08-15 正式录像的现场见证 | `tests/test_bridge.py`；经 manifest 哈希的操作员见证回执（不是飞书签名证明） |
 | Fast-WAM 能加载推理 | VERIFIED | 独立技术验证输出形状 `[1,7]`，首次单次约 0.86 s | 经顶层 manifest 哈希的脱敏验证日志 |
-| Fast-WAM 黑碗→盘操作 | VERIFIED | 在官方 LIBERO `libero_goal` task 8、五个固定初态和 300 步预算下，原版 `env.check_success()` 通过 5/5；五次均由模型在 77–84 个 7D 动作内完成。该数字只描述随附固定初态，不是通用成功率或完整基准 | `fastwam-bowl-plate-20260816-v2-r1` 的五组视频/动作/状态、事件、摘要、公共格式分屏片与 Manifest 哈希 |
+| Fast-WAM 黑碗→盘操作 | VERIFIED | 在官方 LIBERO `libero_goal` task 8、五个固定初态和 300 步预算下，原版 `env.check_success()` 通过 5/5；五次均由 revision 与 SHA-256 已绑定的 checkpoint 在 77–84 个 7D 动作内完成。该数字只描述随附固定初态，不是通用成功率或完整基准 | `fastwam-bowl-plate-20260816-v2-r1` 的五组视频/动作/状态、事件、模型指纹、摘要、公共格式分屏片与 Manifest 哈希 |
 | Fast-WAM 190 ms | PAPER_METRIC | 论文报告指标，未在本机复现 | 论文引用；不得写成 Demo 实测 |
 | Fast-WAM 控制叉车 | NOT_IMPLEMENTED | 当前不控制；需叉车数据、后训练和安全门控 | 无 |
 | ROS 2 真实闭环 | NOT_IMPLEMENTED | 当前桥接为进程/API 边界，不宣称 ROS 2 | 无 |

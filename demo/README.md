@@ -6,7 +6,7 @@
 
 > 2026-08-16 V5/V6 已完成正式重渲染：四个圆柱车轮贴地，集装箱地板顶面与世界地面齐平，集装箱扩大到 7.5×3.4×3.5 m，传送带使用 11 根横向圆柱滚筒，设施与黄线平行；13 mm 侧前方动态跟随机位把完整叉车与近距交互货物纳入同一主体包络，并避开货架、集装箱后墙和顶梁。安全介入 V6 将两块故障障碍物改为共用的显式几何定义，底面都落在地面上且保持 0.05 m 间隙。三场景真实 Isaac 录像、USDA、JSONL、分屏片和 manifest 已在 Mac 复验，障碍物穿透、禁止碰撞与接触违规均为 0。该结论只适用于随附三次演示运行，不外推为生产安全认证。
 
-> 2026-08-16 Fast-WAM 操作轨迹已切换到官方 LIBERO `libero_goal` task 8 `put_the_bowl_on_the_plate`：官方 `fastwam_libero_uncond_2cam224` checkpoint 在 RTX 4090 上生成全部 7D 动作，五个固定初态都在 300 步预算内通过原版 `env.check_success()`，实际执行 77–84 步。五次视频、动作、状态、公共格式分屏片和哈希均保存于 `fastwam-bowl-plate-20260816-v2-r1`。5/5 只描述这五个固定初态，不外推为通用成功率或完整官方基准成绩。
+> 2026-08-16 Fast-WAM 操作轨迹已切换到官方 LIBERO `libero_goal` task 8 `put_the_bowl_on_the_plate`：`lerobot/fastwam_libero_uncond_2cam224` revision `53983e1` 的本地 checkpoint 已通过 config/weights SHA-256 绑定，并在 RTX 4090 上生成全部 7D 动作；五个固定初态都在 300 步预算内通过原版 `env.check_success()`，实际执行 77–84 步。五次视频、动作、状态、公共格式分屏片和哈希均保存于 `fastwam-bowl-plate-20260816-v2-r1`。5/5 只描述这五个固定初态，不外推为通用成功率或完整官方基准成绩。
 
 当前工程采用“局部重构”路线。业务场景、九技能、Fallback、飞书表、AutoDL/Isaac 环境与 Fast-WAM 独立验证继续保留；旧执行器、旧桥接与硬编码网页不再作为正式证据。严格审计见 [`AUDIT.md`](AUDIT.md)，对外声明边界见 [`CLAIMS.md`](CLAIMS.md)。
 

@@ -21,9 +21,10 @@ Demo 已切换到官方 LIBERO `libero_goal` task 8：`put_the_bowl_on_the_plate
 1. 删除苹果、黄盘自定义资产和 BDDL 覆盖，回到 checkpoint 训练分布内的官方黑碗与盘子任务。
 2. 保持官方 300 步预算、五个固定初态和原版成功谓词，不再用 600 步语义迁移预算掩盖任务错配。
 3. checkpoint 在 CPU 装载后一次迁移至 CUDA，任务文本上下文预计算后释放编码器，避免 24 GB 显存峰值溢出。
-4. 事件投影只使用实测碗举升、盘心误差、夹爪状态和官方成功谓词；帧号单调，不展示隐藏思维过程。
-5. Fast-WAM 复用前三个场景的公共证据区和分屏渲染器：相同 TASK、BRAIN、CEREBELLUM、SAFETY、AUDIT 卡片，相同运行/恢复/完成/人工介入色彩语义。
-6. 五组原始视频、动作、状态以及主轨迹和同步分屏片全部由顶层 Manifest 记录 SHA-256。
+4. 运行前核对 Hugging Face revision，并计算实际加载的 config/weights SHA-256；不再只凭目录名声明 checkpoint 身份。
+5. 事件投影只使用实测碗举升、盘心误差、夹爪状态和官方成功谓词；帧号单调，不展示隐藏思维过程。
+6. Fast-WAM 复用前三个场景的公共证据区和分屏渲染器：相同 TASK、BRAIN、CEREBELLUM、SAFETY、AUDIT 卡片，相同运行/恢复/完成/人工介入色彩语义。
+7. 五组原始视频、动作、状态以及主轨迹和同步分屏片全部由顶层 Manifest 记录 SHA-256，并逐 attempt 校验动作数、状态数、视频帧数和末态成功谓词。
 
 ## 分层架构展示
 

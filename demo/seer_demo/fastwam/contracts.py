@@ -24,6 +24,10 @@ FASTWAM_SKILLS = (
     "ARM-VER-01",
 )
 ACTION_SCHEMA_VERSION = "1.0"
+POLICY_REPOSITORY = "lerobot/fastwam_libero_uncond_2cam224"
+POLICY_REVISION = "53983e1249b4eb4d89ab42b40b8678a882d331ad"
+POLICY_CONFIG_SHA256 = "42a94a032ab0803ff0aec86a04324b3326093c76d040d08b10bdc982a4bbbe01"
+POLICY_WEIGHTS_SHA256 = "07a5bf6d73ff5b2713fc83c65b8a4f19c36d41317918198be49eb83c26f441b3"
 
 
 @dataclass(frozen=True, slots=True)
@@ -240,6 +244,13 @@ def validate_fastwam_package(
         summary, "policy_call_count", action_validation.policy_call_count
     )
     _require_exact_summary_field(summary, "attempt_count", 5)
+    for key, expected in (
+        ("policy_repository", POLICY_REPOSITORY),
+        ("policy_revision", POLICY_REVISION),
+        ("policy_config_sha256", POLICY_CONFIG_SHA256),
+        ("policy_weights_sha256", POLICY_WEIGHTS_SHA256),
+    ):
+        _require_exact_summary_field(summary, key, expected)
 
     attempts = summary.get("attempts")
     if not isinstance(attempts, list) or len(attempts) != 5:

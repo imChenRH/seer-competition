@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import gc
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -19,6 +20,10 @@ from .contracts import (
     ActionRecord,
     FASTWAM_SCENARIO,
     FASTWAM_SKILLS,
+    POLICY_CONFIG_SHA256,
+    POLICY_REPOSITORY,
+    POLICY_REVISION,
+    POLICY_WEIGHTS_SHA256,
     load_action_records,
     validate_fastwam_package,
 )
@@ -28,6 +33,54 @@ from .scene_variant import BowlPlateLiberoEnv, SCENE_VARIANT_ID
 CANONICAL_POLICY_PROMPT = "Put the bowl on the plate"
 AGENTOS_TASK = "把黑色碗放入盘子"
 POLICY_CHECKPOINT_NAME = "fastwam_libero_uncond_2cam224"
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def verify_policy_checkpoint(
+    model_dir: Path,
+    *,
+    expected_revision: str = POLICY_REVISION,
+    expected_config_sha256: str = POLICY_CONFIG_SHA256,
+    expected_weights_sha256: str = POLICY_WEIGHTS_SHA256,
+) -> dict[str, str]:
+    """Bind the loaded local files to one trusted Hugging Face revision."""
+    config_path = model_dir / "config.json"
+    weights_path = model_dir / "model.safetensors"
+    metadata_root = model_dir / ".cache" / "huggingface" / "download"
+    config_metadata = metadata_root / "config.json.metadata"
+    weights_metadata = metadata_root / "model.safetensors.metadata"
+    for path in (config_path, weights_path, config_metadata, weights_metadata):
+        if not path.is_file():
+            raise ValueError(f"checkpoint identity file is missing: {path.name}")
+
+    config_lines = config_metadata.read_text(encoding="utf-8").splitlines()
+    weights_lines = weights_metadata.read_text(encoding="utf-8").splitlines()
+    if len(config_lines) < 2 or len(weights_lines) < 2:
+        raise ValueError("checkpoint download metadata is malformed")
+    if config_lines[0] != expected_revision or weights_lines[0] != expected_revision:
+        raise ValueError("checkpoint revision does not match the trusted revision")
+
+    config_sha256 = _sha256_file(config_path)
+    weights_sha256 = _sha256_file(weights_path)
+    if config_sha256 != expected_config_sha256:
+        raise ValueError("checkpoint config SHA-256 does not match the trusted revision")
+    if weights_sha256 != expected_weights_sha256:
+        raise ValueError("checkpoint weights SHA-256 does not match the trusted revision")
+    if weights_lines[1] != weights_sha256:
+        raise ValueError("checkpoint weights disagree with Hugging Face download metadata")
+    return {
+        "policy_repository": POLICY_REPOSITORY,
+        "policy_revision": expected_revision,
+        "policy_config_sha256": config_sha256,
+        "policy_weights_sha256": weights_sha256,
+    }
 
 
 def validate_policy_action(action: Iterable[object]) -> tuple[float, ...]:
@@ -343,6 +396,7 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
         raise ValueError("formal Fast-WAM evaluation requires exactly five attempts")
     if args.fps != 20 or args.width < 640 or args.height < 360 or args.max_steps <= 0:
         raise ValueError("invalid recording clock, resolution, or step budget")
+    policy_fingerprint = verify_policy_checkpoint(args.model_dir)
     output_dir: Path = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=False)
     attempts_dir = output_dir / "attempts"
@@ -530,6 +584,7 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
         "action_count": len(selected_actions),
         "policy_call_count": sum(action.model_call for action in selected_actions),
         "policy_checkpoint": POLICY_CHECKPOINT_NAME,
+        **policy_fingerprint,
         "policy_prompt": CANONICAL_POLICY_PROMPT,
         "agentos_task": AGENTOS_TASK,
         "scene_variant": SCENE_VARIANT_ID,
@@ -545,7 +600,7 @@ def run_remote_rollout(args: argparse.Namespace) -> dict[str, object]:
             *attempt_evidence_files,
         ],
         "claim_boundary": (
-            "记录仅证明官方 Fast-WAM checkpoint 在官方 LIBERO 碗放盘子任务中的五次固定初态结果；"
+            "记录仅证明已绑定仓库、revision 与 SHA-256 的 Fast-WAM checkpoint 在官方 LIBERO 碗放盘子任务中的五次固定初态结果；"
             "不代表通用成功率，也不证明实机迁移或生产安全。"
         ),
     }

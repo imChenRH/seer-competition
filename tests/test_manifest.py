@@ -6,7 +6,15 @@ from pathlib import Path
 from seer_demo.backends.dry_run import DryRunBackend
 from seer_demo.contracts import EventWriter, validate_events, load_events
 from seer_demo.engine import DemoEngine
-from seer_demo.fastwam.contracts import ActionRecord, FASTWAM_SCENARIO, FASTWAM_SKILLS
+from seer_demo.fastwam.contracts import (
+    ActionRecord,
+    FASTWAM_SCENARIO,
+    FASTWAM_SKILLS,
+    POLICY_CONFIG_SHA256,
+    POLICY_REPOSITORY,
+    POLICY_REVISION,
+    POLICY_WEIGHTS_SHA256,
+)
 from seer_demo.manifest import build_manifest, sha256_file
 
 
@@ -66,8 +74,8 @@ class EvidenceManifestTests(unittest.TestCase):
                 evidence={"observed_frame": 9},
             )
         actions = [
-            ActionRecord("1.0", run.name, 0, 0, 0.0, (0.0,) * 7, True, 0.2),
-            ActionRecord("1.0", run.name, 1, 1, 0.05, (0.1,) * 7, False, 0.001),
+            ActionRecord("1.0", run.name, 0, 1, 0.05, (0.0,) * 7, True, 0.2),
+            ActionRecord("1.0", run.name, 1, 2, 0.10, (0.1,) * 7, False, 0.001),
         ]
         action_path = run / "actions.jsonl"
         action_path.write_text(
@@ -79,14 +87,35 @@ class EvidenceManifestTests(unittest.TestCase):
                 "seed": 202608160 + index,
                 "init_state_id": index,
                 "success": index == 2,
-                "executed_steps": 20,
-                "policy_calls": 2,
+                "executed_steps": 2,
+                "policy_calls": 1,
                 "terminal_reason": "official_success" if index == 2 else "step_budget",
             }
             for index in range(5)
         ]
         evaluation = run / "evaluation.json"
         evaluation.write_text(json.dumps({"attempts": attempts}), encoding="utf-8")
+        attempt_evidence = []
+        for attempt in attempts:
+            index = attempt["attempt_index"]
+            attempt_actions = run / f"attempt-{index}-actions.jsonl"
+            attempt_states = run / f"attempt-{index}-states.json"
+            attempt_video = run / f"attempt-{index}-simulation.mp4"
+            attempt_actions.write_text(action_path.read_text(encoding="utf-8"), encoding="utf-8")
+            attempt_states.write_text(
+                json.dumps(
+                    [
+                        {"official_success": False},
+                        {"official_success": False},
+                        {"official_success": attempt["success"]},
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            attempt_video.write_bytes(b"video")
+            attempt_evidence.extend(
+                [attempt_actions.name, attempt_states.name, attempt_video.name]
+            )
         scene = run / "scene_variant.json"
         scene.write_text('{"scene_variant":"apple-plate"}\n', encoding="utf-8")
         video = run / "simulation.mp4"
@@ -103,16 +132,25 @@ class EvidenceManifestTests(unittest.TestCase):
             "actions_file": "actions.jsonl",
             "video_file": "simulation.mp4",
             "scene_file": "scene_variant.json",
-            "additional_evidence_files": ["actions.jsonl", "evaluation.json"],
+            "additional_evidence_files": [
+                "actions.jsonl",
+                "evaluation.json",
+                *attempt_evidence,
+            ],
             "resolution": "1280x720",
             "fps": 20,
-            "frame_count": 10,
+            "frame_count": 3,
             "action_count": 2,
             "policy_call_count": 1,
             "policy_checkpoint": "fastwam_libero_uncond_2cam224",
+            "policy_repository": POLICY_REPOSITORY,
+            "policy_revision": POLICY_REVISION,
+            "policy_config_sha256": POLICY_CONFIG_SHA256,
+            "policy_weights_sha256": POLICY_WEIGHTS_SHA256,
             "attempt_count": 5,
             "attempts": attempts,
             "selected_attempt": 2,
+            "presented_attempt": 2,
             "official_success": True,
         }
         (run / "summary.json").write_text(json.dumps(summary), encoding="utf-8")
@@ -130,13 +168,15 @@ class EvidenceManifestTests(unittest.TestCase):
                     "width": 1280,
                     "height": 720,
                     "fps": 20.0,
-                    "frame_count": 10,
+                    "frame_count": 3,
                     "duration_s": 0.5,
                 },
             )
 
             record = manifest["runs"][0]
             self.assertEqual(record["policy_checkpoint"], "fastwam_libero_uncond_2cam224")
+            self.assertEqual(record["policy_revision"], POLICY_REVISION)
+            self.assertEqual(record["policy_weights_sha256"], POLICY_WEIGHTS_SHA256)
             self.assertTrue(record["official_success"])
             self.assertEqual(record["success_count"], 1)
             self.assertEqual(record["selected_attempt"], 2)
@@ -166,10 +206,33 @@ class EvidenceManifestTests(unittest.TestCase):
                                 "width": 1280,
                                 "height": 720,
                                 "fps": 20.0,
-                                "frame_count": 10,
+                                "frame_count": 3,
                                 "duration_s": 0.5,
                             },
                         )
+
+    def test_manifest_binds_every_fastwam_attempt_to_actions_states_and_video(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            run, _ = self.make_fastwam_package(root)
+            states_path = run / "attempt-2-states.json"
+            states = json.loads(states_path.read_text(encoding="utf-8"))
+            states[-1]["official_success"] = False
+            states_path.write_text(json.dumps(states), encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "attempt 2.*official_success"):
+                build_manifest(
+                    root,
+                    require_auxiliary=False,
+                    video_probe=lambda _: {
+                        "width": 1280,
+                        "height": 720,
+                        "fps": 20.0,
+                        "frame_count": 3,
+                        "duration_s": 0.15,
+                    },
+                )
+
     def test_manifest_revalidates_events_and_hashes_every_declared_file(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

@@ -32,8 +32,8 @@
           "sha256": "c75aea3c1fa2250fff600de7a86d3dad6969bf54af43078257f632c9e05dc4ef"
         },
         "summary.json": {
-          "size_bytes": 2915,
-          "sha256": "cf9434d6a69fa0a1a43347f7ef382aa728ea38cb890aacc38f622089b0aab1f3"
+          "size_bytes": 3269,
+          "sha256": "5e12272ca47bccec9aa3c305ab33c3b527179c6a0e1a6b1b71d63a63e048701f"
         },
         "scene_variant.json": {
           "size_bytes": 362,
@@ -124,6 +124,10 @@
         "duration_s": 4.25
       },
       "policy_checkpoint": "fastwam_libero_uncond_2cam224",
+      "policy_repository": "lerobot/fastwam_libero_uncond_2cam224",
+      "policy_revision": "53983e1249b4eb4d89ab42b40b8678a882d331ad",
+      "policy_config_sha256": "42a94a032ab0803ff0aec86a04324b3326093c76d040d08b10bdc982a4bbbe01",
+      "policy_weights_sha256": "07a5bf6d73ff5b2713fc83c65b8a4f19c36d41317918198be49eb83c26f441b3",
       "official_success": true,
       "attempt_count": 5,
       "success_count": 5,
@@ -309,7 +313,7 @@
       "sha256": "33ed304c4f286afb2f78096a847697464d90cc050d29113ff3757953d4a79434"
     }
   },
-  "generated_at": "2026-08-16T09:07:21.007536+00:00",
+  "generated_at": "2026-08-16T09:35:01.803233+00:00",
   "environment": {
     "simulator": "Isaac Sim 6.0.1",
     "recording_host": "AutoDL Linux / NVIDIA RTX 4090",

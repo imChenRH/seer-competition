@@ -10,6 +10,10 @@ from seer_demo.fastwam.contracts import (
     ActionRecord,
     FASTWAM_SCENARIO,
     FASTWAM_SKILLS,
+    POLICY_CONFIG_SHA256,
+    POLICY_REPOSITORY,
+    POLICY_REVISION,
+    POLICY_WEIGHTS_SHA256,
     load_action_records,
     validate_action_records,
     validate_fastwam_events,
@@ -93,6 +97,10 @@ class FastWamContractTests(unittest.TestCase):
             "frame_count": 10,
             "action_count": 2,
             "policy_call_count": 1,
+            "policy_repository": POLICY_REPOSITORY,
+            "policy_revision": POLICY_REVISION,
+            "policy_config_sha256": POLICY_CONFIG_SHA256,
+            "policy_weights_sha256": POLICY_WEIGHTS_SHA256,
             "official_success": True,
             "attempt_count": 5,
             "attempts": attempts,
@@ -179,6 +187,8 @@ class FastWamContractTests(unittest.TestCase):
             ("attempt_count", 4),
             ("action_count", 3),
             ("frame_count", 1),
+            ("policy_revision", "0" * 40),
+            ("policy_weights_sha256", "0" * 64),
         ):
             forged = {**summary, key: value}
             with self.subTest(key=key):

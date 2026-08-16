@@ -69,7 +69,7 @@
       "terminal_reason": "official_success"
     }
   ],
-  "claim_boundary": "记录仅证明官方 Fast-WAM checkpoint 在官方 LIBERO 碗放盘子任务中的五次固定初态结果；不代表通用成功率，也不证明实机迁移或生产安全。",
+  "claim_boundary": "记录仅证明已绑定仓库、revision 与 SHA-256 的 Fast-WAM checkpoint 在官方 LIBERO 碗放盘子任务中的五次固定初态结果；不代表通用成功率，也不证明实机迁移或生产安全。",
   "duration_s": 4.2,
   "event_count": 18,
   "events_file": "events.jsonl",
@@ -79,6 +79,10 @@
   "official_success": true,
   "policy_call_count": 9,
   "policy_checkpoint": "fastwam_libero_uncond_2cam224",
+  "policy_repository": "lerobot/fastwam_libero_uncond_2cam224",
+  "policy_revision": "53983e1249b4eb4d89ab42b40b8678a882d331ad",
+  "policy_config_sha256": "42a94a032ab0803ff0aec86a04324b3326093c76d040d08b10bdc982a4bbbe01",
+  "policy_weights_sha256": "07a5bf6d73ff5b2713fc83c65b8a4f19c36d41317918198be49eb83c26f441b3",
   "policy_prompt": "Put the bowl on the plate",
   "presented_attempt": 0,
   "resolution": "1280x720",

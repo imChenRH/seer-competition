@@ -15,6 +15,7 @@ from .contracts import load_events, validate_scenario_events
 from .fastwam.contracts import (
     FASTWAM_SOURCE,
     load_action_records,
+    validate_action_records,
     validate_fastwam_package,
 )
 from .isaac.collision import COLLISION_GUARD_VERSION
@@ -93,6 +94,83 @@ def _additional_evidence_paths(run_dir: Path, summary: Mapping[str, object]) -> 
     if len(values) != len(set(values)):
         raise ValueError("additional_evidence_files must not contain duplicates")
     return [_safe_declared_file(run_dir, value, "additional evidence") for value in values]
+
+
+def _validate_fastwam_attempt_evidence(
+    run_dir: Path,
+    summary: Mapping[str, object],
+    additional_paths: list[Path],
+    video_probe: Callable[[Path], Mapping[str, object]],
+) -> None:
+    attempts = summary["attempts"]
+    expected_names = {"actions.jsonl", "evaluation.json"}
+    for index in range(5):
+        expected_names.update(
+            {
+                f"attempt-{index}-actions.jsonl",
+                f"attempt-{index}-states.json",
+                f"attempt-{index}-simulation.mp4",
+            }
+        )
+    actual_names = {path.name for path in additional_paths}
+    if actual_names != expected_names:
+        raise ValueError("Fast-WAM additional evidence must declare every attempt artifact")
+
+    resolution = str(summary["resolution"])
+    expected_width, expected_height = (int(value) for value in resolution.split("x"))
+    expected_fps = float(summary["fps"])
+    for index, attempt in enumerate(attempts):
+        action_path = run_dir / f"attempt-{index}-actions.jsonl"
+        state_path = run_dir / f"attempt-{index}-states.json"
+        video_path = run_dir / f"attempt-{index}-simulation.mp4"
+        states = json.loads(state_path.read_text(encoding="utf-8"))
+        if not isinstance(states, list) or len(states) != attempt["executed_steps"] + 1:
+            raise ValueError(f"attempt {index} states do not match executed_steps")
+        if any(
+            not isinstance(state, dict) or type(state.get("official_success")) is not bool
+            for state in states
+        ):
+            raise ValueError(f"attempt {index} states require boolean official_success")
+        if any(state["official_success"] for state in states[:-1]):
+            raise ValueError(f"attempt {index} continued after official_success")
+        if states[-1]["official_success"] is not attempt["success"]:
+            raise ValueError(f"attempt {index} final official_success disagrees with result")
+        if (attempt["terminal_reason"] == "official_success") is not attempt["success"]:
+            raise ValueError(f"attempt {index} terminal_reason disagrees with success")
+
+        actions = load_action_records(action_path)
+        action_validation = validate_action_records(actions, str(summary["run_id"]), len(states))
+        if action_validation.action_count != attempt["executed_steps"]:
+            raise ValueError(f"attempt {index} actions do not match executed_steps")
+        if action_validation.policy_call_count != attempt["policy_calls"]:
+            raise ValueError(f"attempt {index} actions do not match policy_calls")
+        if any(action.observed_frame != action.sequence + 1 for action in actions):
+            raise ValueError(f"attempt {index} actions are not bound to consecutive frames")
+
+        video = video_probe(video_path)
+        if (video.get("width"), video.get("height")) != (
+            expected_width,
+            expected_height,
+        ):
+            raise ValueError(f"attempt {index} video resolution disagrees with summary")
+        if abs(float(video.get("fps", -1)) - expected_fps) > 1e-6:
+            raise ValueError(f"attempt {index} video fps disagrees with summary")
+        if video.get("frame_count") != len(states):
+            raise ValueError(f"attempt {index} video frames disagree with states")
+
+    presented = summary.get("presented_attempt")
+    selected = summary.get("selected_attempt")
+    expected_presented = selected if selected is not None else 0
+    if presented != expected_presented:
+        raise ValueError("presented_attempt does not select the recorded rollout")
+    if sha256_file(run_dir / "actions.jsonl") != sha256_file(
+        run_dir / f"attempt-{presented}-actions.jsonl"
+    ):
+        raise ValueError("presented actions do not match the selected attempt")
+    if sha256_file(run_dir / "simulation.mp4") != sha256_file(
+        run_dir / f"attempt-{presented}-simulation.mp4"
+    ):
+        raise ValueError("presented video does not match the selected attempt")
 
 
 def assert_collision_summary(summary: Mapping[str, object]) -> None:
@@ -194,6 +272,7 @@ def build_manifest(
             )
         scene_path = _safe_declared_file(run_dir, summary.get("scene_file"), "scene")
         events = load_events(events_path)
+        additional_paths = _additional_evidence_paths(run_dir, summary)
         actions_path = None
         if summary.get("source") == FASTWAM_SOURCE:
             actions_path = _safe_declared_file(
@@ -208,6 +287,9 @@ def build_manifest(
             evaluation = json.loads(evaluation_path.read_text(encoding="utf-8"))
             if not isinstance(evaluation, dict) or evaluation.get("attempts") != summary.get("attempts"):
                 raise ValueError("evaluation attempt results disagree with summary")
+            _validate_fastwam_attempt_evidence(
+                run_dir, summary, additional_paths, video_probe
+            )
         else:
             validation = validate_scenario_events(
                 events, expected_scenario=str(summary["scenario"])
@@ -223,7 +305,7 @@ def build_manifest(
         declared_paths = [events_path, summary_path, scene_path, video_path]
         if actions_path is not None:
             declared_paths.append(actions_path)
-        declared_paths.extend(_additional_evidence_paths(run_dir, summary))
+        declared_paths.extend(additional_paths)
         if presentation_path is not None:
             declared_paths.append(presentation_path)
         for path in dict.fromkeys(declared_paths):
@@ -258,8 +340,12 @@ def build_manifest(
         if validation.source == FASTWAM_SOURCE:
             run_record.update(
                 {
-                    "policy_checkpoint": summary.get("policy_checkpoint"),
-                    "official_success": summary.get("official_success"),
+            "policy_checkpoint": summary.get("policy_checkpoint"),
+            "policy_repository": summary.get("policy_repository"),
+            "policy_revision": summary.get("policy_revision"),
+            "policy_config_sha256": summary.get("policy_config_sha256"),
+            "policy_weights_sha256": summary.get("policy_weights_sha256"),
+            "official_success": summary.get("official_success"),
                     "attempt_count": summary.get("attempt_count"),
                     "success_count": sum(
                         attempt["success"] is True for attempt in summary["attempts"]

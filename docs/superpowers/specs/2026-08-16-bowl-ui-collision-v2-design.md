@@ -12,7 +12,7 @@ The canonical task is the recommended route because the checkpoint, language pro
 
 ## Goals
 
-- Make the recorded Fast-WAM task a real bowl-on-plate rollout controlled only by the official checkpoint's 7-D actions.
+- Make the recorded Fast-WAM task a real bowl-on-plate rollout controlled only by a repository/revision/SHA-bound checkpoint's 7-D actions.
 - Improve measured five-initial-state success above the current apple result of 2/5 without hiding failed attempts.
 - Give Fast-WAM the same split-video hierarchy, typography, card positions, state colors, and audit semantics as normal/recovery/intervention.
 - Give Fast-WAM the same web evidence layout: summary metrics, video beside skill chain, lower evidence cards, and audit log.

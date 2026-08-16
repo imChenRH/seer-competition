@@ -9,7 +9,15 @@ from urllib.request import Request, urlopen
 from seer_demo.backends.dry_run import DryRunBackend
 from seer_demo.contracts import EventWriter, load_events, validate_events
 from seer_demo.engine import DemoEngine
-from seer_demo.fastwam.contracts import ActionRecord, FASTWAM_SCENARIO, FASTWAM_SKILLS
+from seer_demo.fastwam.contracts import (
+    ActionRecord,
+    FASTWAM_SCENARIO,
+    FASTWAM_SKILLS,
+    POLICY_CONFIG_SHA256,
+    POLICY_REPOSITORY,
+    POLICY_REVISION,
+    POLICY_WEIGHTS_SHA256,
+)
 from seer_demo.server import create_server
 
 
@@ -114,6 +122,10 @@ class DemoServerTests(unittest.TestCase):
             "frame_count": 10,
             "action_count": 2,
             "policy_call_count": 1,
+            "policy_repository": POLICY_REPOSITORY,
+            "policy_revision": POLICY_REVISION,
+            "policy_config_sha256": POLICY_CONFIG_SHA256,
+            "policy_weights_sha256": POLICY_WEIGHTS_SHA256,
             "attempt_count": 5,
             "attempts": attempts,
             "selected_attempt": 2,

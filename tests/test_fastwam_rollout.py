@@ -1,5 +1,6 @@
 import math
 import json
+import hashlib
 import unittest
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from seer_demo.fastwam.rollout import (
     batch_single_robot_state,
     derive_phase,
     load_policy_on_cuda,
+    verify_policy_checkpoint,
     validate_policy_action,
 )
 from seer_demo.fastwam.preflight import validate_preflight_record
@@ -101,6 +103,45 @@ class FastWamRolloutTests(unittest.TestCase):
         self.assertIn('mujoco.__version__ == "3.8.1"', launcher)
         self.assertNotIn('mujoco.__version__ == "3.3.2"', launcher)
         self.assertIn("--max-steps 300", launcher)
+
+    def test_checkpoint_verification_binds_revision_config_and_weights(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            model_dir = Path(directory)
+            config = b'{"type":"fastwam"}\n'
+            weights = b"fixture-policy-weights"
+            (model_dir / "config.json").write_bytes(config)
+            (model_dir / "model.safetensors").write_bytes(weights)
+            metadata = model_dir / ".cache" / "huggingface" / "download"
+            metadata.mkdir(parents=True)
+            revision = "a" * 40
+            config_sha = hashlib.sha256(config).hexdigest()
+            weights_sha = hashlib.sha256(weights).hexdigest()
+            (metadata / "config.json.metadata").write_text(
+                f"{revision}\nconfig-etag\n0\n", encoding="utf-8"
+            )
+            (metadata / "model.safetensors.metadata").write_text(
+                f"{revision}\n{weights_sha}\n0\n", encoding="utf-8"
+            )
+
+            fingerprint = verify_policy_checkpoint(
+                model_dir,
+                expected_revision=revision,
+                expected_config_sha256=config_sha,
+                expected_weights_sha256=weights_sha,
+            )
+            self.assertEqual(fingerprint["policy_revision"], revision)
+            self.assertEqual(fingerprint["policy_weights_sha256"], weights_sha)
+
+            (model_dir / "model.safetensors").write_bytes(b"tampered")
+            with self.assertRaisesRegex(ValueError, "weights SHA-256"):
+                verify_policy_checkpoint(
+                    model_dir,
+                    expected_revision=revision,
+                    expected_config_sha256=config_sha,
+                    expected_weights_sha256=weights_sha,
+                )
 
     def test_semantic_transfer_budget_is_explicit_and_policy_rng_is_seeded(self):
         with self.assertRaisesRegex(ValueError, "episode_length"):

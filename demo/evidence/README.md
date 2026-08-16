@@ -5,7 +5,7 @@
 - `isaac-normal-20260816-v5-r1/`：531 帧、66.375 秒视频、20 条事件，终态 `COMPLETED`。
 - `isaac-recovery-20260816-v5-r1/`：619 帧、77.375 秒视频、24 条事件，包含 `FB-F01`，终态 `COMPLETED`。
 - `isaac-intervention-20260816-v6-r1/`：289 帧、36.125 秒视频、18 条事件；两次 `FB-F02` 后执行 `FB-F07`，车辆退至箱外并停稳，终态 `HUMAN_REQUIRED`；两块故障障碍物底面落地并保持 0.05 m 间隙。
-- `fastwam-bowl-plate-20260816-v2-r1/`：官方 LIBERO task 8 的五个固定初态，300 步预算内 5/5 通过原版成功谓词；五次执行 77–84 步，并保留五组视频、动作和状态。
+- `fastwam-bowl-plate-20260816-v2-r1/`：官方 LIBERO task 8 的五个固定初态，300 步预算内 5/5 通过原版成功谓词；五次执行 77–84 步，并保留五组视频、动作和状态。摘要同时绑定模型仓库、revision、config SHA-256 和 weights SHA-256。
 - `MANIFEST.json`：由 `scripts/build_evidence_manifest.py` 重验 JSONL、原始视频与分屏视频后生成，并记录文件大小和 SHA-256。
 - `FEISHU_LIVE_RECEIPT.json`：现场任务 `T-DEMO-20260813-001` 的脱敏操作员见证回执；它不是飞书签名或不可伪造的 API 导出，也不是本轮三份录像的现场见证。
 - `fastwam/`：Fast-WAM 单批加载/推理的独立验证；不能当作叉车控制证据。
