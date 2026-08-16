@@ -118,6 +118,18 @@ assert(
 );
 assert(fastWamPlaybackPlan.playbackRate === 0.5, "Fast-WAM playback runs at half speed");
 assert(fastWamPlaybackPlan.presentationDurationS === 8.4, "half-speed playback doubles presentation duration");
+const extendedFastWamPlan = SeerProtocol.fastWamPlaybackPlan([
+  {label: "双相机观测", start: 0, end: 0.05},
+  {label: "任务语义映射", start: 0.05, end: 0.1},
+  {label: "Fast-WAM 动作生成", start: 0.1, end: 0.15},
+  {label: "接近黑色碗", start: 0.05, end: 0.1},
+  {label: "夹持黑色碗", start: 0.1, end: 0.2},
+  {label: "举升与转移", start: 0.2, end: 0.3},
+  {label: "放入盘子", start: 0.3, end: 0.4}
+], 4.2, 20, 10);
+assert(extendedFastWamPlan.playbackRate === 1, "pre-extended video plays at native speed");
+assert(extendedFastWamPlan.segments[0].start === 0.1, "timeline is rescaled to the extended media clock");
+assert(extendedFastWamPlan.presentationDurationS === 8.4, "extended presentation duration matches doubled media");
 const dispatch = SeerProtocol.dispatchPlan(valid);
 assert(dispatch.length === 1, "dispatch plan uses started actions only");
 assert(dispatch[0].identifier === "FB-F01", "fallback dispatch identifier");

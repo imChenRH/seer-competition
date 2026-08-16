@@ -98,8 +98,8 @@
   "video_file": "simulation.mp4",
   "presentation_file": "presentation.mp4",
   "presentation_resolution": "2560x1080",
-  "presentation_fps": 20.0,
+  "presentation_fps": 10,
   "presentation_frame_count": 85,
-  "presentation_duration_s": 4.25,
+  "presentation_duration_s": 8.5,
   "presentation_contract": "auditable_common_projection_v2"
 }

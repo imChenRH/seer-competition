@@ -203,16 +203,29 @@
     ]);
   }
 
-  function fastWamPlaybackPlan(segments, sourceDurationS) {
+  function fastWamPlaybackPlan(segments, sourceDurationS, sourceFps, presentationFps) {
     if (!Array.isArray(segments) || segments.length < 4
         || typeof sourceDurationS !== "number" || !Number.isFinite(sourceDurationS) || sourceDurationS <= 0) {
       throw new Error("Fast-WAM 播放计划无效");
     }
-    const playbackRate = 0.5;
+    const fileExtended = typeof sourceFps === "number" && sourceFps > 0
+      && typeof presentationFps === "number" && presentationFps > 0
+      && presentationFps < sourceFps;
+    const mediaScale = fileExtended ? sourceFps / presentationFps : 1;
+    const playbackRate = fileExtended ? 1 : 0.5;
     return Object.freeze({
-      segments: Object.freeze(segments.slice(3)),
+      segments: Object.freeze(segments.slice(3).map(function (segment) {
+        return Object.freeze({
+          kind: segment.kind,
+          label: segment.label,
+          start: segment.start * mediaScale,
+          end: segment.end * mediaScale
+        });
+      })),
       playbackRate: playbackRate,
-      presentationDurationS: sourceDurationS / playbackRate
+      presentationDurationS: fileExtended
+        ? sourceDurationS * mediaScale
+        : sourceDurationS / playbackRate
     });
   }
 
@@ -229,6 +242,12 @@
     }
     if (typeof summary.fps !== "number" || !Number.isFinite(summary.fps) || summary.fps <= 0) {
       throw new Error("Fast-WAM 视频帧率无效");
+    }
+    if (summary.presentation_fps !== undefined
+        && (typeof summary.presentation_fps !== "number"
+            || !Number.isFinite(summary.presentation_fps)
+            || summary.presentation_fps <= 0)) {
+      throw new Error("Fast-WAM 展示视频帧率无效");
     }
     if (!Array.isArray(actions) || actions.length === 0 || summary.action_count !== actions.length) {
       throw new Error("Fast-WAM 动作数量无效");

@@ -33,7 +33,7 @@ Demo 已切换到官方 LIBERO `libero_goal` task 8：`put_the_bowl_on_the_plate
 - 物理层：MuJoCo 相机画面、碗举升、盘心误差、夹爪状态和官方成功谓词。
 - 证据层：同一视频帧时钟、连续 JSONL、五次固定初态结果和 Manifest 哈希。
 
-`presentation.mp4` 为 2560×1080、20 fps、85 帧。左半屏是 1280×720 MuJoCo 操作，右半屏使用与三个叉车场景相同的结构化决策卡；运行和完成分别使用蓝、绿主题。
+`presentation.mp4` 为 2560×1080、10 fps、85 帧（由 20 fps 原片延长 2× 生成，原片保留为 `presentation-source-20fps.mp4`）。左半屏是 1280×720 MuJoCo 操作，右半屏使用与三个叉车场景相同的结构化决策卡；运行和完成分别使用蓝、绿主题。
 
 ## 声明边界
 

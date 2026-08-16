@@ -434,7 +434,11 @@
   function syncFastWamPlayback(currentTime) {
     if (!activeFastWam) return;
     const summary = activeFastWam.summary;
-    const frame = SeerProtocol.fastWamFrame(currentTime, Number(summary.fps), summary.frame_count);
+    const frame = SeerProtocol.fastWamFrame(
+      currentTime,
+      Number(summary.presentation_fps || summary.fps),
+      summary.frame_count
+    );
     const projected = SeerProtocol.fastWamAtFrame(activeFastWam.events, activeFastWam.actions, frame);
     const event = projected.event;
     const action = projected.action;
@@ -462,13 +466,27 @@
     demoBoundary.hidden = false;
     setConsoleCompact(true);
     const reduced = SeerProtocol.reduceEvents(activeEvents);
-    const playbackPlan = SeerProtocol.fastWamPlaybackPlan(playbackSegments(activeEvents), reduced.durationS);
+    const presentationFps = Number(summary.presentation_fps || summary.fps);
+    const playbackPlan = SeerProtocol.fastWamPlaybackPlan(
+      playbackSegments(activeEvents),
+      reduced.durationS,
+      Number(summary.fps),
+      presentationFps
+    );
     setText("metric-status", reduced.terminalStatus);
     setText("metric-skills", reduced.completedSkills.length + " / 8");
     setText("metric-fallbacks", "0");
     setText("metric-duration", playbackPlan.presentationDurationS.toFixed(1) + " s");
-    setText("metric-duration-label", "展示时长（0.5×）");
-    setText("timeline-hint", "前 3 个准备阶段已隐藏 · 0.5× 慢速播放");
+    setText(
+      "metric-duration-label",
+      playbackPlan.playbackRate < 1 ? "展示时长（0.5× 慢放）" : "展示时长（视频已延长）"
+    );
+    setText(
+      "timeline-hint",
+      playbackPlan.playbackRate < 1
+        ? "前 3 个准备阶段已隐藏 · 0.5× 慢速播放"
+        : "前 3 个准备阶段已隐藏 · 视频已延长至 2×"
+    );
     setText("source-pill", "fastwam_policy");
     setText("event-count", reduced.eventCount + " events");
     setText("run-meta", summary.run_id + " · fastwam_bowl_plate · official LIBERO task 8");

@@ -32,8 +32,8 @@
           "sha256": "c75aea3c1fa2250fff600de7a86d3dad6969bf54af43078257f632c9e05dc4ef"
         },
         "summary.json": {
-          "size_bytes": 3269,
-          "sha256": "5e12272ca47bccec9aa3c305ab33c3b527179c6a0e1a6b1b71d63a63e048701f"
+          "size_bytes": 3371,
+          "sha256": "3c0077906623b0202272dca4bbae68272d7f7649dea716aa3c3888d877f7ee84"
         },
         "scene_variant.json": {
           "size_bytes": 362,
@@ -112,8 +112,8 @@
           "sha256": "582ccc3fd81cd86c28000a42baa3791f59514a566c2ede560844d522be4dd2d8"
         },
         "presentation.mp4": {
-          "size_bytes": 690280,
-          "sha256": "47461afe065104841af38af21e193a1851792c199eb08812b651a974ea0eed2a"
+          "size_bytes": 803322,
+          "sha256": "4786664c185878cd9ccdfe5a622242baa2c854d5dd7fc44ecadbc87275fe400d"
         }
       },
       "presentation_probe": {
