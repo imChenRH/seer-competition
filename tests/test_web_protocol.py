@@ -24,7 +24,15 @@ class WebProtocolTests(unittest.TestCase):
             self.assertNotIn(glyph, html)
         self.assertIn('class="feishu-conversation"', html)
         self.assertIn('id="active-instruction"', html)
-        self.assertIn("机械臂模型、任务数据与后训练", html)
+        self.assertNotIn("机械臂模型、任务数据与后训练", html)
+        for element_id in (
+            "fastwam-video",
+            "fastwam-action-values",
+            "fastwam-attempts",
+            "fastwam-official-success",
+            "fastwam-phase",
+        ):
+            self.assertIn(f'id="{element_id}"', html)
         self.assertIn("eventAtTime", source)
         self.assertIn("dispatchPlan", source)
         self.assertGreaterEqual(source.count("if (generation !== renderGeneration) return;"), 2)
@@ -32,6 +40,10 @@ class WebProtocolTests(unittest.TestCase):
         self.assertIn("collapseDetails", source)
         self.assertIn("scrollEvidenceIntoView", source)
         self.assertIn("projectEventTimes", source)
+        self.assertIn("fetchFastWamEvidence", source)
+        self.assertIn("syncFastWamPlayback", source)
+        self.assertIn("validateFastWamEvidence", source)
+        self.assertIn("把红色苹果放入黄色盘子", source)
         self.assertNotIn("select.addEventListener", source)
 
         styles = (ROOT / "demo" / "web" / "styles.css").read_text(encoding="utf-8")
@@ -57,7 +69,7 @@ class WebProtocolTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("protocol assertions: 40", result.stdout)
+        self.assertIn("protocol assertions: 48", result.stdout)
 
 
 if __name__ == "__main__":

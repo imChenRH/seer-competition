@@ -106,4 +106,42 @@ assert(SeerProtocol.reconcileTask("  recorded task ", "recorded task").accepted,
 const rejectedTask = SeerProtocol.reconcileTask("invented task", "recorded task");
 assert(!rejectedTask.accepted && rejectedTask.task === "recorded task", "unrecorded task falls back to evidence task");
 
+const fastEvents = [
+  event(0, "task_started", {run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy", evidence: {observed_frame: 0}}),
+  event(1, "skill_started", {run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy", skill_id: "ARM-OP-01", evidence: {observed_frame: 1}}),
+  event(2, "skill_completed", {run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy", skill_id: "ARM-VER-01", state: {official_success: true}, evidence: {observed_frame: 2}}),
+  event(3, "task_completed", {run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy", status: "COMPLETED", state: {official_success: true}, evidence: {observed_frame: 3}})
+];
+const fastActions = [
+  {schema_version: "1.0", run_id: "wam-1", sequence: 0, observed_frame: 1, sim_time_s: 0.05, action: [0, 0, 0, 0, 0, 0, -1], model_call: true, latency_s: 0.22},
+  {schema_version: "1.0", run_id: "wam-1", sequence: 1, observed_frame: 2, sim_time_s: 0.10, action: [0.1, 0, 0, 0, 0, 0, 1], model_call: false, latency_s: 0.001}
+];
+const fastSummary = {
+  run_id: "wam-1", scenario: "fastwam_apple_plate", source: "fastwam_policy",
+  frame_count: 4, action_count: 2, policy_call_count: 1,
+  terminal_status: "COMPLETED", official_success: true, selected_attempt: 2,
+  attempts: [0, 1, 2, 3, 4].map(function (index) { return {attempt_index: index, success: index === 2}; })
+};
+assert(SeerProtocol.validateFastWamEvidence(fastSummary, fastEvents, fastActions).runId === "wam-1", "fastwam evidence validates atomically");
+assert(SeerProtocol.fastWamAtFrame(fastEvents, fastActions, 0).action === null, "no action before observed frame");
+assert(SeerProtocol.fastWamAtFrame(fastEvents, fastActions, 2).action.sequence === 1, "latest observed action selected");
+assert(SeerProtocol.fastWamAtFrame(fastEvents, fastActions, 2).event.sequence === 2, "latest observed event selected");
+assert(SeerProtocol.fastWamFrame(0.149, 20, 4) === 2, "playback time floors to source frame");
+
+let invalidFastWam = 0;
+for (const brokenActions of [
+  [Object.assign({}, fastActions[0], {action: [0, 0, 0, 0, 0, 0]})],
+  [Object.assign({}, fastActions[0], {run_id: "other"})],
+  [Object.assign({}, fastActions[0], {sequence: 2})],
+  [Object.assign({}, fastActions[0], {observed_frame: 4})],
+  [Object.assign({}, fastActions[0], {action: [0, 0, 0, 0, 0, 0, Number.NaN]})]
+]) {
+  try { SeerProtocol.validateFastWamEvidence(Object.assign({}, fastSummary, {action_count: brokenActions.length}), fastEvents, brokenActions); } catch (_) { invalidFastWam += 1; }
+}
+assert(invalidFastWam === 5, "malformed fastwam actions fail closed");
+let forgedFastSuccessRejected = false;
+try { SeerProtocol.validateFastWamEvidence(Object.assign({}, fastSummary, {official_success: false}), fastEvents, fastActions); } catch (_) { forgedFastSuccessRejected = true; }
+assert(forgedFastSuccessRejected, "fastwam summary cannot contradict terminal predicate");
+assert(fastActions[0].action.length === 7, "fastwam validator does not mutate action evidence");
+
 print("protocol assertions: " + assertions);
