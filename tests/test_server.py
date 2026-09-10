@@ -1,8 +1,10 @@
 import json
+import shutil
 import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest import mock
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -402,6 +404,73 @@ class DemoServerTests(unittest.TestCase):
                     error.close()
                 else:
                     self.fail("unsafe path was served")
+
+
+class MissingFfprobeTests(unittest.TestCase):
+    """The console must degrade when ffprobe is absent, not drop the connection.
+
+    ``manifest.probe_video`` raises RuntimeError without ffprobe, because sealing
+    evidence must fail closed. The console has the opposite contract: listing runs
+    still has to succeed, so it substitutes a tolerant probe. Before that wrapper
+    existed the handler thread raised an uncaught RuntimeError and the client saw
+    a closed connection instead of a response.
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp_dir.cleanup)
+        self.evidence_root = Path(self.temp_dir.name) / "evidence"
+        run_dir = self.evidence_root / "normal-proof"
+        run_dir.mkdir(parents=True)
+        events_path = run_dir / "events.jsonl"
+        with EventWriter(events_path, "normal-proof", "normal", "dry_run") as writer:
+            DemoEngine(DryRunBackend("normal"), writer).run("normal")
+        summary = validate_events(load_events(events_path))
+        (run_dir / "summary.json").write_text(
+            json.dumps(
+                {
+                    "run_id": summary.run_id,
+                    "scenario": summary.scenario,
+                    "source": summary.source,
+                    "event_count": summary.event_count,
+                    "terminal_status": summary.terminal_status,
+                    "duration_s": summary.duration_s,
+                    "events_file": "events.jsonl",
+                }
+            ),
+            encoding="utf-8",
+        )
+        # Use the real default probe rather than injecting a fake one.
+        self.server = create_server(
+            "127.0.0.1", 0, self.evidence_root, ROOT / "web"
+        )
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        self.addCleanup(self._close_server)
+        self.base_url = f"http://127.0.0.1:{self.server.server_port}"
+
+    def _close_server(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=2)
+
+    def test_run_listing_survives_a_missing_ffprobe(self):
+        real_which = shutil.which
+
+        def without_ffprobe(name, *args, **kwargs):
+            if name == "ffprobe":
+                return None
+            return real_which(name, *args, **kwargs)
+
+        with mock.patch("shutil.which", side_effect=without_ffprobe):
+            with urlopen(self.base_url + "/api/runs", timeout=5) as response:
+                self.assertEqual(response.status, 200)
+                runs = json.loads(response.read())["runs"]
+
+        self.assertEqual([run["run_id"] for run in runs], ["normal-proof"])
+        # Media is simply not advertised when it cannot be measured.
+        self.assertFalse(runs[0]["has_video"])
+        self.assertFalse(runs[0]["has_presentation"])
 
 
 if __name__ == "__main__":

@@ -24,6 +24,20 @@ from .manifest import probe_video, validate_fastwam_attempt_evidence
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 
+def _tolerant_video_probe(path: Path) -> Mapping[str, object]:
+    """Console-side probe that degrades when ffprobe is unavailable.
+
+    Sealing evidence (``manifest.build_manifest``) must fail closed when it cannot
+    measure a video, because a manifest without probe data is not evidence. The
+    read-only console has the opposite requirement: a visitor without ffprobe must
+    still be able to list and inspect runs, so the media is simply not advertised.
+    """
+    try:
+        return probe_video(path)
+    except RuntimeError:
+        return {}
+
+
 def _available_declared_media(run_dir: Path, value: object) -> str | None:
     if not isinstance(value, str) or not value or Path(value).name != value:
         return None
@@ -37,7 +51,7 @@ class EvidenceCatalog:
         self,
         root: Path | str,
         *,
-        video_probe: Callable[[Path], Mapping[str, object]] = probe_video,
+        video_probe: Callable[[Path], Mapping[str, object]] = _tolerant_video_probe,
     ):
         self.root = Path(root).resolve()
         self._video_probe = video_probe
@@ -224,7 +238,7 @@ def create_server(
     evidence_root: Path | str,
     web_root: Path | str,
     *,
-    video_probe: Callable[[Path], Mapping[str, object]] = probe_video,
+    video_probe: Callable[[Path], Mapping[str, object]] = _tolerant_video_probe,
 ):
     catalog = EvidenceCatalog(evidence_root, video_probe=video_probe)
     web = Path(web_root).resolve()

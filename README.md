@@ -1,4 +1,4 @@
-# SEER-HVLA
+﻿# SEER-HVLA
 
 > An evidence-driven layered VLA demo for industrial forklift container unloading.
 > Deterministic Isaac Sim digital twin, nine-skill AgentOS orchestration, fallback
@@ -117,7 +117,7 @@ validate_scenario_events  →  assert_summary_matches_validation
 
 **Fast-WAM 策略验证**（`evidence/fastwam-bowl-plate-20260816-v2-r1/`）：官方 LIBERO `libero_goal` task 8 `put_the_bowl_on_the_plate`，五个固定初态在官方 300 步预算内 **5/5** 通过原版 `env.check_success()`，实际执行 77–84 步。全部 7D 动作由 revision 与 config/weights SHA-256 已绑定的 checkpoint 生成，无规则控制器补动作。
 
-**测试**：201 项 Python 测试 + 56 项 JavaScript 协议断言。
+**测试**：202 项 Python 测试 + 56 项 JavaScript 协议断言。
 
 > ⚠️ 5/5 只描述随附的五个固定初态，不是通用成功率，也不是完整官方基准复现。
 
@@ -129,7 +129,7 @@ validate_scenario_events  →  assert_summary_matches_validation
 git clone <this-repo>
 cd <this-repo>
 
-./bin/demo.sh check                     # 201 项测试 + compileall + bash 语法检查
+./bin/demo.sh check                     # 202 项测试 + compileall + bash 语法检查
 ./bin/demo.sh serve evidence 8765       # 浏览器打开 http://127.0.0.1:8765
 ```
 
@@ -173,7 +173,7 @@ python3 bin/build_presentation.py evidence/isaac-normal-20260816-v5-r1
 ## 已验证状态
 
 ```
-201 项 Python 测试通过          python -m unittest discover -s tests
+202 项 Python 测试通过          python -m unittest discover -s tests
                                  （1 项跳过：依赖 macOS JavaScriptCore 的前端协议测试，见 CI 的 macOS job）
 56 项前端协议断言                tests/web_protocol_test.js
 三个叉车事件流严格校验通过        20 / 24 / 18 条事件，终态 COMPLETED / COMPLETED / HUMAN_REQUIRED
@@ -199,7 +199,7 @@ evidence/ 全部 40 个封存文件       SHA-256 与 MANIFEST.json 逐字节一
 │   └── backends/dry_run.py    确定性干运行后端（无需仿真环境）
 ├── web/                       只读证据控制台（零依赖、零构建、CSP 严格）
 ├── evidence/                  四份正式运行 + MANIFEST.json
-├── tests/                     201 项 Python 测试 + JS 协议断言
+├── tests/                     202 项 Python 测试 + JS 协议断言
 ├── bin/                       运行、录制、成片、封存脚本
 ├── docs/                      架构、声明边界、证据说明、工程记录
 │   └── development/           开发过程的 plan / spec 存档
