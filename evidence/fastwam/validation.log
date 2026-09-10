@@ -1,0 +1,10 @@
+Cannot initialize model with low cpu memory usage because `accelerate` was not found in the environment. Defaulting to `low_cpu_mem_usage=False`.
+The config attributes {'clip_output': False} were passed to AutoencoderKLWan, but are not expected and will be ignored.
+There are modules in AutoencoderKLWan that should be kept in float32: []. Casting directly with `to()` can lead to inconsistent results; set `torch_dtype` in `from_pretrained()` instead to keep these modules in float32.
+The tokenizer is using an incorrect regex pattern; the upstream loader recommends `fix_mistral_regex=True`.
+loading FastWAM policy on CPU ...
+Loading weights from local directory
+MODEL_LOADED, moving to CUDA ...
+ON_CUDA, device attrs synced
+INFERENCE_OK, action: torch.Size([1, 7]) | 推理耗时 0.86s
+VERIFY_DONE

@@ -1,0 +1,434 @@
+"""Headless Isaac Sim runner that records frames and observed JSONL evidence."""
+
+from __future__ import annotations
+
+import argparse
+from dataclasses import asdict
+from datetime import datetime, timezone
+import json
+import math
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+from typing import Mapping
+
+from ..contracts import EventWriter, load_events, validate_scenario_events
+from ..engine import ActionResult, DemoEngine
+from ..scenarios import (
+    SCENARIOS,
+    fallback_state_succeeded,
+    skill_state_succeeded,
+)
+from .timeline import FrameState, Timeline, build_timeline
+from .collision import assert_frame_transition_safe, assert_timeline_collision_safe
+
+
+CAMERA_STRATEGY = "subject_fit_smoothed_side_front_v3"
+
+
+def capture_action_observation(
+    observations: dict[tuple[str, str, int], dict[str, object]],
+    key: tuple[str, str, int],
+    observed: Mapping[str, object],
+) -> None:
+    """Bind one engine action to its first terminal timeline observation."""
+    observations.setdefault(key, dict(observed))
+
+
+def annotate_navigation_target_error(
+    observed: dict[str, object], target_frame: FrameState
+) -> None:
+    """Record measured planar error against this scenario phase's terminal target."""
+    try:
+        base_x = float(observed["base_x_m"])
+        base_y = float(observed["base_y_m"])
+    except (KeyError, TypeError, ValueError):
+        return
+    if not math.isfinite(base_x) or not math.isfinite(base_y):
+        return
+    observed["navigation_target_error_m"] = round(
+        math.hypot(base_x - target_frame.base_x_m, base_y - target_frame.base_y_m),
+        6,
+    )
+
+
+def annotate_payload_settle_state(
+    observed: dict[str, object],
+    previous_payload: tuple[float, float, float] | None,
+    delta_time_s: float | None,
+) -> None:
+    """Project measured payload motion into the release-settle evidence."""
+    try:
+        current = (
+            float(observed["payload_x_m"]),
+            float(observed["payload_y_m"]),
+            float(observed["payload_z_m"]),
+        )
+    except (KeyError, TypeError, ValueError):
+        observed["payload_speed_mps"] = None
+        observed["payload_settled"] = False
+        return
+    if previous_payload is None or delta_time_s is None or delta_time_s <= 0.0:
+        speed_mps = 0.0
+    else:
+        speed_mps = math.dist(previous_payload, current) / delta_time_s
+    observed["payload_speed_mps"] = round(speed_mps, 6)
+    observed["payload_settled"] = bool(
+        observed.get("payload_supported") is True and speed_mps <= 0.02
+    )
+
+
+class IsaacTimelineBackend:
+    """Execute engine actions against the exact frame-time observations of one run.
+
+    Durations are derived from the timeline frame clock rather than from fixed
+    skill budgets, so event ``sim_time_s`` stays aligned with the rendered video.
+    """
+
+    def __init__(self, timeline: Timeline, observations: Mapping[tuple[str, str, int], Mapping[str, object]]):
+        self.timeline = timeline
+        self.observations = observations
+        self._state = timeline.frames[0].to_observed_state()
+        self._observed_frame = timeline.frames[0].frame
+        self._last_observed_time_s = float(timeline.frames[0].sim_time_s)
+
+    def snapshot(self):
+        return dict(self._state)
+
+    def snapshot_evidence(self):
+        return {
+            "backend": "isaac_sim",
+            "stage_observed": True,
+            "observed_frame": self._observed_frame,
+        }
+
+    def execute_skill(self, skill_id: str, attempt: int) -> ActionResult:
+        state, frame, duration_s = self._observed("skill", skill_id, attempt)
+        success = skill_state_succeeded(skill_id, state)
+        confidence = 0.93 if success else max(0.20, 0.45 - attempt * 0.04)
+        return ActionResult(
+            success=success,
+            duration_s=duration_s,
+            state=state,
+            evidence={
+                "backend": "isaac_sim",
+                "stage_observed": True,
+                "observed_frame": frame,
+                "confidence": confidence,
+            },
+            message=f"{skill_id} {'状态验证通过' if success else '观测未通过阈值'}",
+        )
+
+    def execute_fallback(self, fallback_id: str, attempt: int) -> ActionResult:
+        state, frame, duration_s = self._observed("fallback", fallback_id, attempt)
+        success = fallback_state_succeeded(fallback_id, state)
+        return ActionResult(
+            success=success,
+            duration_s=duration_s,
+            state=state,
+            evidence={"backend": "isaac_sim", "stage_observed": True, "observed_frame": frame},
+            message={
+                "FB-F01": "Isaac 场景内横向重对位完成",
+                "FB-F02": "Isaac 场景内观察位姿调整完成",
+                "FB-F07": "Isaac 场景内退回安全等待点",
+            }[fallback_id],
+        )
+
+    def safety_stop(self) -> ActionResult:
+        state, frame, duration_s = self._observed("safety", "FB-F07", 1)
+        return ActionResult(
+            success=(
+                state.get("stopped") is True
+                and abs(float(state.get("base_speed_mps", 999.0))) <= 0.01
+            ),
+            duration_s=duration_s,
+            state=state,
+            evidence={
+                "backend": "isaac_sim",
+                "stage_observed": True,
+                "observed_frame": frame,
+                "velocity_verified_mps": state.get("base_speed_mps"),
+            },
+            message="Isaac 场景内车辆停稳",
+        )
+
+    def _observed(self, kind: str, identifier: str, attempt: int):
+        key = (kind, identifier, attempt)
+        if key not in self.observations:
+            raise RuntimeError(f"missing stage observation for {key}")
+        record = dict(self.observations[key])
+        frame = int(record.pop("_frame"))
+        if frame < 0 or frame >= len(self.timeline.frames):
+            raise RuntimeError(f"stage observation frame {frame} is outside the timeline")
+        frame_time_s = float(self.timeline.frames[frame].sim_time_s)
+        duration_s = max(0.0, round(frame_time_s - self._last_observed_time_s, 6))
+        self._last_observed_time_s = frame_time_s
+        self._state = record
+        self._observed_frame = frame
+        return dict(record), frame, duration_s
+
+
+
+def _parse_resolution(value: str) -> tuple[int, int]:
+    try:
+        width_text, height_text = value.lower().split("x", 1)
+        width, height = int(width_text), int(height_text)
+    except (ValueError, AttributeError) as exc:
+        raise argparse.ArgumentTypeError("resolution must look like 1280x720") from exc
+    if width < 640 or height < 360:
+        raise argparse.ArgumentTypeError("resolution must be at least 640x360")
+    return width, height
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Record a truthful SEER Isaac Sim scenario")
+    parser.add_argument("--scenario", required=True, choices=sorted(SCENARIOS))
+    parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--run-id", required=True)
+    parser.add_argument("--fps", type=int, default=8)
+    parser.add_argument("--resolution", type=_parse_resolution, default=(1280, 720))
+    parser.add_argument(
+        "--warehouse-asset-root",
+        type=Path,
+        help="optional root of the NVIDIA SimReady Warehouse-01 asset tree",
+    )
+    return parser
+
+
+def _encode_video(frames_dir: Path, output_path: Path, fps: int) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError("ffmpeg is required to encode the Isaac recording")
+    process = subprocess.run(
+        [
+            ffmpeg,
+            "-y",
+            "-loglevel",
+            "error",
+            "-framerate",
+            str(fps),
+            "-i",
+            str(frames_dir / "frame_%05d.png"),
+            "-c:v",
+            "libx264",
+            "-preset",
+            "medium",
+            "-crf",
+            "20",
+            "-pix_fmt",
+            "yuv420p",
+            str(output_path),
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=600,
+    )
+    if process.returncode != 0:
+        raise RuntimeError(f"ffmpeg failed: {process.stderr[-1000:]}")
+
+
+def run_isaac(args: argparse.Namespace) -> dict[str, object]:
+    if args.fps <= 0:
+        raise ValueError("fps must be positive")
+    os.environ.setdefault("OMNI_KIT_ACCEPT_EULA", "YES")
+    from isaacsim import SimulationApp
+
+    width, height = args.resolution
+    app = SimulationApp({"headless": True, "width": width, "height": height})
+    try:
+        import omni.replicator.core as rep
+        import omni.timeline
+        from omni.replicator.core.functional import write_image
+
+        from .scene import (
+            CAMERA_FOCAL_LENGTH_MM,
+            PHYSICS_SCHEMA_APIS,
+            WAREHOUSE_EXTENT_M,
+            apply_frame,
+            build_scene,
+            camera_poses_for_timeline,
+            observe_scene,
+        )
+        from .layout import static_physics_contract, warehouse_layout_spec
+
+        output_dir: Path = args.output_dir
+        output_dir.mkdir(parents=True, exist_ok=True)
+        frames_dir = output_dir / "frames"
+        frames_dir.mkdir(parents=True, exist_ok=True)
+        timeline = build_timeline(args.scenario, fps=args.fps)
+        collision_certification = assert_timeline_collision_safe(timeline)
+        handles = build_scene(
+            output_dir / "scene.usda",
+            args.scenario,
+            warehouse_asset_root=args.warehouse_asset_root,
+        )
+        omni.timeline.get_timeline_interface().play()
+        for _ in range(60):
+            app.update()
+
+        camera_poses = camera_poses_for_timeline(timeline)
+        initial_camera = camera_poses[0]
+        camera = rep.functional.create.camera(
+            position=initial_camera.position,
+            look_at=initial_camera.look_at,
+            parent="/World",
+            name="DemoCamera",
+            focal_length=CAMERA_FOCAL_LENGTH_MM,
+            clipping_range=(0.1, 1000.0),
+        )
+        render_product = rep.create.render_product(camera, resolution=(width, height), name="DemoRender")
+        rgb = rep.annotators.get("rgb")
+        rgb.attach(render_product)
+        observations: dict[tuple[str, str, int], dict[str, object]] = {}
+        previous_base: tuple[float, float] | None = None
+        previous_payload: tuple[float, float, float] | None = None
+        previous_time: float | None = None
+        previous_camera_pose = None
+        for index, frame in enumerate(timeline.frames):
+            if index > 0:
+                assert_frame_transition_safe(
+                    timeline.frames[index - 1], frame, timeline.scenario
+                )
+            apply_frame(handles, frame)
+            camera_pose = camera_poses[index]
+            if camera_pose != previous_camera_pose:
+                rep.functional.modify.pose(
+                    camera,
+                    position_value=camera_pose.position,
+                    look_at_value=camera_pose.look_at,
+                    look_at_up_axis=(0.0, 0.0, 1.0),
+                    write_to_usd=True,
+                )
+                previous_camera_pose = camera_pose
+            rep.orchestrator.step(rt_subframes=2)
+            write_image(path=str(frames_dir / f"frame_{index:05d}.png"), data=rgb.get_data())
+            observed = observe_scene(handles, base_speed_mps=0.0)
+            if previous_base is None or previous_time is None:
+                base_speed_mps = 0.0
+            else:
+                delta_time = frame.sim_time_s - previous_time
+                delta_x = float(observed["base_x_m"]) - previous_base[0]
+                delta_y = float(observed["base_y_m"]) - previous_base[1]
+                base_speed_mps = (
+                    (delta_x * delta_x + delta_y * delta_y) ** 0.5 / delta_time
+                    if delta_time > 0
+                    else 0.0
+                )
+            observed["base_speed_mps"] = round(base_speed_mps, 6)
+            observed["stopped"] = base_speed_mps <= 0.01
+            delta_time = (
+                frame.sim_time_s - previous_time
+                if previous_time is not None
+                else None
+            )
+            annotate_payload_settle_state(
+                observed,
+                previous_payload,
+                delta_time,
+            )
+            observed["safe_retreat_complete"] = (
+                float(observed["base_x_m"]) <= -0.9
+                and observed["payload_attached"] is False
+            )
+            previous_base = (
+                float(observed["base_x_m"]),
+                float(observed["base_y_m"]),
+            )
+            previous_payload = (
+                float(observed["payload_x_m"]),
+                float(observed["payload_y_m"]),
+                float(observed["payload_z_m"]),
+            )
+            previous_time = frame.sim_time_s
+            next_frame = timeline.frames[index + 1] if index + 1 < len(timeline.frames) else None
+            if next_frame is None or next_frame.phase != frame.phase:
+                observed["_frame"] = frame.frame
+                if frame.skill_id in {"FORK-NAV-01", "FORK-NAV-02", "FORK-NAV-03"}:
+                    annotate_navigation_target_error(observed, frame)
+                if frame.phase == "safety_stop":
+                    key = ("safety", "FB-F07", 1)
+                elif frame.skill_id:
+                    key = ("skill", frame.skill_id, frame.attempt)
+                elif frame.fallback_id:
+                    key = ("fallback", frame.fallback_id, frame.attempt)
+                else:
+                    continue
+                capture_action_observation(observations, key, observed)
+
+        handles.stage.GetRootLayer().Export(str(output_dir / "scene.usda"))
+
+        video_path = output_dir / "simulation.mp4"
+        _encode_video(frames_dir, video_path, args.fps)
+        events_path = output_dir / "events.jsonl"
+        with EventWriter(events_path, args.run_id, args.scenario, "isaac_sim") as writer:
+            DemoEngine(IsaacTimelineBackend(timeline, observations), writer).run(args.scenario)
+        validation = validate_scenario_events(
+            load_events(events_path), expected_scenario=args.scenario
+        )
+        summary = asdict(validation)
+        summary.update(collision_certification.to_summary())
+        summary.update(
+            {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
+                "control_mode": "kinematic_targets_with_explicit_physics_attachment_v2",
+                "physics_contract": list(PHYSICS_SCHEMA_APIS),
+                "physics_attachment": "UsdPhysics.FixedJoint",
+                "physics_downgrade_reason": (
+                    "The demonstration authors deterministic kinematic targets for reproducibility; "
+                    "pickup truth additionally requires an explicit enabled FixedJoint plus measured "
+                    "geometry. It is not a calibrated force-control or production dynamics claim."
+                ),
+                "isaac_version": "6.0.1",
+                "frame_count": len(timeline.frames),
+                "fps": args.fps,
+                "resolution": f"{width}x{height}",
+                "events_file": "events.jsonl",
+                "video_file": "simulation.mp4",
+                "scene_file": "scene.usda",
+                "warehouse_extent_m": list(WAREHOUSE_EXTENT_M),
+                "warehouse_asset_root": str(args.warehouse_asset_root) if args.warehouse_asset_root else None,
+                "warehouse_asset_count": len(handles.referenced_assets),
+                "warehouse_assets": list(handles.referenced_assets),
+                "facility_layout": asdict(warehouse_layout_spec()),
+                "static_physics_contract": [
+                    asdict(item) for item in static_physics_contract(args.scenario)
+                ],
+                "static_collision_prim_count": len(handles.static_collision_prims),
+                "camera_strategy": CAMERA_STRATEGY,
+            }
+        )
+        (output_dir / "summary.json").write_text(
+            json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+    except Exception as exc:
+        print(
+            f"ISAAC_RUN_FAILED:{type(exc).__name__}:{exc}",
+            file=sys.stderr,
+            flush=True,
+        )
+        app.close(exit_code=2)
+        raise
+    else:
+        print("ISAAC_RUN_COMPLETE:" + json.dumps(summary, ensure_ascii=False), flush=True)
+        app.close(exit_code=0)
+        return summary
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parser().parse_args(argv)
+    try:
+        summary = run_isaac(args)
+    except Exception as exc:
+        print(f"ISAAC_RUN_FAILED:{type(exc).__name__}:{exc}", file=sys.stderr, flush=True)
+        return 2
+    # In normal Isaac fast-shutdown mode run_isaac exits from app.close().
+    # This return remains useful for tests or hosts that disable fast shutdown.
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,11 @@
+{
+  "agentos_task": "把黑色碗放入盘子",
+  "canonical_assets": true,
+  "official_suite": "libero_goal",
+  "official_task_id": 8,
+  "official_task_name": "put_the_bowl_on_the_plate",
+  "policy_prompt": "Put the bowl on the plate",
+  "scene_variant": "libero_goal_8_bowl_plate_canonical_v1",
+  "schema_version": "1.0",
+  "task_specific_finetuning": false
+}

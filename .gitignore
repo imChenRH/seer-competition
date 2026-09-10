@@ -1,0 +1,22 @@
+# Local credentials (never committed)
+.env
+凭证汇总.md
+*.pem
+
+# Python
+*.py[cod]
+__pycache__/
+*.dmp
+
+# Generated dry-run evidence
+evidence/local/
+
+# Local tooling and OS noise
+.claude/
+.dsh-vision-toolkit/
+codex-*.md
+.DS_Store
+seer_demo_server*.log
+
+# Rendered frames are regenerable; never commit them
+evidence/*/frames/

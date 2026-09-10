@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SEER × AgentOS × VLA · 工业仓储智能叉车演示</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <main>
+    <nav class="scenario-tabs panel" aria-label="演示场景" role="tablist">
+      <button class="scenario-tab active" type="button" role="tab" aria-selected="true" data-scenario="normal"><span class="tab-label">正常卸货</span><span class="tab-badge" data-badge-for="normal">读取中</span></button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="recovery"><span class="tab-label">自动恢复</span><span class="tab-badge" data-badge-for="recovery">读取中</span></button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="intervention"><span class="tab-label">安全介入</span><span class="tab-badge" data-badge-for="intervention">读取中</span></button>
+      <button class="scenario-tab" type="button" role="tab" aria-selected="false" data-scenario="fastwam"><span class="tab-label">Fast-WAM 碗→盘</span><span class="tab-badge" data-badge-for="fastwam">读取中</span></button>
+    </nav>
+
+    <section id="judge-hero" class="panel">
+      <div class="hero-copy">
+        <p class="eyebrow">SEER-HVLA · 评委证据导览</p>
+        <h1>让大模型负责决策，让机器人按规控安全执行</h1>
+        <p class="hero-subtitle">面向集装箱卸货中的长流程、异常恢复和人机协同痛点，AgentOS 将自然语言任务分解为白名单技能，VLA 生成细粒度动作，仿真与连续审计共同验证结果。</p>
+      </div>
+      <div class="hero-actions">
+        <button id="quick-normal" class="hero-primary" type="button">开始完整演示</button>
+        <button id="quick-fastwam" class="hero-secondary" type="button">只看 Fast-WAM</button>
+        <button id="demo-mode-toggle" class="hero-ghost" type="button" aria-pressed="false">演示模式</button>
+      </div>
+      <ol id="evaluation-rubric" class="evaluation-rubric" aria-label="评分标准证据映射"></ol>
+      <div id="evaluation-proofline" class="evaluation-proofline" aria-label="当前可核验证据">
+        <strong>当前可核验证据</strong>
+        <span id="hero-stat-forklift">9/9 技能闭环</span>
+        <span id="hero-stat-safety">1 次自动恢复 · 0 禁止碰撞</span>
+        <span id="hero-stat-fastwam">Fast-WAM 正在读取</span>
+        <em>实机节拍、接管率、停机时长和 ROI 待与仙工联合标定</em>
+      </div>
+    </section>
+
+    <section id="agent-console" class="agent-console panel" aria-label="AgentOS 任务对话">
+      <div class="feishu-conversation">
+        <header class="feishu-header">
+          <div class="agent-identity">
+            <span class="agent-avatar">A</span>
+            <strong>agentos</strong>
+            <span class="agent-tag">智能体</span>
+          </div>
+          <div class="feishu-tools" aria-label="会话工具"><span>⌕</span><span>□+</span><span>✎</span><span>⚙</span></div>
+        </header>
+        <div class="feishu-thread">
+          <div class="reply-count">▣ 1 条回复</div>
+          <article class="agent-reply">
+            <p class="reply-context">回复 操作员：你好，我是你的 agentos</p>
+            <p>我是 <strong>AgentOS 智能调度员</strong>，负责把自然语言仓储任务转换为可审计的技能序列，并在异常时触发既定 Fallback 或人工介入。</p>
+            <h2>核心工作职责</h2>
+            <ol>
+              <li><strong>任务分解：</strong>只从技能库选择已定义能力并形成执行顺序。</li>
+              <li><strong>大脑与小脑协同：</strong>大脑层规划，小脑层执行，状态来自仿真与审计事件。</li>
+              <li><strong>安全与追溯：</strong>每个决策、恢复和终态都写入连续证据。</li>
+            </ol>
+            <div id="chat-response" class="chat-response" aria-live="polite">请选择上方模式，然后发送预填任务。</div>
+          </article>
+        </div>
+        <div class="feishu-composer">
+          <button class="quick-command" type="button" tabindex="-1">快捷指令⌄</button>
+          <div class="composer-box">
+            <input id="task-input" value="卸载3号集装箱货物到A区传送带" autocomplete="off" aria-label="任务指令">
+            <div class="composer-tools" aria-hidden="true"><span>Aa</span><span>☺</span><span>@</span><span>✂</span><span>⊕</span><span>⛶</span></div>
+            <button id="dispatch-button" type="button" aria-label="发送任务">➤</button>
+          </div>
+        </div>
+        <div id="dispatch-details" class="dispatch-details" hidden>
+          <div class="dispatch-strip">
+            <div><span>当前下发</span><strong id="active-instruction">未开始</strong></div>
+            <div><span>行为映射</span><strong id="active-behavior">等待小脑层</strong></div>
+            <div><span>审计游标</span><strong id="active-audit">#—</strong></div>
+          </div>
+          <ol id="dispatch-plan" class="dispatch-plan" aria-label="技能分发计划"></ol>
+        </div>
+      </div>
+    </section>
+
+    <div id="evidence-content" hidden>
+    <section class="run-picker panel">
+      <strong>已验证证据运行</strong>
+      <div id="run-meta" class="run-meta">正在读取本地证据…</div>
+    </section>
+
+    <section class="metrics" aria-label="运行摘要">
+      <article class="metric"><span>终态</span><strong id="metric-status">—</strong></article>
+      <article class="metric"><span>已完成技能</span><strong id="metric-skills">—</strong></article>
+      <article class="metric"><span>Fallback</span><strong id="metric-fallbacks">—</strong></article>
+      <article class="metric"><span id="metric-duration-label">证据时长</span><strong id="metric-duration">—</strong></article>
+    </section>
+
+    <section class="workspace">
+      <article class="video-card panel">
+        <div class="section-heading">
+          <div><p id="video-eyebrow" class="eyebrow">ISAAC SIM × ARCHITECTURE VIEW</p><h2 id="video-heading">仿真与双层架构同步画面</h2></div>
+          <span id="source-pill" class="pill">—</span>
+        </div>
+        <video id="simulation-video" controls preload="metadata" playsinline></video>
+        <div id="no-video" class="empty-state" hidden>该运行是 Mac dry-run，仅有逻辑证据，没有仿真视频。</div>
+        <div class="playback-timeline" aria-label="播放进度">
+          <div class="timeline-caption"><span>播放进度</span><em id="timeline-hint">点击阶段可跳转</em></div>
+          <ol id="phase-track" class="phase-track"></ol>
+        </div>
+      </article>
+
+      <article class="panel skills-card">
+        <div class="section-heading"><div><p class="eyebrow">SKILL GRAPH</p><h2 id="skills-heading">技能执行链</h2></div></div>
+        <ol id="skill-list" class="skill-list"></ol>
+      </article>
+    </section>
+
+    <section class="lower-grid">
+      <article class="panel">
+        <div class="section-heading"><div><p id="lower-left-eyebrow" class="eyebrow">FALLBACK & SAFETY</p><h2 id="lower-left-heading">恢复与安全事件</h2></div></div>
+        <div id="fallback-list" class="event-cards"></div>
+      </article>
+      <article class="panel">
+        <div class="section-heading"><div><p class="eyebrow">AUDIT TRAIL</p><h2>连续审计日志</h2></div><span id="event-count" class="pill">0 events</span></div>
+        <div id="event-log" class="event-log"></div>
+      </article>
+    </section>
+    </div>
+
+    <aside class="limitations" id="demo-boundary" hidden>
+      <strong>演示边界</strong>
+      <span>确定性运动目标 + 显式 UsdPhysics 固定关节的仿真原型；不是仙工实机控制、真实感知、ROS 2 硬件闭环、标定力控或 Fast-WAM 叉车控制。</span>
+    </aside>
+  </main>
+
+  <script src="/assets/protocol.js"></script>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

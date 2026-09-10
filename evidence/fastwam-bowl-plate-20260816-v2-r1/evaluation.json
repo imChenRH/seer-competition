@@ -1,0 +1,49 @@
+{
+  "attempts": [
+    {
+      "attempt_index": 0,
+      "executed_steps": 84,
+      "init_state_id": 0,
+      "policy_calls": 9,
+      "seed": 202608160,
+      "success": true,
+      "terminal_reason": "official_success"
+    },
+    {
+      "attempt_index": 1,
+      "executed_steps": 79,
+      "init_state_id": 1,
+      "policy_calls": 8,
+      "seed": 202608161,
+      "success": true,
+      "terminal_reason": "official_success"
+    },
+    {
+      "attempt_index": 2,
+      "executed_steps": 77,
+      "init_state_id": 2,
+      "policy_calls": 8,
+      "seed": 202608162,
+      "success": true,
+      "terminal_reason": "official_success"
+    },
+    {
+      "attempt_index": 3,
+      "executed_steps": 79,
+      "init_state_id": 3,
+      "policy_calls": 8,
+      "seed": 202608163,
+      "success": true,
+      "terminal_reason": "official_success"
+    },
+    {
+      "attempt_index": 4,
+      "executed_steps": 80,
+      "init_state_id": 4,
+      "policy_calls": 8,
+      "seed": 202608164,
+      "success": true,
+      "terminal_reason": "official_success"
+    }
+  ]
+}

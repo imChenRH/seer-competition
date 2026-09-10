@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "evidence_class": "operator_attestation",
+  "verified_at": "2026-08-13T08:46:16Z",
+  "task_id": "T-DEMO-20260813-001",
+  "feishu_record_id": "recvsafPX7fVOy",
+  "bridge_id": "strict-bridge-20260813",
+  "runner_invocation_count": 1,
+  "task_status": "已完成",
+  "last_event_sequence": 19,
+  "external_status": "任务完成",
+  "audit_count": 20,
+  "audit_sequences": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+  "run": {
+    "run_id": "T-DEMO-20260813-001-normal",
+    "scenario": "normal",
+    "source": "isaac_sim",
+    "terminal_status": "COMPLETED",
+    "event_count": 20,
+    "duration_s": 51.0,
+    "generated_at": "2026-08-13T08:43:37.572863+00:00",
+    "isaac_version": "6.0.1",
+    "controller": "deterministic_kinematic_rule_controller",
+    "resolution": "640x360",
+    "fps": 2,
+    "frame_count": 103
+  },
+  "remote_artifacts": {
+    "events.jsonl": {
+      "size_bytes": 13208,
+      "sha256": "aecfd9879481692c6516978f477ca7beebcc9da0c2ee817312faed11de7a990a"
+    },
+    "summary.json": {
+      "size_bytes": 470,
+      "sha256": "da01390b53619faed1889ab038a26d05eaaa3191b84d0843dd3f7419165c4bcc"
+    },
+    "scene.usda": {
+      "size_bytes": 28202,
+      "sha256": "c66dbf4977d191d0c91cf77cb180308349fdc691c32c00c25908eb500b6949c5"
+    },
+    "simulation.mp4": {
+      "size_bytes": 615391,
+      "sha256": "ac0aeec1a442f732d30f366e86ccb7d65d1978cba5d6cd9e64047febe0063b10"
+    }
+  },
+  "claim_boundary": "Operator-attested snapshot recording one observed Feishu task, one runner invocation, and 20 replayed events. The repository manifest hashes this file, but the receipt is not a signed Feishu API export and is not independently tamper-proof. It does not establish an Aily natural-language turn, hardware control, ROS 2, or production safety."
+}

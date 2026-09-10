@@ -1,0 +1,325 @@
+{
+  "schema_version": "1.0",
+  "runs": [
+    {
+      "run_id": "fastwam-bowl-plate-20260816-v2-r1",
+      "scenario": "fastwam_bowl_plate",
+      "source": "fastwam_policy",
+      "terminal_status": "COMPLETED",
+      "event_count": 18,
+      "duration_s": 4.2,
+      "isaac_version": null,
+      "controller": null,
+      "collision_guard": null,
+      "collision_check_count": null,
+      "minimum_body_clearance_m": null,
+      "maximum_contact_error_m": null,
+      "maximum_horizontal_placement_error_m": null,
+      "contact_violation_count": null,
+      "forbidden_collision_count": null,
+      "obstacle_interpenetration_count": null,
+      "collision_certified": null,
+      "video_probe": {
+        "width": 1280,
+        "height": 720,
+        "fps": 20.0,
+        "frame_count": 85,
+        "duration_s": 4.25
+      },
+      "files": {
+        "events.jsonl": {
+          "size_bytes": 8981,
+          "sha256": "c75aea3c1fa2250fff600de7a86d3dad6969bf54af43078257f632c9e05dc4ef"
+        },
+        "summary.json": {
+          "size_bytes": 3269,
+          "sha256": "5e12272ca47bccec9aa3c305ab33c3b527179c6a0e1a6b1b71d63a63e048701f"
+        },
+        "scene_variant.json": {
+          "size_bytes": 362,
+          "sha256": "cb96137d13928bfd3e4736098f042705b7d819af4bf0bfa147800946ca340dec"
+        },
+        "simulation.mp4": {
+          "size_bytes": 331093,
+          "sha256": "5ad658b0032f919ed5f3e7e1cba39d087180ca59a9713b4c3863f60d05d58177"
+        },
+        "actions.jsonl": {
+          "size_bytes": 23586,
+          "sha256": "9b27e348baf6a25969ee514bc1938d3bc248f8e4b6eea67764d7709bf70b1dc5"
+        },
+        "evaluation.json": {
+          "size_bytes": 1073,
+          "sha256": "daa346657108f9b309759a10721ed940606da32e7a6cb20ba22f63901ecd7e66"
+        },
+        "attempt-0-actions.jsonl": {
+          "size_bytes": 23586,
+          "sha256": "9b27e348baf6a25969ee514bc1938d3bc248f8e4b6eea67764d7709bf70b1dc5"
+        },
+        "attempt-0-states.json": {
+          "size_bytes": 29765,
+          "sha256": "e78d5aae24b681a70a8000ca1f09af8ff1b582756176415dd6b10b73f7e27fcd"
+        },
+        "attempt-0-simulation.mp4": {
+          "size_bytes": 331093,
+          "sha256": "5ad658b0032f919ed5f3e7e1cba39d087180ca59a9713b4c3863f60d05d58177"
+        },
+        "attempt-1-actions.jsonl": {
+          "size_bytes": 22128,
+          "sha256": "d18d5db980090535aeee0d1296508f7d9a8a403272a45ca52dcf1e076a75af55"
+        },
+        "attempt-1-states.json": {
+          "size_bytes": 27946,
+          "sha256": "848b612a4ea84e8638f79ce64ac5db05b7eb3209c2109838f3d557c419c80f2a"
+        },
+        "attempt-1-simulation.mp4": {
+          "size_bytes": 324419,
+          "sha256": "a6bb13787a33efa4378a894772226bbe289c9e11940a2d7c6395523fca4ad893"
+        },
+        "attempt-2-actions.jsonl": {
+          "size_bytes": 21587,
+          "sha256": "75e7c5b12cebc5e500f49fc1a90da62c5b28389425c77ddec300f26303d34cbf"
+        },
+        "attempt-2-states.json": {
+          "size_bytes": 27253,
+          "sha256": "81b247d3f0e7800770b39e82c9c797cd745633b75cddef8ab9111db068ca69a3"
+        },
+        "attempt-2-simulation.mp4": {
+          "size_bytes": 305870,
+          "sha256": "b31b76da2db0c9133dbb7b11fe026233f3c331745e23e732ec4e8360efc42867"
+        },
+        "attempt-3-actions.jsonl": {
+          "size_bytes": 22127,
+          "sha256": "2f30c273d3587efb2bc9b9a3905f73de0f19875bf756e25f39674ae9e5b38a93"
+        },
+        "attempt-3-states.json": {
+          "size_bytes": 28025,
+          "sha256": "e2edf032bba2eed03aec465c1db807493a3a54a04ffa1595b077b167ef254d82"
+        },
+        "attempt-3-simulation.mp4": {
+          "size_bytes": 320837,
+          "sha256": "f31dbe1d24f780ea928efd276f62300cbf1eebffdc9af2293d582a37d22eb807"
+        },
+        "attempt-4-actions.jsonl": {
+          "size_bytes": 22505,
+          "sha256": "a41b86007591c7dd5cbfac6619dfab884cb47561adb901ca9a72d7ac88ed8aa0"
+        },
+        "attempt-4-states.json": {
+          "size_bytes": 28206,
+          "sha256": "3a28647aa6c01a8db11d8313ae7f3464a9a773411eb624531091ea79a0edeafa"
+        },
+        "attempt-4-simulation.mp4": {
+          "size_bytes": 315460,
+          "sha256": "582ccc3fd81cd86c28000a42baa3791f59514a566c2ede560844d522be4dd2d8"
+        },
+        "presentation.mp4": {
+          "size_bytes": 690280,
+          "sha256": "47461afe065104841af38af21e193a1851792c199eb08812b651a974ea0eed2a"
+        }
+      },
+      "presentation_probe": {
+        "width": 2560,
+        "height": 1080,
+        "fps": 20.0,
+        "frame_count": 85,
+        "duration_s": 4.25
+      },
+      "policy_checkpoint": "fastwam_libero_uncond_2cam224",
+      "policy_repository": "lerobot/fastwam_libero_uncond_2cam224",
+      "policy_revision": "53983e1249b4eb4d89ab42b40b8678a882d331ad",
+      "policy_config_sha256": "42a94a032ab0803ff0aec86a04324b3326093c76d040d08b10bdc982a4bbbe01",
+      "policy_weights_sha256": "07a5bf6d73ff5b2713fc83c65b8a4f19c36d41317918198be49eb83c26f441b3",
+      "official_success": true,
+      "attempt_count": 5,
+      "success_count": 5,
+      "selected_attempt": 0
+    },
+    {
+      "run_id": "isaac-intervention-20260816-v6-r1",
+      "scenario": "intervention",
+      "source": "isaac_sim",
+      "terminal_status": "HUMAN_REQUIRED",
+      "event_count": 18,
+      "duration_s": 36.0,
+      "isaac_version": "6.0.1",
+      "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
+      "collision_guard": "2.5D_OBB_SAT_SWEEP_V4",
+      "collision_check_count": 651784,
+      "minimum_body_clearance_m": 0.387376,
+      "maximum_contact_error_m": 0.0,
+      "maximum_horizontal_placement_error_m": 0.0,
+      "contact_violation_count": 0,
+      "forbidden_collision_count": 0,
+      "obstacle_interpenetration_count": 0,
+      "collision_certified": true,
+      "video_probe": {
+        "width": 1280,
+        "height": 720,
+        "fps": 8.0,
+        "frame_count": 289,
+        "duration_s": 36.125
+      },
+      "files": {
+        "events.jsonl": {
+          "size_bytes": 17863,
+          "sha256": "eadf84667bc32a034181058d985f5114b1f0ccfe85157a83b0e41e7f7f2bb787"
+        },
+        "summary.json": {
+          "size_bytes": 4472,
+          "sha256": "a3656d3c397626a005f393325e863a01354d6c20dec3b8a8bd74a195ae71c549"
+        },
+        "scene.usda": {
+          "size_bytes": 251188,
+          "sha256": "5a6c4b8d636bfac2488718003e8bc7762baa4d7729d96a8db8e83ca6ca6698e6"
+        },
+        "simulation.mp4": {
+          "size_bytes": 6351861,
+          "sha256": "be5ad473b6e32a4c6eb933b6ddef7c84a7ab1468c16fd9283f498ee06b128aef"
+        },
+        "presentation.mp4": {
+          "size_bytes": 8522516,
+          "sha256": "c096c950afea24260556bc6d453320529afd22648fc0d3a5c4af93ac38626023"
+        }
+      },
+      "presentation_probe": {
+        "width": 2560,
+        "height": 1080,
+        "fps": 8.0,
+        "frame_count": 289,
+        "duration_s": 36.125
+      }
+    },
+    {
+      "run_id": "isaac-normal-20260816-v5-r1",
+      "scenario": "normal",
+      "source": "isaac_sim",
+      "terminal_status": "COMPLETED",
+      "event_count": 20,
+      "duration_s": 66.25,
+      "isaac_version": "6.0.1",
+      "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
+      "collision_guard": "2.5D_OBB_SAT_SWEEP_V4",
+      "collision_check_count": 1128953,
+      "minimum_body_clearance_m": 0.213986,
+      "maximum_contact_error_m": 0.0,
+      "maximum_horizontal_placement_error_m": 0.0,
+      "contact_violation_count": 0,
+      "forbidden_collision_count": 0,
+      "obstacle_interpenetration_count": 0,
+      "collision_certified": true,
+      "video_probe": {
+        "width": 1280,
+        "height": 720,
+        "fps": 8.0,
+        "frame_count": 531,
+        "duration_s": 66.375
+      },
+      "files": {
+        "events.jsonl": {
+          "size_bytes": 19410,
+          "sha256": "83d099e4a4d7ac7f68c6b0c6b73cbff891a99d1aaf1237b08bc705aaf9c6f0ff"
+        },
+        "summary.json": {
+          "size_bytes": 4313,
+          "sha256": "a5bd9bc249cd737155e0d8ebcc1ab6bd2d87400f1b640f01518b09704e44ebbc"
+        },
+        "scene.usda": {
+          "size_bytes": 318968,
+          "sha256": "b3134697f33468204ce757d7c72301336616316522f9e1b6f4a90dfde324c220"
+        },
+        "simulation.mp4": {
+          "size_bytes": 11692174,
+          "sha256": "144fa3f181cfb51d3ceda4bece223d95883d1148e7b61ae3de58455daf5b632a"
+        },
+        "presentation.mp4": {
+          "size_bytes": 15410887,
+          "sha256": "c0735390d59718933062bb37d87e732605da97881785b4cfc59559bc6699a0f5"
+        }
+      },
+      "presentation_probe": {
+        "width": 2560,
+        "height": 1080,
+        "fps": 8.0,
+        "frame_count": 531,
+        "duration_s": 66.375
+      }
+    },
+    {
+      "run_id": "isaac-recovery-20260816-v5-r1",
+      "scenario": "recovery",
+      "source": "isaac_sim",
+      "terminal_status": "COMPLETED",
+      "event_count": 24,
+      "duration_s": 77.25,
+      "isaac_version": "6.0.1",
+      "controller": "deterministic_kinematic_targets_with_explicit_physics_attachment",
+      "collision_guard": "2.5D_OBB_SAT_SWEEP_V4",
+      "collision_check_count": 1248809,
+      "minimum_body_clearance_m": 0.213986,
+      "maximum_contact_error_m": 0.0,
+      "maximum_horizontal_placement_error_m": 0.0,
+      "contact_violation_count": 0,
+      "forbidden_collision_count": 0,
+      "obstacle_interpenetration_count": 0,
+      "collision_certified": true,
+      "video_probe": {
+        "width": 1280,
+        "height": 720,
+        "fps": 8.0,
+        "frame_count": 619,
+        "duration_s": 77.375
+      },
+      "files": {
+        "events.jsonl": {
+          "size_bytes": 23554,
+          "sha256": "9f3b78efc644e558afabfa426ecfef05832732922a55ff6ea6fc3780de3ab59d"
+        },
+        "summary.json": {
+          "size_bytes": 4317,
+          "sha256": "8df0bcd2ddd8a99212cd778d02089887d34f8f907f384ea4f9683378461aa8c3"
+        },
+        "scene.usda": {
+          "size_bytes": 347974,
+          "sha256": "fa3a00fea5605c73636552ee0806bb5d9a955fe5c8601710b7a43a702255877c"
+        },
+        "simulation.mp4": {
+          "size_bytes": 13932505,
+          "sha256": "ccc9645ce5a513515a3334f7c07e9b37d8004ce0385f0d21ae2ca86433d82f6f"
+        },
+        "presentation.mp4": {
+          "size_bytes": 18403340,
+          "sha256": "6664503a14f2010112984f28fa09a8c3a9de828852f5b0071d6c1721af216baf"
+        }
+      },
+      "presentation_probe": {
+        "width": 2560,
+        "height": 1080,
+        "fps": 8.0,
+        "frame_count": 619,
+        "duration_s": 77.375
+      }
+    }
+  ],
+  "auxiliary_evidence": {
+    "FEISHU_LIVE_RECEIPT.json": {
+      "size_bytes": 1830,
+      "sha256": "877f0f55565a44bf0ef5bbfe03353cb148538dd24b30d4ea218dfd6d36f7f209"
+    },
+    "fastwam/README.md": {
+      "size_bytes": 541,
+      "sha256": "588bf6c25b495b3634af127f8fea87cb1aac8b713c71fa158e15cf1707f70957"
+    },
+    "fastwam/validation.log": {
+      "size_bytes": 801,
+      "sha256": "33ed304c4f286afb2f78096a847697464d90cc050d29113ff3757953d4a79434"
+    }
+  },
+  "generated_at": "2026-08-16T09:35:01.803233+00:00",
+  "environment": {
+    "simulator": "Isaac Sim 6.0.1",
+    "recording_host": "AutoDL Linux / NVIDIA RTX 4090",
+    "controller": "deterministic kinematic targets with explicit physics attachment",
+    "payload_model": "geometry observation plus time-sampled UsdPhysics.FixedJoint",
+    "presentation": "2560x1080 auditable event projection synchronized to source video"
+  },
+  "claim_boundary": "Demonstration-grade deterministic motion targets with explicit USD physics attachment; not hardware, ROS 2, real perception, Fast-WAM forklift control, calibrated dynamics, force control, or production safety evidence."
+}
