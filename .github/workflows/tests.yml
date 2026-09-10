@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # The Python suite covers the event contract, the nine-skill state machine,
+      # the Feishu bridge, evidence/manifest validation, the collision guard and
+      # the HTTP evidence server. It needs no GPU, no Isaac Sim and no ffmpeg.
+      - name: Run test suite
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+          NO_PROXY: 127.0.0.1,localhost
+          no_proxy: 127.0.0.1,localhost
+        run: python -m unittest discover -s tests -v
+
+      - name: Byte-compile
+        run: python -m compileall -q src tests bin
+
+      - name: Shell syntax
+        run: bash -n bin/demo.sh bin/run_isaac.sh bin/run_fastwam.sh
+
+  protocol-assertions:
+    # tests/test_web_protocol.py drives tests/web_protocol_test.js through the
+    # macOS JavaScriptCore `jsc` binary, so this job must run on macOS.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Assert the front-end evidence protocol
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: python -m unittest tests.test_web_protocol -v

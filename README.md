@@ -165,6 +165,23 @@ python3 bin/build_presentation.py evidence/isaac-normal-20260816-v5-r1
 
 回写飞书桥接需要的凭证放在仓库根的 `.env`（模板见 `.env.example`，已被 Git 忽略）。
 
+> **本地校验的两个前提**
+>
+> - `bin/build_manifest.py` 会调用 `ffprobe` 重新探测视频帧数，这是重新封存证据的硬依赖；只跑测试与展示不需要它。
+> - 若 checkout 路径含非 ASCII 字符（例如中文目录名），在部分 Windows 终端下 Python 解析 `PYTHONPATH` 会失败。此时请改用 ASCII 路径，或把 `src` 加入 `sys.path` 后再运行。
+
+## 已验证状态
+
+```
+201 项 Python 测试通过          python -m unittest discover -s tests
+                                 （1 项跳过：依赖 macOS JavaScriptCore 的前端协议测试，见 CI 的 macOS job）
+56 项前端协议断言                tests/web_protocol_test.js
+三个叉车事件流严格校验通过        20 / 24 / 18 条事件，终态 COMPLETED / COMPLETED / HUMAN_REQUIRED
+Fast-WAM 证据包校验通过          5 次 attempt 的动作、状态、视频逐组交叉验证
+evidence/ 全部 40 个封存文件       SHA-256 与 MANIFEST.json 逐字节一致
+```
+
+
 ## 仓库结构
 
 ```
