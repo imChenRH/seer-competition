@@ -21,8 +21,10 @@ jobs:
       - name: Run test suite
         env:
           PYTHONPATH: ${{ github.workspace }}/src
+          # GitHub Actions parses env keys case-insensitively, so declaring both
+          # NO_PROXY and no_proxy makes the whole workflow fail to parse
+          # ('no_proxy' is already defined). Keep exactly one spelling.
           NO_PROXY: 127.0.0.1,localhost
-          no_proxy: 127.0.0.1,localhost
         run: python -m unittest discover -s tests -v
 
       - name: Byte-compile
