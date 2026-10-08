@@ -169,10 +169,15 @@ python3 bin/build_presentation.py evidence/isaac-normal-20260816-v5-r1
 
 回写飞书桥接需要的凭证放在仓库根的 `.env`（模板见 `.env.example`，已被 Git 忽略）。
 
-> **本地校验的两个前提**
+> **本地校验的前提**
 >
-> - `bin/build_manifest.py` 会调用 `ffprobe` 重新探测视频帧数，这是重新封存证据的硬依赖；只跑测试与展示不需要它。
-> - 若 checkout 路径含非 ASCII 字符（例如中文目录名），在部分 Windows 终端下 Python 解析 `PYTHONPATH` 会失败。此时请改用 ASCII 路径，或把 `src` 加入 `sys.path` 后再运行。
+> `bin/build_manifest.py` 会调用 `ffprobe` 重新探测视频帧数，这是重新封存证据的硬依赖；只跑测试与展示不需要它。
+
+正常跑测试只需要把 `src` 加进 `PYTHONPATH`。含非 ASCII 字符的 checkout 路径（例如中文目录名）本身不构成问题：已在本机 Windows + 中文路径下验证 `python -m unittest discover -s tests` 全部通过，且 Python 3.11 与 3.14 均可（CI 使用 3.11）。若某个终端未能正确传递 `PYTHONPATH`，那是该终端的编码问题，可用绝对路径显式指定，或在仓库根改用：
+
+```bash
+python -c "import sys; sys.path.insert(0, 'src'); import unittest; unittest.main(module=None, argv=['x', 'discover', '-s', 'tests'])"
+```
 
 ## 已验证状态
 
