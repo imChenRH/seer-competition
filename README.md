@@ -1,4 +1,4 @@
-﻿# SEER-HVLA
+# SEER-HVLA
 
 > An evidence-driven layered VLA demo for industrial forklift container unloading.
 > Deterministic Isaac Sim digital twin, nine-skill AgentOS orchestration, fallback
@@ -35,38 +35,42 @@
 ## 分层架构
 
 ```
-                        飞书 Aily（业务入口）
-                               │  自然语言任务
-                               ▼
-        ┌──────────────────────────────────────────┐
-        │  AgentOS 编排层（src/engine.py）           │
-        │  九技能序列 · Fallback · 终态判定          │
-        └──────────────────────────────────────────┘
-                               │  技能 + 观测
-                               ▼
-        ┌──────────────────────────────────────────┐
-        │  执行层                                   │
-        │  Isaac Sim 数字孪生（src/isaac/）          │
-        │  Fast-WAM 策略（src/fastwam/）             │
-        │  确定性规则引擎（src/backends/dry_run.py） │
-        └──────────────────────────────────────────┘
-                               │  实际观测
-                               ▼
-        ┌──────────────────────────────────────────┐
-        │  安全层（src/isaac/collision.py）          │
-        │  2.5D OBB/SAT 扫掠碰撞认证 · 失败关闭      │
-        └──────────────────────────────────────────┘
-                               │
-                               ▼
-                  events.jsonl（唯一事实源）
-                               │
-              ┌────────────────┼────────────────┐
-              ▼                ▼                ▼
-        飞书审计回写      证据清单哈希      只读证据控制台
-       （src/bridge.py） （src/manifest.py）    （web/）
+                    飞书 Aily（业务入口）
+                            │  自然语言任务
+                            ▼
+      ┌────────────────────────────────────────────────┐
+      │  AgentOS 编排层                                │
+      │    engine.py · scenarios.py                    │
+      │    九技能序列 · Fallback · 终态判定            │
+      └────────────────────────────────────────────────┘
+                            │  技能 + 观测
+                            ▼
+      ┌────────────────────────────────────────────────┐
+      │  执行层                                        │
+      │    isaac/     Isaac Sim 数字孪生               │
+      │    fastwam/   Fast-WAM 策略                    │
+      │    backends/  确定性规则引擎（可无仿真运行）   │
+      └────────────────────────────────────────────────┘
+                            │  实际观测
+                            ▼
+      ┌────────────────────────────────────────────────┐
+      │  安全层                                        │
+      │    isaac/collision.py                          │
+      │    2.5D OBB/SAT 扫掠碰撞认证 · 失败关闭        │
+      └────────────────────────────────────────────────┘
+                            │
+                            ▼
+                 events.jsonl（唯一事实源）
+                            │
+             ┌──────────────┼──────────────┐
+             ▼              ▼              ▼
+        飞书审计回写    证据清单哈希    只读证据控制台
+        bridge.py       manifest.py     web/
 ```
 
-**九技能序列**（`src/scenarios.py`）：
+以上模块全部位于 `src/seer_demo/`，`web/` 位于仓库根。
+
+**九技能序列**（`src/seer_demo/scenarios.py`）：
 
 ```
 FORK-NAV-01 进箱导航 → FORK-NAV-03 精确对位 → FORK-PER-01 栈板识别
@@ -74,7 +78,7 @@ FORK-NAV-01 进箱导航 → FORK-NAV-03 精确对位 → FORK-PER-01 栈板识�
 → FORK-NAV-02 月台区导航 → FORK-OP-05 传送带对接 → FORK-OP-04 栈板放置
 ```
 
-**三个场景共用同一状态机**（`src/engine.py`），只有注入条件不同：
+**三个场景共用同一状态机**（`src/seer_demo/engine.py`），只有注入条件不同：
 
 | 场景 | 注入条件 | Fallback | 终态 |
 |---|---|---|---|
@@ -86,7 +90,7 @@ FORK-NAV-01 进箱导航 → FORK-NAV-03 精确对位 → FORK-PER-01 栈板识�
 
 这是本项目与普通演示最大的区别，也是代码的主要工作量所在。
 
-**1. 事件契约是可验证的语义，不只是格式。** `src/contracts.py` 的 `validate_scenario_events()` 为三个场景各自硬编码了期望事件轨迹并逐条比对。它会拒绝：已 `skill_completed` 但状态谓词为假、伪造的 Fallback 观测、终态状态与前置决策不一致、`stopped=true` 却报告 `base_speed_mps=99`、`observed_frame` 非单调、序号不连续、终态不在末位。
+**1. 事件契约是可验证的语义，不只是格式。** `src/seer_demo/contracts.py` 的 `validate_scenario_events()` 为三个场景各自硬编码了期望事件轨迹并逐条比对。它会拒绝：已 `skill_completed` 但状态谓词为假、伪造的 Fallback 观测、终态状态与前置决策不一致、`stopped=true` 却报告 `base_speed_mps=99`、`observed_frame` 非单调、序号不连续、终态不在末位。
 
 **2. 每一层都把上层产物当作不可信输入重新校验。**
 
@@ -97,11 +101,11 @@ validate_scenario_events  →  assert_summary_matches_validation
                           →  server 只暴露通过校验的运行目录
 ```
 
-**3. 后端不能自己宣布成功。** `src/engine.py` 的注释即是设计约束：*backend executes actions but cannot invent success*。recovery 场景若首次尝试意外成功、intervention 若意外恢复，引擎直接抛 `RuntimeError`。安全停车失败时也不会产生"人工接管"终态。
+**3. 后端不能自己宣布成功。** `src/seer_demo/engine.py` 的注释即是设计约束：*backend executes actions but cannot invent success*。recovery 场景若首次尝试意外成功、intervention 若意外恢复，引擎直接抛 `RuntimeError`。安全停车失败时也不会产生"人工接管"终态。
 
 **4. 物理判定需要两个条件同时成立。** 载荷叉取必须**同时**满足相对几何对齐与 `UsdPhysics.FixedJoint` 已启用，放置后关节关闭。抓取状态不由日志常量伪造。
 
-**5. 运动安全性独立认证。** `src/isaac/collision.py` 实现纯 Python 的 2.5D OBB/SAT 扫掠守卫，把车身、四轮、倾斜叉架、双货叉、12 部件载荷与全部静态设施纳入逐帧检查；平移步长 ≤ 0.025 m、偏航步长 ≤ 0.5°。只允许方向正确、误差 ≤ 1 mm 的支撑面接触。时间线生成、Isaac 每帧写入、分屏合成、清单生成四处均失败关闭。
+**5. 运动安全性独立认证。** `src/seer_demo/isaac/collision.py` 实现纯 Python 的 2.5D OBB/SAT 扫掠守卫，把车身、四轮、倾斜叉架、双货叉、12 部件载荷与全部静态设施纳入逐帧检查；平移步长 ≤ 0.025 m、偏航步长 ≤ 0.5°。只允许方向正确、误差 ≤ 1 mm 的支撑面接触。时间线生成、Isaac 每帧写入、分屏合成、清单生成四处均失败关闭。
 
 ## 验证结果
 

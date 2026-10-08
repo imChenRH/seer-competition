@@ -12,9 +12,9 @@
 | 静态设施碰撞 | VERIFIED | 七类常驻设施具有静态碰撞；故障障碍物仅在 intervention 启用，normal/recovery 不保留隐形碰撞体。V5 normal/recovery 各验证 193 个静态碰撞 Prim，V6 intervention 为 195 个 | 正式 `summary.static_physics_contract`、`summary.static_collision_prim_count`、`tests/test_timeline.py` |
 | 载荷叉取与放置 | DEMO_IMPLEMENTED | 两个叉孔与货叉对齐；只有相对几何满足且 `FixedJoint` 启用才报告挂接；放置时降低、释放并等待受支撑载荷停稳 | normal/recovery JSONL 的 `physical_attachment_enabled`、`payload_supported`、`payload_settled`，USDA 与视频 |
 | 场景比例与路径对齐 | VERIFIED | 车轮落地；集装箱为 7.5×3.4×3.5 m；11 根横向圆柱滚筒组成传送带；集装箱和传送带均与地面黄线平行 | 三份 `scene.usda`、`summary.facility_layout`、`tests/test_timeline.py`、正式视频 |
-| 防穿模扫掠守卫 | DEMO_IMPLEMENTED | `2.5D_OBB_SAT_SWEEP_V4` 对车身、四轮、倾斜叉架、双货叉、12 部件载荷、齐平集装箱地板、圆柱滚筒和 intervention 障碍物包络做扫掠检查；V5 normal/recovery 与 V6 intervention 的障碍物穿透、禁碰数、接触违规数均为 0，最小车身净距不低于 0.213986 m；这不等于完整动力学或生产安全认证 | 正式 `summary.json` / `MANIFEST.json`、`src/isaac/collision.py`、`tests/test_timeline.py` |
-| 侧前方联动镜头 | DEMO_IMPLEMENTED | 相机位于叉车局部前半平面并保留侧向夹角；近距交互时把未连接货物纳入主体包络，三场景完整叉车与相关货物解析边距不低于 5% | `summary.camera_strategy`、`simulation.mp4`、`src/isaac/scene.py`、`tests/test_timeline.py` |
-| 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一 `observed_frame / fps` 视频帧时钟；运行/恢复/完成/人工接管用蓝/琥珀/绿/红主题；右侧不是隐藏思维过程 | `presentation.mp4`、`src/presentation.py`、`tests/test_presentation.py` |
+| 防穿模扫掠守卫 | DEMO_IMPLEMENTED | `2.5D_OBB_SAT_SWEEP_V4` 对车身、四轮、倾斜叉架、双货叉、12 部件载荷、齐平集装箱地板、圆柱滚筒和 intervention 障碍物包络做扫掠检查；V5 normal/recovery 与 V6 intervention 的障碍物穿透、禁碰数、接触违规数均为 0，最小车身净距不低于 0.213986 m；这不等于完整动力学或生产安全认证 | 正式 `summary.json` / `MANIFEST.json`、`src/seer_demo/isaac/collision.py`、`tests/test_timeline.py` |
+| 侧前方联动镜头 | DEMO_IMPLEMENTED | 相机位于叉车局部前半平面并保留侧向夹角；近距交互时把未连接货物纳入主体包络，三场景完整叉车与相关货物解析边距不低于 5% | `summary.camera_strategy`、`simulation.mp4`、`src/seer_demo/isaac/scene.py`、`tests/test_timeline.py` |
+| 双层架构展示 | DEMO_IMPLEMENTED | 左侧 Isaac 操作与右侧可审计的结构化决策摘要使用同一 `observed_frame / fps` 视频帧时钟；运行/恢复/完成/人工接管用蓝/琥珀/绿/红主题；右侧不是隐藏思维过程 | `presentation.mp4`、`src/seer_demo/presentation.py`、`tests/test_presentation.py` |
 | 飞书 → Isaac 闭环 | DEMO_IMPLEMENTED | 同主机/同证据目录的单实例桥接可认领、一次启动、以哈希收据恢复回放；操作员见证回执对应 `T-DEMO-20260813-001`，不是三份 2026-08-15 正式录像的现场见证 | `tests/test_bridge.py`；经 manifest 哈希的操作员见证回执（不是飞书签名证明） |
 | Fast-WAM 能加载推理 | VERIFIED | 独立技术验证输出形状 `[1,7]`，首次单次约 0.86 s | 经顶层 manifest 哈希的脱敏验证日志 |
 | Fast-WAM 黑碗→盘操作 | VERIFIED | 在官方 LIBERO `libero_goal` task 8、五个固定初态和 300 步预算下，原版 `env.check_success()` 通过 5/5；五次均由 revision 与 SHA-256 已绑定的 checkpoint 在 77–84 个 7D 动作内完成。该数字只描述随附固定初态，不是通用成功率或完整基准 | `fastwam-bowl-plate-20260816-v2-r1` 的五组视频/动作/状态、事件、模型指纹、摘要、公共格式分屏片与 Manifest 哈希 |
